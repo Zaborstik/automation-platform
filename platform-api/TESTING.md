@@ -615,3 +615,4 @@ void shouldExecutePlanSuccessfully() throws Exception {
 - Надежность проверок
 - Быстрое обнаружение регрессий
 
+

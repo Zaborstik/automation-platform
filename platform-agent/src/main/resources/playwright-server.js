@@ -269,3 +269,4 @@ app.listen(PORT, () => {
     console.log(`Screenshots directory: ${SCREENSHOTS_DIR}`);
 });
 
+
