@@ -39,6 +39,10 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+        </dependency>
 
         <!-- HTTP Client (Java 11+) -->
         <!-- Используем встроенный java.net.http -->
