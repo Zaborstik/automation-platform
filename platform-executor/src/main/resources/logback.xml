@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Консольный аппендер с цветным выводом -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- INFO - обычный текст, WARN - желтый, ERROR - красный -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %customLevel(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+        <!-- Включаем поддержку ANSI цветов -->
+        <withJansi>true</withJansi>
+    </appender>
+
+    <!-- Кастомный конвертер для цветов уровней -->
+    <conversionRule conversionWord="customLevel" 
+                    converterClass="com.zaborstik.platform.core.logging.CustomLevelConverter" />
+
+    <!-- Уровень логирования -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- Более детальное логирование для executor -->
+    <logger name="com.zaborstik.platform.executor" level="INFO" />
+</configuration>

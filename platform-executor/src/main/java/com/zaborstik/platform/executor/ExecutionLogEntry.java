@@ -9,6 +9,9 @@ import java.util.Objects;
 /**
  * Одна запись в execution_log.
  * Связывает шаг плана с фактическим результатом выполнения через UI-агента.
+ * 
+ * One entry in execution_log.
+ * Links plan step with actual execution result through UI agent.
  */
 public class ExecutionLogEntry {
     private final String planId;
