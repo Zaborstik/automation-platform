@@ -11,6 +11,9 @@ import java.util.Objects;
 /**
  * Высокоуровневый результат исполнения плана.
  * Содержит агрегированный статус, временные метки и execution_log.
+ * 
+ * High-level plan execution result.
+ * Contains aggregated status, timestamps and execution_log.
  */
 public class PlanExecutionResult {
     private final String planId;
@@ -55,6 +58,8 @@ public class PlanExecutionResult {
 
     /**
      * Удобный метод для получения «сырых» результатов выполнения шагов.
+     * 
+     * Convenient method for getting "raw" step execution results.
      */
     public List<StepExecutionResult> getStepResults() {
         return logEntries.stream()

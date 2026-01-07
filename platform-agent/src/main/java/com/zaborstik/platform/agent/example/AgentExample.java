@@ -18,12 +18,15 @@ import java.util.Set;
 
 /**
  * Пример использования Agent для выполнения планов.
+ * 
+ * Example of using Agent for executing plans.
  */
 public class AgentExample {
     private static final Logger log = LoggerFactory.getLogger(AgentExample.class);
 
     public static void main(String[] args) {
         // 1. Настраиваем Resolver с тестовыми данными
+        // 1. Configure Resolver with test data
         InMemoryResolver resolver = new InMemoryResolver();
         
         EntityType building = new EntityType(
@@ -51,9 +54,11 @@ public class AgentExample {
         resolver.registerUIBinding(extractBinding);
 
         // 2. Создаем ExecutionEngine
+        // 2. Create ExecutionEngine
         ExecutionEngine engine = new ExecutionEngine(resolver);
 
         // 3. Создаем запрос на выполнение
+        // 3. Create execution request
         ExecutionRequest request = new ExecutionRequest(
             "Building",
             "93939",
@@ -62,17 +67,20 @@ public class AgentExample {
         );
 
         // 4. Создаем план
+        // 4. Create plan
         Plan plan = engine.createPlan(request);
         log.info("Created plan: {}", plan);
 
         // 5. Настраиваем Agent
+        // 5. Configure Agent
         AgentConfiguration config = new AgentConfiguration(
-            "http://localhost:3000",  // URL Playwright сервера
-            "http://localhost:8080",   // Базовый URL приложения
-            false                       // Не headless (видимый браузер)
+            "http://localhost:3000",  // URL Playwright сервера / Playwright server URL
+            "http://localhost:8080",   // Базовый URL приложения / Application base URL
+            false                       // Не headless (видимый браузер) / Not headless (visible browser)
         );
 
         // Проверяем доступность агента
+        // Check agent availability
         if (!config.checkAgentAvailability()) {
             log.error("Agent is not available. Make sure Playwright server is running.");
             log.error("Start it with: node platform-agent/src/main/resources/playwright-server.js");
@@ -80,6 +88,7 @@ public class AgentExample {
         }
 
         // 6. Создаем AgentService и выполняем план
+        // 6. Create AgentService and execute plan
         AgentService agentService = config.createAgentService(resolver);
         
         try {
@@ -87,6 +96,7 @@ public class AgentExample {
             List<StepExecutionResult> results = agentService.executePlan(plan);
 
             // 7. Выводим результаты
+            // 7. Print results
             log.info("Execution completed. Results:");
             for (StepExecutionResult result : results) {
                 if (result.isSuccess()) {
@@ -104,6 +114,7 @@ public class AgentExample {
 
         } finally {
             // 8. Закрываем браузер
+            // 8. Close browser
             agentService.close();
         }
     }

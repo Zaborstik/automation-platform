@@ -11,6 +11,14 @@ import java.util.Objects;
  *   "entityId": "93939",
  *   "action": "order_egrn_extract"
  * }
+ * 
+ * Input data for action execution.
+ * Example:
+ * {
+ *   "entity": "Building",
+ *   "entityId": "93939",
+ *   "action": "order_egrn_extract"
+ * }
  */
 public class ExecutionRequest {
     private final String entityType;

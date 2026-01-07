@@ -17,6 +17,11 @@ import java.util.Objects;
  *
  * Берёт {@link Plan}, передаёт шаги в {@link AgentService}, собирает execution_log
  * и возвращает агрегированный {@link PlanExecutionResult}.
+ * 
+ * Plan executor.
+ * 
+ * Takes {@link Plan}, passes steps to {@link AgentService}, collects execution_log
+ * and returns aggregated {@link PlanExecutionResult}.
  */
 public class PlanExecutor {
     private static final Logger log = LoggerFactory.getLogger(PlanExecutor.class);
@@ -32,6 +37,11 @@ public class PlanExecutor {
      *
      * @param plan план для исполнения
      * @return результат исполнения с execution_log
+     * 
+     * Synchronously executes plan.
+     * 
+     * @param plan plan to execute
+     * @return execution result with execution_log
      */
     public PlanExecutionResult execute(Plan plan) {
         Objects.requireNonNull(plan, "plan cannot be null");
@@ -61,6 +71,7 @@ public class PlanExecutor {
         }
 
         // Если агент вернул меньше результатов, чем шагов, добавим фиктивные failure-записи.
+        // If agent returned fewer results than steps, add synthetic failure entries.
         if (stepsSize > resultsSize) {
             for (int i = resultsSize; i < stepsSize; i++) {
                 PlanStep step = steps.get(i);

@@ -6,6 +6,9 @@ import java.util.Objects;
 /**
  * Состояние сущности или системы.
  * Используется для проверки preconditions/postconditions и state transitions.
+ * 
+ * Entity or system state.
+ * Used for checking preconditions/postconditions and state transitions.
  */
 public class State {
     private final String id;

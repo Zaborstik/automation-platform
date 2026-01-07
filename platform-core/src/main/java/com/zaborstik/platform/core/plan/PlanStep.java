@@ -11,6 +11,14 @@ import java.util.Objects;
  * - hover: action(order_egrn_extract)
  * - click: action(order_egrn_extract)
  * - wait: result
+ * 
+ * Plan execution step.
+ * Examples:
+ * - open_page: /buildings/{id}
+ * - explain: "Opening building card"
+ * - hover: action(order_egrn_extract)
+ * - click: action(order_egrn_extract)
+ * - wait: result
  */
 public class PlanStep {
     private final String type;

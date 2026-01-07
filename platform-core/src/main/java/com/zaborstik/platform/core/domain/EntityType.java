@@ -7,6 +7,10 @@ import java.util.Objects;
  * Тип сущности в системе.
  * Платформа не знает предметную область, поэтому EntityType - это метаданные.
  * Примеры: "Building", "Contract", "Extract"
+ * 
+ * Entity type in the system.
+ * Platform doesn't know the domain, so EntityType is metadata.
+ * Examples: "Building", "Contract", "Extract"
  */
 public class EntityType {
     private final String id;

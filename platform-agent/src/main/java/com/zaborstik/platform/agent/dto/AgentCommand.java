@@ -6,6 +6,9 @@ import java.util.Objects;
 /**
  * Команда для выполнения агентом.
  * Содержит тип команды, целевой элемент и параметры.
+ * 
+ * Command for agent execution.
+ * Contains command type, target element and parameters.
  */
 public class AgentCommand {
     private final CommandType type;

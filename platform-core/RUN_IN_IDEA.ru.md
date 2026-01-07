@@ -8,7 +8,6 @@
    ```
    platform-core/src/main/java/org/example/core/example/ExampleUsage.java
    ```
-
 2. Найдите метод `main` (строка 23)
 
 3. Нажмите на зеленую стрелку слева от `public static void main` или правой кнопкой мыши → **Run 'ExampleUsage.main()'**

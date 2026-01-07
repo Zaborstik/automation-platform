@@ -20,6 +20,7 @@ class DTOsSerializationTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         // Добавляем поддержку Java 8 time API для работы с Instant
+        // Add Java 8 time API support for working with Instant
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -152,6 +153,7 @@ class DTOsSerializationTest {
     @Test
     void shouldHandleJsonPropertyAnnotations() throws Exception {
         // Given - проверяем, что JSON использует правильные имена полей
+        // Given - check that JSON uses correct field names
         ExecutionRequestDTO dto = new ExecutionRequestDTO(
             "Building",
             "93939",

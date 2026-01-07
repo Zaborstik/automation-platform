@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
  * Эндпоинты:
  * - POST /api/execution/plan - создание плана выполнения
  * - GET /api/execution/plan/{id} - получение плана (для будущей реализации)
+ * 
+ * REST controller for action execution.
+ * 
+ * Endpoints:
+ * - POST /api/execution/plan - create execution plan
+ * - GET /api/execution/plan/{id} - get plan (for future implementation)
  */
 @RestController
 @RequestMapping("/api/execution")
@@ -39,6 +45,20 @@ public class ExecutionController {
      * 
      * @param requestDTO запрос на выполнение действия
      * @return план выполнения
+     * 
+     * Creates execution plan for the specified action.
+     * 
+     * Request example:
+     * POST /api/execution/plan
+     * {
+     *   "entity": "Building",
+     *   "entityId": "93939",
+     *   "action": "order_egrn_extract",
+     *   "parameters": {}
+     * }
+     * 
+     * @param requestDTO action execution request
+     * @return execution plan
      */
     @PostMapping("/plan")
     public ResponseEntity<PlanDTO> createPlan(@Valid @RequestBody ExecutionRequestDTO requestDTO) {
@@ -53,10 +73,18 @@ public class ExecutionController {
      * 
      * @param id идентификатор плана
      * @return план выполнения
+     * 
+     * Gets plan by identifier.
+     * 
+     * TODO: Implement plan storage and retrieval by ID.
+     * 
+     * @param id plan identifier
+     * @return execution plan
      */
     @GetMapping("/plan/{id}")
     public ResponseEntity<ErrorResponseDTO> getPlan(@PathVariable("id") String id) {
         // Пока не реализовано - планы не сохраняются
+        // Not implemented yet - plans are not stored
         ErrorResponseDTO error = new ErrorResponseDTO(
             HttpStatus.NOT_IMPLEMENTED.value(),
             "Not Implemented",

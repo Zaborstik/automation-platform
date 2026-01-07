@@ -17,6 +17,9 @@ import java.util.Map;
 /**
  * Клиент для взаимодействия с Playwright сервером через HTTP.
  * Отправляет команды агенту и получает результаты выполнения.
+ * 
+ * Client for interacting with Playwright server via HTTP.
+ * Sends commands to agent and receives execution results.
  */
 public class AgentClient {
     private static final Logger log = LoggerFactory.getLogger(AgentClient.class);
@@ -45,6 +48,12 @@ public class AgentClient {
      * @param command команда для выполнения
      * @return ответ от агента
      * @throws AgentException если произошла ошибка при выполнении
+     * 
+     * Executes command through agent.
+     * 
+     * @param command command to execute
+     * @return response from agent
+     * @throws AgentException if error occurred during execution
      */
     public AgentResponse execute(AgentCommand command) throws AgentException {
         long startTime = System.currentTimeMillis();
@@ -92,6 +101,10 @@ public class AgentClient {
      * Проверяет доступность агента.
      * 
      * @return true если агент доступен
+     * 
+     * Checks agent availability.
+     * 
+     * @return true if agent is available
      */
     public boolean isAvailable() {
         try {
@@ -115,6 +128,12 @@ public class AgentClient {
      * @param baseUrl базовый URL приложения
      * @param headless запускать ли в headless режиме
      * @return ответ от агента
+     * 
+     * Initializes browser (opens new context).
+     * 
+     * @param baseUrl application base URL
+     * @param headless whether to run in headless mode
+     * @return response from agent
      */
     public AgentResponse initialize(String baseUrl, boolean headless) throws AgentException {
         try {
@@ -149,6 +168,8 @@ public class AgentClient {
 
     /**
      * Закрывает браузер и освобождает ресурсы.
+     * 
+     * Closes browser and releases resources.
      */
     public AgentResponse close() throws AgentException {
         try {

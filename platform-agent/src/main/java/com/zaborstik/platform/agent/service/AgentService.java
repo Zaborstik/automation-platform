@@ -19,6 +19,9 @@ import java.util.Optional;
 /**
  * Сервис для выполнения планов через UI-агента.
  * Преобразует PlanStep в AgentCommand и выполняет их через AgentClient.
+ * 
+ * Service for executing plans through UI agent.
+ * Converts PlanStep to AgentCommand and executes them through AgentClient.
  */
 public class AgentService {
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
@@ -40,6 +43,11 @@ public class AgentService {
      * 
      * @param plan план для выполнения
      * @return список результатов выполнения шагов
+     * 
+     * Executes plan through UI agent.
+     * 
+     * @param plan plan to execute
+     * @return list of step execution results
      */
     public List<StepExecutionResult> executePlan(Plan plan) {
         log.info("Starting plan execution: {}", plan.getId());
@@ -47,6 +55,7 @@ public class AgentService {
 
         try {
             // Инициализируем браузер
+            // Initialize browser
             AgentResponse initResponse = agentClient.initialize(baseUrl, headless);
             if (!initResponse.isSuccess()) {
                 log.error("Failed to initialize agent: {}", initResponse.getError());
@@ -56,6 +65,7 @@ public class AgentService {
             }
 
             // Выполняем каждый шаг плана
+            // Execute each plan step
             for (PlanStep step : plan.getSteps()) {
                 StepExecutionResult result = executeStep(step);
                 results.add(result);
@@ -63,6 +73,7 @@ public class AgentService {
                 if (!result.isSuccess()) {
                     log.error("Step execution failed: {}", result.getError());
                     // Можно добавить логику для обработки ошибок (retry, fallback и т.д.)
+                    // Can add error handling logic (retry, fallback, etc.)
                 }
             }
 
@@ -79,6 +90,8 @@ public class AgentService {
 
     /**
      * Выполняет один шаг плана.
+     * 
+     * Executes one plan step.
      */
     private StepExecutionResult executeStep(PlanStep step) {
         long startTime = System.currentTimeMillis();
@@ -113,6 +126,8 @@ public class AgentService {
 
     /**
      * Преобразует PlanStep в AgentCommand.
+     * 
+     * Converts PlanStep to AgentCommand.
      */
     private AgentCommand convertToCommand(PlanStep step) {
         String type = step.getType();
@@ -125,6 +140,7 @@ public class AgentService {
 
             case "click":
                 // Если target в формате "action(actionId)", находим UIBinding
+                // If target is in format "action(actionId)", find UIBinding
                 if (target != null && target.startsWith("action(") && target.endsWith(")")) {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
@@ -140,6 +156,7 @@ public class AgentService {
 
             case "hover":
                 // Аналогично click
+                // Similar to click
                 if (target != null && target.startsWith("action(") && target.endsWith(")")) {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
@@ -174,6 +191,8 @@ public class AgentService {
 
     /**
      * Закрывает браузер и освобождает ресурсы.
+     * 
+     * Closes browser and releases resources.
      */
     public void close() {
         try {

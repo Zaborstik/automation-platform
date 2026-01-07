@@ -20,10 +20,18 @@ import java.util.List;
  * - передаёт его в PlanExecutor, который управляет UI-агентом.
  *
  * Это пример, а не продовый bootstrap.
+ * 
+ * Simple CLI entry point for manual-run MVP:
+ * - assembles in-memory Resolver (EntityType, Action, UIBinding)
+ * - creates simple Plan (linear)
+ * - passes it to PlanExecutor, which manages UI agent.
+ * 
+ * This is an example, not production bootstrap.
  */
 public class Main {
     public static void main(String[] args) {
         // 1. Конфигурируем resolver c одной сущностью и действием
+        // 1. Configure resolver with one entity and action
         InMemoryResolver resolver = new InMemoryResolver();
 
         EntityType building = new EntityType("Building", "Здание", java.util.Map.of());
@@ -39,6 +47,7 @@ public class Main {
         resolver.registerAction(orderEgrn);
 
         // Привязка действия к UI (селектор условный, адаптируется под конкретное приложение)
+        // Action binding to UI (selector is conditional, adapts to specific application)
         UIBinding binding = new UIBinding(
             orderEgrn.getId(),
             "button[data-action='order_egrn_extract']",
@@ -48,6 +57,7 @@ public class Main {
         resolver.registerUIBinding(binding);
 
         // 2. Конструируем план руками (в бою он придёт из core/ExecutionEngine)
+        // 2. Build plan manually (in production it will come from core/ExecutionEngine)
         String entityId = "93939";
         Plan plan = new Plan(
             building.getId(),
@@ -63,14 +73,16 @@ public class Main {
         );
 
         // 3. Поднимаем клиента к Playwright-агенту
-        String agentBaseUrl = "http://localhost:3000"; // URL Playwright-сервера
+        // 3. Set up client to Playwright agent
+        String agentBaseUrl = "http://localhost:3000"; // URL Playwright-сервера / Playwright server URL
         AgentClient agentClient = new AgentClient(agentBaseUrl);
 
-        String appBaseUrl = "http://localhost:8080"; // URL бизнес-приложения
+        String appBaseUrl = "http://localhost:8080"; // URL бизнес-приложения / Business application URL
         boolean headless = false;
         AgentService agentService = new AgentService(agentClient, resolver, appBaseUrl, headless);
 
         // 4. Исполняем план через executor
+        // 4. Execute plan through executor
         PlanExecutor executor = new PlanExecutor(agentService);
         PlanExecutionResult result = executor.execute(plan);
 

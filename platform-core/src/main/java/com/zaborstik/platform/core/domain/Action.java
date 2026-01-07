@@ -8,6 +8,10 @@ import java.util.Set;
  * Действие - атом системы.
  * Это минимальная осмысленная операция, которую пользователь может выполнить через UI.
  * Примеры: "order_egrn_extract", "close_contract", "assign_owner"
+ * 
+ * Action - system atom.
+ * This is the minimal meaningful operation that user can perform through UI.
+ * Examples: "order_egrn_extract", "close_contract", "assign_owner"
  */
 public class Action {
     private final String id;

@@ -6,6 +6,9 @@ import java.util.Objects;
 /**
  * Привязка действия к UI-элементу.
  * Содержит селекторы и метаданные для поиска элемента в UI.
+ * 
+ * Action binding to UI element.
+ * Contains selectors and metadata for finding element in UI.
  */
 public class UIBinding {
     private final String actionId;
@@ -17,7 +20,7 @@ public class UIBinding {
         CSS,
         XPATH,
         TEXT,
-        ACTION_ID  // Специальный тип для семантических действий
+        ACTION_ID  // Специальный тип для семантических действий / Special type for semantic actions
     }
 
     public UIBinding(String actionId, String selector, SelectorType selectorType, 

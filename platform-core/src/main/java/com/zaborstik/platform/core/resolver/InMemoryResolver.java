@@ -11,6 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * In-memory реализация Resolver для MVP.
  * В будущем может быть заменена на репозиторий с БД.
+ * 
+ * In-memory Resolver implementation for MVP.
+ * In the future can be replaced with DB repository.
  */
 public class InMemoryResolver implements Resolver {
     private final Map<String, EntityType> entityTypes = new ConcurrentHashMap<>();

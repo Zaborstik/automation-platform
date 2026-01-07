@@ -9,6 +9,13 @@ import com.zaborstik.platform.agent.example.AgentExample;
  * 1. Убедитесь, что Playwright сервер запущен:
  *    cd src/main/resources && npm install && node playwright-server.js
  * 2. Запустите этот класс
+ * 
+ * Main class for platform-agent.
+ * 
+ * To run agent usage example:
+ * 1. Make sure Playwright server is running:
+ *    cd src/main/resources && npm install && node playwright-server.js
+ * 2. Run this class
  */
 public class Main {
     public static void main(String[] args) {
@@ -22,6 +29,7 @@ public class Main {
         System.out.println();
         
         // Запускаем пример
+        // Run example
         AgentExample.main(args);
     }
 }
