@@ -3,12 +3,14 @@ package com.zaborstik.platform.api.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaborstik.platform.api.dto.ExecutionRequestDTO;
 import com.zaborstik.platform.api.dto.PlanDTO;
+import com.zaborstik.platform.api.exception.GlobalExceptionHandler;
 import com.zaborstik.platform.api.service.ExecutionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ExecutionController.class)
+@Import(GlobalExceptionHandler.class)
 class ExecutionControllerTest {
 
     @Autowired

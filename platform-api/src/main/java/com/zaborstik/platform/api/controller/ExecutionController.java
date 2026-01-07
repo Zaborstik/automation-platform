@@ -55,7 +55,7 @@ public class ExecutionController {
      * @return план выполнения
      */
     @GetMapping("/plan/{id}")
-    public ResponseEntity<ErrorResponseDTO> getPlan(@PathVariable String id) {
+    public ResponseEntity<ErrorResponseDTO> getPlan(@PathVariable("id") String id) {
         // Пока не реализовано - планы не сохраняются
         ErrorResponseDTO error = new ErrorResponseDTO(
             HttpStatus.NOT_IMPLEMENTED.value(),
