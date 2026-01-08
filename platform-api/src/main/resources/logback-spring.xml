@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <!-- Консольный аппендер с цветным выводом (без jansi) -->
+<configuration>    
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <!-- Используем встроенный конвертер %highlight() для цветов (работает без jansi) -->
             <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
         </encoder>
     </appender>
@@ -15,5 +13,7 @@
 
     <!-- Более детальное логирование для платформы -->
     <logger name="com.zaborstik.platform" level="INFO" />
-    <logger name="org.example" level="INFO" />
+    <logger name="org.springframework.web" level="INFO" />
+    <logger name="org.hibernate.SQL" level="DEBUG" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" />
 </configuration>
