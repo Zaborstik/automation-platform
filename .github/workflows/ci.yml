@@ -90,10 +90,9 @@ jobs:
       
       # Шаг 3: Запуск Qodana анализа
       - name: Run Qodana
-        uses: JetBrains/qodana-action@v2024.3
-        with:
-          # Используем конфигурацию из qodana.yaml
-          # Результаты будут загружены как артефакт
+        uses: JetBrains/qodana-action@v2025.2
+        # Используем конфигурацию из qodana.yaml
+        # Результаты будут загружены как артефакт
       
       # Шаг 4: Загрузка отчета Qodana
       - name: Upload Qodana report
