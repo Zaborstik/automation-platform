@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Используем стандартный паттерн Spring Boot с цветами через ANSI -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+        <withJansi>false</withJansi>
+    </appender>
+
+    <!-- Уровень логирования -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- Более детальное логирование для платформы -->
+    <logger name="com.zaborstik.platform" level="INFO" />
+    <logger name="org.example" level="INFO" />
+    
+    <!-- Логирование Spring -->
+    <logger name="org.springframework" level="INFO" />
+    <logger name="org.springframework.web" level="INFO" />
+    <logger name="org.hibernate.SQL" level="DEBUG" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" />
+</configuration>
