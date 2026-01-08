@@ -1,0 +1,60 @@
+#-------------------------------------------------------------------------------#
+#               Qodana analysis is configured by qodana.yaml file               #
+#             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
+#-------------------------------------------------------------------------------#
+
+#################################################################################
+#              WARNING: Do not store sensitive information in this file,        #
+#               as its contents will be included in the Qodana report.          #
+#################################################################################
+version: "1.0"
+
+# Specify inspection profile for code analysis
+# qodana.starter - базовый профиль для начала работы
+# qodana.recommended - рекомендуемый профиль для большинства проектов
+profile:
+  name: qodana.recommended
+
+# Enable specific inspections (раскомментируйте, если нужно включить дополнительные проверки)
+# include:
+#   - name: JavaDoc
+#   - name: ConstantConditions
+
+# Disable inspections for specific paths (например, для сгенерированного кода)
+exclude:
+  - name: UnusedImport
+    paths:
+      - "**/target/**"
+      - "**/generated-sources/**"
+      - "**/generated-test-sources/**"
+  - name: UnusedDeclaration
+    paths:
+      - "**/target/**"
+
+# Java version for analysis (Applied in CI/CD pipeline)
+projectJDK: "21"
+
+# Execute shell command before Qodana execution (Applied in CI/CD pipeline)
+# Например, для компиляции проекта перед анализом
+# bootstrap: mvn clean compile -DskipTests
+
+# Install IDE plugins before Qodana execution (Applied in CI/CD pipeline)
+# plugins:
+#   - id: org.jetbrains.plugins.spring  # Spring plugin для лучшей поддержки Spring Boot
+
+# Quality gate. Will fail the CI/CD pipeline if any condition is not met
+# severityThresholds - настраивает максимальные пороги для разных уровней серьезности проблем
+# testCoverageThresholds - настраивает минимальное покрытие кода тестами
+# Code Coverage доступен в Ultimate и Ultimate Plus планах
+failureConditions:
+  severityThresholds:
+    any: 50        # Максимум 50 проблем любого уровня
+    critical: 5    # Максимум 5 критических проблем
+    warning: 30    # Максимум 30 предупреждений
+  # testCoverageThresholds:
+  #   fresh: 70    # 70% покрытия для нового кода
+  #   total: 50    # 50% общего покрытия проекта
+
+# Qodana supports other languages, for example, Python, JavaScript, TypeScript, Go, C#, PHP
+# For all supported languages see https://www.jetbrains.com/help/qodana/linters.html
+linter: jetbrains/qodana-jvm-community:2025.2

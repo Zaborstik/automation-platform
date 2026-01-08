@@ -1,0 +1,81 @@
+# Docker Compose конфигурация для локальной разработки
+# 
+# Что это такое:
+# Docker Compose позволяет запускать несколько контейнеров одновременно
+# В данном случае: PostgreSQL база данных для разработки
+#
+# Как использовать:
+# 1. Установите Docker Desktop (https://www.docker.com/products/docker-desktop)
+# 2. Запустите: docker-compose up -d
+# 3. Остановите: docker-compose down
+# 4. Посмотреть логи: docker-compose logs -f postgres
+#
+# База данных будет доступна на:
+# - Host: localhost
+# - Port: 5432
+# - Database: platformdb
+# - Username: platform_user
+# - Password: platform_pass
+
+version: '3.8'
+
+services:
+  # PostgreSQL база данных для разработки
+  postgres:
+    image: postgres:16-alpine  # Легковесная версия PostgreSQL
+    container_name: platform-postgres
+    restart: unless-stopped
+    
+    # Переменные окружения для инициализации БД
+    environment:
+      POSTGRES_DB: platformdb
+      POSTGRES_USER: platform_user
+      POSTGRES_PASSWORD: platform_pass
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    # Проброс портов: host:container
+    ports:
+      - "5432:5432"
+    
+    # Постоянное хранилище данных (чтобы данные не терялись при перезапуске)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Можно добавить init скрипты для автоматической инициализации
+      # - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    
+    # Health check для проверки готовности БД
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform_user -d platformdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    # Сеть для связи между сервисами (если добавите больше сервисов)
+    networks:
+      - platform-network
+
+  # Опционально: pgAdmin для управления БД через веб-интерфейс
+  # Раскомментируйте, если нужен графический интерфейс для БД
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: platform-pgadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@platform.local
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #   ports:
+  #     - "5050:80"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - platform-network
+
+# Именованные volumes для постоянного хранения данных
+volumes:
+  postgres_data:
+    driver: local
+
+# Сеть для связи между контейнерами
+networks:
+  platform-network:
+    driver: bridge

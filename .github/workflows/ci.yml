@@ -1,0 +1,143 @@
+# GitHub Actions CI/CD Pipeline для automation-platform
+# Этот файл автоматически запускается при каждом push и pull request
+# 
+# Что делает этот pipeline:
+# 1. Проверяет код на разных версиях Java (если нужно)
+# 2. Компилирует проект с помощью Maven
+# 3. Запускает тесты
+# 4. Проверяет качество кода с помощью Qodana
+# 5. Собирает артефакты (JAR файлы)
+
+name: CI/CD Pipeline
+
+# Когда запускать pipeline
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*.*.*'  # При создании тега версии
+  pull_request:
+    branches:
+      - main
+      - develop
+
+# Переменные окружения для всего workflow
+env:
+  MAVEN_OPTS: -Dmaven.repo.local=${{ github.workspace }}/.m2/repository
+  JAVA_VERSION: '21'
+
+jobs:
+  # Job 1: Компиляция и тесты
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Шаг 1: Checkout кода
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Шаг 2: Установка Java
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+      
+      # Шаг 3: Компиляция проекта
+      - name: Build with Maven
+        run: mvn clean compile -DskipTests
+      
+      # Шаг 4: Запуск тестов
+      - name: Run tests
+        run: mvn test
+      
+      # Шаг 5: Сборка артефактов
+      - name: Package application
+        run: mvn package -DskipTests
+      
+      # Шаг 6: Сохранение артефактов
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: platform-artifacts
+          path: |
+            platform-api/target/*.jar
+            platform-agent/target/*.jar
+            platform-executor/target/*.jar
+          retention-days: 7
+
+  # Job 2: Проверка качества кода с Qodana
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Шаг 1: Checkout кода
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Шаг 2: Установка Java
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+      
+      # Шаг 3: Запуск Qodana анализа
+      - name: Run Qodana
+        uses: JetBrains/qodana-action@v2024.3
+        with:
+          # Используем конфигурацию из qodana.yaml
+          # Результаты будут загружены как артефакт
+      
+      # Шаг 4: Загрузка отчета Qodana
+      - name: Upload Qodana report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qodana-report
+          path: ${{ runner.temp }}/qodana/results
+          retention-days: 30
+
+  # Job 3: Проверка безопасности зависимостей
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Шаг 1: Checkout кода
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Шаг 2: Установка Java
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+      
+      # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'automation-platform'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+      
+      # Шаг 4: Загрузка отчета безопасности
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-report
+          path: reports/
+          retention-days: 30

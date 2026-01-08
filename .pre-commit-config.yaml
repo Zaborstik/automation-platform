@@ -1,0 +1,98 @@
+# Pre-commit hooks конфигурация
+# 
+# Что это такое:
+# Pre-commit hooks - это скрипты, которые автоматически запускаются перед каждым коммитом
+# Они помогают поддерживать качество кода и единый стиль
+#
+# Как установить:
+# 1. Установите pre-commit: pip install pre-commit
+# 2. Установите hooks: pre-commit install
+# 3. Теперь hooks будут запускаться автоматически при каждом git commit
+#
+# Как запустить вручную:
+# - Для всех файлов: pre-commit run --all-files
+# - Для staged файлов: pre-commit run
+
+# Версия конфигурации
+repos:
+  # Общие проверки файлов
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Проверка окончания файлов (должны заканчиваться новой строкой)
+      - id: end-of-file-fixer
+        description: "Убеждается, что файлы заканчиваются новой строкой"
+      
+      # Удаление trailing whitespace (пробелов в конце строк)
+      - id: trailing-whitespace
+        description: "Удаляет пробелы в конце строк"
+        args: [--markdown-linebreak-ext=md]
+      
+      # Проверка YAML синтаксиса
+      - id: check-yaml
+        description: "Проверяет корректность YAML файлов"
+        args: [--unsafe]  # Разрешает кастомные теги
+      
+      # Проверка JSON синтаксиса
+      - id: check-json
+        description: "Проверяет корректность JSON файлов"
+      
+      # Проверка наличия merge конфликтов
+      - id: check-merge-conflict
+        description: "Проверяет, что нет незакрытых merge конфликтов"
+      
+      # Проверка больших файлов
+      - id: check-added-large-files
+        description: "Предупреждает о больших файлах (>500KB)"
+        args: [--maxkb=500]
+      
+      # Проверка наличия секретов (API ключи, пароли и т.д.)
+      - id: detect-secrets
+        description: "Обнаруживает потенциальные секреты в коде"
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+            .*\.lock|
+            .*\.log|
+            target/.*|
+            .*\.class
+          )$
+
+  # Проверка Java кода (если установлен Checkstyle)
+  # Раскомментируйте, если хотите использовать Checkstyle
+  # - repo: https://github.com/checkstyle/checkstyle
+  #   rev: 10.12.5
+  #   hooks:
+  #     - id: checkstyle
+  #       description: "Проверяет стиль Java кода"
+  #       args: [--config, checkstyle.xml]
+  #       files: \.java$
+
+  # Форматирование Java кода с помощью Google Java Format
+  # Раскомментируйте, если хотите автоматическое форматирование
+  # - repo: https://github.com/google/google-java-format
+  #   rev: v1.20.0
+  #   hooks:
+  #     - id: google-java-format
+  #       description: "Форматирует Java код в стиле Google"
+  #       args: [--aosp, --skip-javadoc-formatting]
+  #       files: \.java$
+
+  # Проверка Maven pom.xml
+  - repo: local
+    hooks:
+      - id: maven-validate
+        name: Validate Maven POM files
+        description: "Проверяет корректность pom.xml файлов"
+        entry: bash -c 'mvn validate -q'
+        language: system
+        files: pom\.xml$
+        pass_filenames: false
+        always_run: true
+
+# Глобальные настройки
+default_language_version:
+  python: python3
+
+# Минимальная версия pre-commit
+minimum_pre_commit_version: '3.0.0'
