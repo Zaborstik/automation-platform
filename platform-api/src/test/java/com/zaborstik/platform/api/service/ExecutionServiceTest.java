@@ -3,6 +3,8 @@ package com.zaborstik.platform.api.service;
 import com.zaborstik.platform.api.dto.ExecutionRequestDTO;
 import com.zaborstik.platform.api.dto.PlanDTO;
 import com.zaborstik.platform.api.dto.PlanStepDTO;
+import com.zaborstik.platform.api.mapper.PlanMapper;
+import com.zaborstik.platform.api.repository.PlanRepository;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
@@ -16,16 +18,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExecutionServiceTest {
 
     @Mock
     private ExecutionEngine executionEngine;
+
+    @Mock
+    private PlanRepository planRepository;
+
+    @Mock
+    private PlanMapper planMapper;
 
     @InjectMocks
     private ExecutionService executionService;
@@ -61,6 +70,16 @@ class ExecutionServiceTest {
         );
 
         when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
+        when(planMapper.toEntity(any(Plan.class))).thenReturn(
+            new com.zaborstik.platform.api.entity.PlanEntity(
+                testPlan.getId(),
+                testPlan.getEntityTypeId(),
+                testPlan.getEntityId(),
+                testPlan.getActionId(),
+                com.zaborstik.platform.api.entity.PlanEntity.PlanStatus.CREATED
+            )
+        );
+        when(planRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         PlanDTO result = executionService.createPlan(requestDTO);
@@ -72,6 +91,10 @@ class ExecutionServiceTest {
         assertEquals("order_egrn_extract", result.getActionId());
         assertEquals("CREATED", result.getStatus());
         assertEquals(5, result.getSteps().size());
+        
+        // Проверяем, что план был сохранен в БД
+        verify(planRepository, times(1)).save(any());
+        verify(planMapper, times(1)).toEntity(testPlan);
     }
 
     @Test
@@ -197,6 +220,49 @@ class ExecutionServiceTest {
         // Then
         assertNotNull(result);
         assertTrue(result.getSteps().isEmpty());
+    }
+
+    @Test
+    void shouldGetPlanFromDatabase() {
+        // Given
+        String planId = "test-plan-id";
+        com.zaborstik.platform.api.entity.PlanEntity planEntity = new com.zaborstik.platform.api.entity.PlanEntity(
+            planId,
+            "Building",
+            "93939",
+            "order_egrn_extract",
+            com.zaborstik.platform.api.entity.PlanEntity.PlanStatus.CREATED
+        );
+
+        when(planRepository.findById(planId)).thenReturn(Optional.of(planEntity));
+        when(planMapper.toDomain(planEntity)).thenReturn(testPlan);
+
+        // When
+        Optional<PlanDTO> result = executionService.getPlan(planId);
+
+        // Then
+        assertTrue(result.isPresent());
+        PlanDTO planDTO = result.get();
+        assertEquals("Building", planDTO.getEntityTypeId());
+        assertEquals("93939", planDTO.getEntityId());
+        verify(planRepository, times(1)).findById(planId);
+        verify(planMapper, times(1)).toDomain(planEntity);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenPlanNotFound() {
+        // Given
+        String planId = "non-existent-plan";
+
+        when(planRepository.findById(planId)).thenReturn(Optional.empty());
+
+        // When
+        Optional<PlanDTO> result = executionService.getPlan(planId);
+
+        // Then
+        assertFalse(result.isPresent());
+        verify(planRepository, times(1)).findById(planId);
+        verify(planMapper, never()).toDomain(any());
     }
 }
 

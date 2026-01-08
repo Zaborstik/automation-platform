@@ -168,12 +168,39 @@ class ExecutionControllerTest {
     }
 
     @Test
-    void shouldReturnNotImplementedForGetPlan() throws Exception {
+    void shouldReturnPlanWhenFound() throws Exception {
+        // Given
+        PlanDTO foundPlan = new PlanDTO(
+            "test-plan-id",
+            "Building",
+            "93939",
+            "order_egrn_extract",
+            List.of(),
+            "CREATED"
+        );
+
+        when(executionService.getPlan("test-plan-id")).thenReturn(java.util.Optional.of(foundPlan));
+
         // When & Then
-        mockMvc.perform(get("/api/execution/plan/test-id"))
-            .andExpect(status().isNotImplemented())
-            .andExpect(jsonPath("$.error").value("Not Implemented"))
-            .andExpect(jsonPath("$.message").value("Plan storage is not implemented yet. Plans are created on-demand."));
+        mockMvc.perform(get("/api/execution/plan/test-plan-id"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("test-plan-id"))
+            .andExpect(jsonPath("$.entityType").value("Building"))
+            .andExpect(jsonPath("$.entityId").value("93939"))
+            .andExpect(jsonPath("$.action").value("order_egrn_extract"))
+            .andExpect(jsonPath("$.status").value("CREATED"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenPlanDoesNotExist() throws Exception {
+        // Given
+        when(executionService.getPlan("non-existent-id")).thenReturn(java.util.Optional.empty());
+
+        // When & Then
+        mockMvc.perform(get("/api/execution/plan/non-existent-id"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.error").value("Not Found"))
+            .andExpect(jsonPath("$.message").value("Plan with id 'non-existent-id' not found"));
     }
 
     @Test

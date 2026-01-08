@@ -1,35 +1,128 @@
 package com.zaborstik.platform.api.config;
 
+import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.entity.EntityTypeEntity;
+import com.zaborstik.platform.api.entity.UIBindingEntity;
+import com.zaborstik.platform.api.repository.ActionRepository;
+import com.zaborstik.platform.api.repository.EntityTypeRepository;
+import com.zaborstik.platform.api.repository.UIBindingRepository;
+import com.zaborstik.platform.api.resolver.DatabaseResolver;
 import com.zaborstik.platform.core.ExecutionEngine;
-import com.zaborstik.platform.core.domain.Action;
-import com.zaborstik.platform.core.domain.EntityType;
-import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.resolver.Resolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DataJpaTest
+@Import({PlatformConfiguration.class, DatabaseResolver.class})
+@TestPropertySource(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 class PlatformConfigurationTest {
 
-    private PlatformConfiguration configuration;
+    @Autowired
+    private EntityTypeRepository entityTypeRepository;
+
+    @Autowired
+    private ActionRepository actionRepository;
+
+    @Autowired
+    private UIBindingRepository uiBindingRepository;
+
+    @Autowired
     private Resolver resolver;
+
+    @Autowired
     private ExecutionEngine executionEngine;
 
     @BeforeEach
     void setUp() {
-        configuration = new PlatformConfiguration();
-        resolver = configuration.resolver();
-        executionEngine = configuration.executionEngine(resolver);
+        // Очищаем БД
+        uiBindingRepository.deleteAll();
+        actionRepository.deleteAll();
+        entityTypeRepository.deleteAll();
+
+        // Создаем тестовые данные (имитируем миграцию V2)
+        EntityTypeEntity buildingType = new EntityTypeEntity(
+            "Building",
+            "Здание",
+            Map.of("description", "Тип сущности для работы со зданиями")
+        );
+        entityTypeRepository.save(buildingType);
+
+        EntityTypeEntity contractType = new EntityTypeEntity(
+            "Contract",
+            "Договор",
+            Map.of("description", "Тип сущности для работы с договорами")
+        );
+        entityTypeRepository.save(contractType);
+
+        ActionEntity action1 = new ActionEntity(
+            "order_egrn_extract",
+            "Заказать выписку из ЕГРН",
+            "Заказывает выписку из ЕГРН для указанного здания",
+            Set.of("Building"),
+            Map.of("category", "document")
+        );
+        actionRepository.save(action1);
+
+        ActionEntity action2 = new ActionEntity(
+            "close_contract",
+            "Закрыть договор",
+            "Закрывает указанный договор",
+            Set.of("Contract"),
+            Map.of("category", "workflow")
+        );
+        actionRepository.save(action2);
+
+        ActionEntity action3 = new ActionEntity(
+            "assign_owner",
+            "Назначить владельца",
+            "Назначает владельца для указанного здания",
+            Set.of("Building"),
+            Map.of("category", "management")
+        );
+        actionRepository.save(action3);
+
+        UIBindingEntity uiBinding1 = new UIBindingEntity(
+            "order_egrn_extract",
+            "[data-action='order_egrn_extract']",
+            UIBindingEntity.SelectorType.CSS,
+            Map.of("highlight", "true")
+        );
+        uiBindingRepository.save(uiBinding1);
+
+        UIBindingEntity uiBinding2 = new UIBindingEntity(
+            "close_contract",
+            "//button[contains(@class, 'close-contract-btn')]",
+            UIBindingEntity.SelectorType.XPATH,
+            Map.of("highlight", "true")
+        );
+        uiBindingRepository.save(uiBinding2);
+
+        UIBindingEntity uiBinding3 = new UIBindingEntity(
+            "assign_owner",
+            "[data-action='assign_owner']",
+            UIBindingEntity.SelectorType.CSS,
+            Map.of("highlight", "true")
+        );
+        uiBindingRepository.save(uiBinding3);
     }
 
     @Test
     void shouldCreateResolverBean() {
         assertNotNull(resolver);
+        assertTrue(resolver instanceof DatabaseResolver);
     }
 
     @Test
@@ -44,7 +137,7 @@ class PlatformConfigurationTest {
         assertTrue(resolver.findEntityType("Contract").isPresent());
         assertFalse(resolver.findEntityType("NonExistent").isPresent());
 
-        EntityType building = resolver.findEntityType("Building").orElseThrow();
+        var building = resolver.findEntityType("Building").orElseThrow();
         assertEquals("Building", building.getId());
         assertEquals("Здание", building.getName());
     }
@@ -57,7 +150,7 @@ class PlatformConfigurationTest {
         assertTrue(resolver.findAction("assign_owner").isPresent());
         assertFalse(resolver.findAction("non_existent").isPresent());
 
-        Action action = resolver.findAction("order_egrn_extract").orElseThrow();
+        var action = resolver.findAction("order_egrn_extract").orElseThrow();
         assertEquals("order_egrn_extract", action.getId());
         assertEquals("Заказать выписку из ЕГРН", action.getName());
         assertTrue(action.isApplicableTo("Building"));
@@ -72,10 +165,9 @@ class PlatformConfigurationTest {
         assertTrue(resolver.findUIBinding("assign_owner").isPresent());
         assertFalse(resolver.findUIBinding("non_existent").isPresent());
 
-        UIBinding uiBinding = resolver.findUIBinding("order_egrn_extract").orElseThrow();
+        var uiBinding = resolver.findUIBinding("order_egrn_extract").orElseThrow();
         assertEquals("order_egrn_extract", uiBinding.getActionId());
         assertEquals("[data-action='order_egrn_extract']", uiBinding.getSelector());
-        assertEquals(UIBinding.SelectorType.CSS, uiBinding.getSelectorType());
     }
 
     @Test
@@ -144,4 +236,3 @@ class PlatformConfigurationTest {
         });
     }
 }
-

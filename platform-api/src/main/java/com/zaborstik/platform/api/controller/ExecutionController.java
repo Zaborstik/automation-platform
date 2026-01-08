@@ -67,31 +67,26 @@ public class ExecutionController {
     }
 
     /**
-     * Получает план по идентификатору.
+     * Получает план по идентификатору из БД.
      * 
-     * TODO: Реализовать хранение планов и получение по ID.
+     * Gets plan by identifier from database.
      * 
-     * @param id идентификатор плана
-     * @return план выполнения
-     * 
-     * Gets plan by identifier.
-     * 
-     * TODO: Implement plan storage and retrieval by ID.
-     * 
-     * @param id plan identifier
-     * @return execution plan
+     * @param id идентификатор плана / plan identifier
+     * @return план выполнения или 404, если не найден / execution plan or 404 if not found
      */
     @GetMapping("/plan/{id}")
-    public ResponseEntity<ErrorResponseDTO> getPlan(@PathVariable("id") String id) {
-        // Пока не реализовано - планы не сохраняются
-        // Not implemented yet - plans are not stored
-        ErrorResponseDTO error = new ErrorResponseDTO(
-            HttpStatus.NOT_IMPLEMENTED.value(),
-            "Not Implemented",
-            "Plan storage is not implemented yet. Plans are created on-demand.",
-            "/api/execution/plan/" + id
-        );
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(error);
+    public ResponseEntity<?> getPlan(@PathVariable("id") String id) {
+        return executionService.getPlan(id)
+            .<ResponseEntity<?>>map(plan -> ResponseEntity.ok(plan))
+            .orElseGet(() -> {
+                ErrorResponseDTO error = new ErrorResponseDTO(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Not Found",
+                    "Plan with id '" + id + "' not found",
+                    "/api/execution/plan/" + id
+                );
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            });
     }
 }
 
