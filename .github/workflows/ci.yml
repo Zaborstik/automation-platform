@@ -107,6 +107,7 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # Таймаут для security scan (может работать долго)
     
     steps:
       # Шаг 1: Checkout кода
@@ -121,10 +122,19 @@ jobs:
           distribution: 'temurin'
           cache: maven
       
+      # Шаг 2.5: Кеширование базы данных OWASP Dependency Check
+      - name: Cache OWASP Dependency Check database
+        uses: actions/cache@v4
+        with:
+          path: ~/.dependency-check/data
+          key: dependency-check-db-${{ runner.os }}
+          restore-keys: |
+            dependency-check-db-${{ runner.os }}
+      
       # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check Maven Plugin
       - name: Run OWASP Dependency Check
         run: mvn dependency-check:check
-        continue-on-error: false  # Не останавливаем pipeline при найденных уязвимостях
+        continue-on-error: false  # Останавливаем pipeline при критических уязвимостях (CVSS >= 7)
       
       # Шаг 4: Загрузка отчета безопасности
       - name: Upload security report
