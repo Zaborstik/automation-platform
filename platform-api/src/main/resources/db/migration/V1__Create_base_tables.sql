@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS entity_types (
 -- Entity Type Metadata table
 CREATE TABLE IF NOT EXISTS entity_type_metadata (
     entity_type_id VARCHAR(255) NOT NULL,
-    "key" VARCHAR(255) NOT NULL,
-    "value" TEXT,
-    PRIMARY KEY (entity_type_id, "key"),
+    meta_key VARCHAR(255) NOT NULL,
+    meta_value TEXT,
+    PRIMARY KEY (entity_type_id, meta_key),
     FOREIGN KEY (entity_type_id) REFERENCES entity_types(id) ON DELETE CASCADE
 );
 
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS action_applicable_entity_types (
 -- Action Metadata table
 CREATE TABLE IF NOT EXISTS action_metadata (
     action_id VARCHAR(255) NOT NULL,
-    "key" VARCHAR(255) NOT NULL,
-    "value" TEXT,
-    PRIMARY KEY (action_id, "key"),
+    meta_key VARCHAR(255) NOT NULL,
+    meta_value TEXT,
+    PRIMARY KEY (action_id, meta_key),
     FOREIGN KEY (action_id) REFERENCES actions(id) ON DELETE CASCADE
 );
 
@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS ui_bindings (
 -- UI Binding Metadata table
 CREATE TABLE IF NOT EXISTS ui_binding_metadata (
     action_id VARCHAR(255) NOT NULL,
-    "key" VARCHAR(255) NOT NULL,
-    "value" TEXT,
-    PRIMARY KEY (action_id, "key"),
+    meta_key VARCHAR(255) NOT NULL,
+    meta_value TEXT,
+    PRIMARY KEY (action_id, meta_key),
     FOREIGN KEY (action_id) REFERENCES ui_bindings(action_id) ON DELETE CASCADE
 );
 
@@ -92,9 +92,9 @@ CREATE TABLE IF NOT EXISTS plan_steps (
 -- Plan Step Parameters table
 CREATE TABLE IF NOT EXISTS plan_step_parameters (
     step_pk BIGINT NOT NULL,
-    "key" VARCHAR(255) NOT NULL,
-    "value" TEXT,
-    PRIMARY KEY (step_pk, "key"),
+    meta_key VARCHAR(255) NOT NULL,
+    meta_value TEXT,
+    PRIMARY KEY (step_pk, meta_key),
     FOREIGN KEY (step_pk) REFERENCES plan_steps(pk) ON DELETE CASCADE
 );
 

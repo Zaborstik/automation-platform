@@ -36,7 +36,7 @@ class PlanMapperTest {
 
         // Then
         assertNotNull(entity);
-        assertEquals(plan.getId(), entity.getId());
+        assertEquals(plan.id(), entity.getId());
         assertEquals("Building", entity.getEntityTypeId());
         assertEquals("93939", entity.getEntityId());
         assertEquals("order_egrn_extract", entity.getActionId());
@@ -68,14 +68,14 @@ class PlanMapperTest {
 
         // Then
         assertNotNull(plan);
-        assertEquals("plan-id", plan.getId());
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertEquals(Plan.PlanStatus.CREATED, plan.getStatus());
-        assertEquals(2, plan.getSteps().size());
-        assertEquals("open_page", plan.getSteps().get(0).getType());
-        assertEquals("click", plan.getSteps().get(1).getType());
+        assertEquals("plan-id", plan.id());
+        assertEquals("Building", plan.entityTypeId());
+        assertEquals("93939", plan.entityId());
+        assertEquals("order_egrn_extract", plan.actionId());
+        assertEquals(Plan.PlanStatus.CREATED, plan.status());
+        assertEquals(2, plan.steps().size());
+        assertEquals("open_page", plan.steps().get(0).type());
+        assertEquals("click", plan.steps().get(1).type());
     }
 
     @Test
@@ -101,27 +101,27 @@ class PlanMapperTest {
         // Test CREATED
         PlanEntity entity1 = new PlanEntity("id1", "Building", "123", "action", PlanEntity.PlanStatus.CREATED);
         Plan plan1 = planMapper.toDomain(entity1);
-        assertEquals(Plan.PlanStatus.CREATED, plan1.getStatus());
+        assertEquals(Plan.PlanStatus.CREATED, plan1.status());
 
         // Test EXECUTING
         PlanEntity entity2 = new PlanEntity("id2", "Building", "123", "action", PlanEntity.PlanStatus.EXECUTING);
         Plan plan2 = planMapper.toDomain(entity2);
-        assertEquals(Plan.PlanStatus.EXECUTING, plan2.getStatus());
+        assertEquals(Plan.PlanStatus.EXECUTING, plan2.status());
 
         // Test COMPLETED
         PlanEntity entity3 = new PlanEntity("id3", "Building", "123", "action", PlanEntity.PlanStatus.COMPLETED);
         Plan plan3 = planMapper.toDomain(entity3);
-        assertEquals(Plan.PlanStatus.COMPLETED, plan3.getStatus());
+        assertEquals(Plan.PlanStatus.COMPLETED, plan3.status());
 
         // Test FAILED
         PlanEntity entity4 = new PlanEntity("id4", "Building", "123", "action", PlanEntity.PlanStatus.FAILED);
         Plan plan4 = planMapper.toDomain(entity4);
-        assertEquals(Plan.PlanStatus.FAILED, plan4.getStatus());
+        assertEquals(Plan.PlanStatus.FAILED, plan4.status());
 
         // Test CANCELLED
         PlanEntity entity5 = new PlanEntity("id5", "Building", "123", "action", PlanEntity.PlanStatus.CANCELLED);
         Plan plan5 = planMapper.toDomain(entity5);
-        assertEquals(Plan.PlanStatus.CANCELLED, plan5.getStatus());
+        assertEquals(Plan.PlanStatus.CANCELLED, plan5.status());
     }
 
     @Test
@@ -152,9 +152,9 @@ class PlanMapperTest {
         Plan convertedPlan = planMapper.toDomain(entity);
 
         // Then
-        assertEquals(3, convertedPlan.getSteps().size());
-        assertEquals("open_page", convertedPlan.getSteps().get(0).getType());
-        assertEquals("explain", convertedPlan.getSteps().get(1).getType());
-        assertEquals("click", convertedPlan.getSteps().get(2).getType());
+        assertEquals(3, convertedPlan.steps().size());
+        assertEquals("open_page", convertedPlan.steps().get(0).type());
+        assertEquals("explain", convertedPlan.steps().get(1).type());
+        assertEquals("click", convertedPlan.steps().get(2).type());
     }
 }

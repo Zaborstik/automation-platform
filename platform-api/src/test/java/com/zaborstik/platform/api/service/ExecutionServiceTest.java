@@ -72,10 +72,10 @@ class ExecutionServiceTest {
         when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
         when(planMapper.toEntity(any(Plan.class))).thenReturn(
             new com.zaborstik.platform.api.entity.PlanEntity(
-                testPlan.getId(),
-                testPlan.getEntityTypeId(),
-                testPlan.getEntityId(),
-                testPlan.getActionId(),
+                testPlan.id(),
+                testPlan.entityTypeId(),
+                testPlan.entityId(),
+                testPlan.actionId(),
                 com.zaborstik.platform.api.entity.PlanEntity.PlanStatus.CREATED
             )
         );

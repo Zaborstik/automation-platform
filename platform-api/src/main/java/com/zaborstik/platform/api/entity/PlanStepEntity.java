@@ -36,8 +36,8 @@ public class PlanStepEntity {
 
     @ElementCollection
     @CollectionTable(name = "plan_step_parameters", joinColumns = @JoinColumn(name = "step_pk"))
-    @MapKeyColumn(name = "key")
-    @Column(name = "value")
+    @MapKeyColumn(name = "meta_key")
+    @Column(name = "meta_value")
     private Map<String, String> parameters = new HashMap<>();
 
     @Column(name = "created_at")
