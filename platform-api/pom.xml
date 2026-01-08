@@ -65,6 +65,12 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <!-- JANSI for colored console output -->
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+
         <!-- Platform Core -->
         <dependency>
             <groupId>com.zaborstik.platform</groupId>
