@@ -7,9 +7,6 @@ import java.util.List;
 /**
  * JPA Entity для ExecutionResult.
  * Хранит результаты выполнения планов.
- * 
- * JPA Entity for ExecutionResult.
- * Stores plan execution results.
  */
 @Entity
 @Table(name = "execution_results")

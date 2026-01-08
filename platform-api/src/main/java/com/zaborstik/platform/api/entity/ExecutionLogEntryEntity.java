@@ -5,9 +5,6 @@ import jakarta.persistence.*;
 /**
  * JPA Entity для ExecutionLogEntry.
  * Хранит записи лога выполнения планов.
- * 
- * JPA Entity for ExecutionLogEntry.
- * Stores plan execution log entries.
  */
 @Entity
 @Table(name = "execution_log_entries")

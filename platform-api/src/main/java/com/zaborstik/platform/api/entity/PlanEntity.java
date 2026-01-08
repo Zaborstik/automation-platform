@@ -7,9 +7,6 @@ import java.util.List;
 /**
  * JPA Entity для Plan.
  * Хранит планы выполнения действий.
- * 
- * JPA Entity for Plan.
- * Stores action execution plans.
  */
 @Entity
 @Table(name = "plans")

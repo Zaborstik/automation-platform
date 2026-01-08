@@ -7,9 +7,6 @@ import java.util.Map;
 /**
  * JPA Entity для UIBinding.
  * Хранит привязки действий к UI-элементам.
- * 
- * JPA Entity for UIBinding.
- * Stores action bindings to UI elements.
  */
 @Entity
 @Table(name = "ui_bindings")

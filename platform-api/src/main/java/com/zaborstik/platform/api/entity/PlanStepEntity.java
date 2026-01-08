@@ -7,9 +7,6 @@ import java.util.Map;
 /**
  * JPA Entity для PlanStep.
  * Хранит шаги плана выполнения.
- * 
- * JPA Entity for PlanStep.
- * Stores plan execution steps.
  */
 @Entity
 @Table(name = "plan_steps")

@@ -153,7 +153,6 @@ class DTOsSerializationTest {
     @Test
     void shouldHandleJsonPropertyAnnotations() throws Exception {
         // Given - проверяем, что JSON использует правильные имена полей
-        // Given - check that JSON uses correct field names
         ExecutionRequestDTO dto = new ExecutionRequestDTO(
             "Building",
             "93939",

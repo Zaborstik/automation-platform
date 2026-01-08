@@ -18,13 +18,6 @@ import java.util.Set;
  * 1. Регистрацию EntityType, Action, UIBinding
  * 2. Создание ExecutionRequest
  * 3. Построение плана выполнения
- * 
- * Example of Execution Engine usage.
- * 
- * Demonstrates:
- * 1. Registration of EntityType, Action, UIBinding
- * 2. Creation of ExecutionRequest
- * 3. Building execution plan
  */
 public class ExampleUsage {
     public static void main(String[] args) {

@@ -6,16 +6,13 @@ import java.util.Objects;
 /**
  * Привязка действия к UI-элементу.
  * Содержит селекторы и метаданные для поиска элемента в UI.
- * <p>
- * Action binding to UI element.
- * Contains selectors and metadata for finding element in UI.
  */
 public record UIBinding(String actionId, String selector, SelectorType selectorType, Map<String, Object> metadata) {
     public enum SelectorType {
         CSS,
         XPATH,
         TEXT,
-        ACTION_ID  // Специальный тип для семантических действий / Special type for semantic actions
+        ACTION_ID  // Специальный тип для семантических действий
     }
 
     public UIBinding(String actionId, String selector, SelectorType selectorType,

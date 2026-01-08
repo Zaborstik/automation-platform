@@ -7,9 +7,6 @@ import java.util.Map;
 /**
  * JPA Entity для EntityType.
  * Хранит метаданные о типах сущностей в системе.
- * 
- * JPA Entity for EntityType.
- * Stores metadata about entity types in the system.
  */
 @Entity
 @Table(name = "entity_types")

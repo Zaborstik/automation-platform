@@ -6,9 +6,6 @@ import java.util.*;
 /**
  * JPA Entity для Action.
  * Хранит метаданные о действиях в системе.
- * 
- * JPA Entity for Action.
- * Stores metadata about actions in the system.
  */
 @Entity
 @Table(name = "actions")
