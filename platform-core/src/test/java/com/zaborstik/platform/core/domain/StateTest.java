@@ -13,25 +13,25 @@ class StateTest {
         Map<String, Object> properties = Map.of("status", "active", "version", 1);
         State state = new State("active", "Активное состояние", properties);
 
-        assertEquals("active", state.getId());
-        assertEquals("Активное состояние", state.getName());
-        assertEquals(properties, state.getProperties());
+        assertEquals("active", state.id());
+        assertEquals("Активное состояние", state.name());
+        assertEquals(properties, state.properties());
     }
 
     @Test
     void shouldCreateStateWithNullProperties() {
         State state = new State("active", "Активное", null);
 
-        assertEquals("active", state.getId());
-        assertTrue(state.getProperties().isEmpty());
+        assertEquals("active", state.id());
+        assertTrue(state.properties().isEmpty());
     }
 
     @Test
     void shouldCreateStateWithEmptyProperties() {
         State state = new State("active", "Активное", Map.of());
 
-        assertEquals("active", state.getId());
-        assertTrue(state.getProperties().isEmpty());
+        assertEquals("active", state.id());
+        assertTrue(state.properties().isEmpty());
     }
 
     @Test
@@ -53,7 +53,7 @@ class StateTest {
         Map<String, Object> originalProperties = Map.of("key", "value");
         State state = new State("id", "name", originalProperties);
 
-        Map<String, Object> returnedProperties = state.getProperties();
+        Map<String, Object> returnedProperties = state.properties();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedProperties.put("newKey", "newValue");
         });

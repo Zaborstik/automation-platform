@@ -18,10 +18,10 @@ class ExecutionRequestTest {
             parameters
         );
 
-        assertEquals("Building", request.getEntityType());
-        assertEquals("93939", request.getEntityId());
-        assertEquals("order_egrn_extract", request.getAction());
-        assertEquals(parameters, request.getParameters());
+        assertEquals("Building", request.entityType());
+        assertEquals("93939", request.entityId());
+        assertEquals("order_egrn_extract", request.action());
+        assertEquals(parameters, request.parameters());
     }
 
     @Test
@@ -33,8 +33,8 @@ class ExecutionRequestTest {
             null
         );
 
-        assertEquals("Building", request.getEntityType());
-        assertTrue(request.getParameters().isEmpty());
+        assertEquals("Building", request.entityType());
+        assertTrue(request.parameters().isEmpty());
     }
 
     @Test
@@ -46,8 +46,8 @@ class ExecutionRequestTest {
             Map.of()
         );
 
-        assertEquals("Building", request.getEntityType());
-        assertTrue(request.getParameters().isEmpty());
+        assertEquals("Building", request.entityType());
+        assertTrue(request.parameters().isEmpty());
     }
 
     @Test
@@ -81,7 +81,7 @@ class ExecutionRequestTest {
             originalParams
         );
 
-        Map<String, Object> returnedParams = request.getParameters();
+        Map<String, Object> returnedParams = request.parameters();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedParams.put("newKey", "newValue");
         });

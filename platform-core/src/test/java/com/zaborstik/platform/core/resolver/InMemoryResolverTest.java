@@ -147,7 +147,7 @@ class InMemoryResolverTest {
 
         Optional<EntityType> found = resolver.findEntityType("Building");
         assertTrue(found.isPresent());
-        assertEquals("Обновленное здание", found.get().getName());
+        assertEquals("Обновленное здание", found.get().name());
     }
 
     @Test
@@ -160,7 +160,7 @@ class InMemoryResolverTest {
 
         Optional<Action> found = resolver.findAction("action");
         assertTrue(found.isPresent());
-        assertEquals("Updated", found.get().getName());
+        assertEquals("Updated", found.get().name());
     }
 
     @Test
@@ -173,7 +173,7 @@ class InMemoryResolverTest {
 
         Optional<UIBinding> found = resolver.findUIBinding("action");
         assertTrue(found.isPresent());
-        assertEquals("selector2", found.get().getSelector());
+        assertEquals("selector2", found.get().selector());
     }
 }
 

@@ -18,28 +18,28 @@ class PlanTest {
 
         Plan plan = new Plan("Building", "123", "order_egrn_extract", steps);
 
-        assertNotNull(plan.getId());
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("123", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertEquals(2, plan.getSteps().size());
-        assertEquals(Plan.PlanStatus.CREATED, plan.getStatus());
+        assertNotNull(plan.id());
+        assertEquals("Building", plan.entityTypeId());
+        assertEquals("123", plan.entityId());
+        assertEquals("order_egrn_extract", plan.actionId());
+        assertEquals(2, plan.steps().size());
+        assertEquals(Plan.PlanStatus.CREATED, plan.status());
     }
 
     @Test
     void shouldCreatePlanWithEmptySteps() {
         Plan plan = new Plan("Building", "123", "action", List.of());
 
-        assertEquals("Building", plan.getEntityTypeId());
-        assertTrue(plan.getSteps().isEmpty());
-        assertEquals(Plan.PlanStatus.CREATED, plan.getStatus());
+        assertEquals("Building", plan.entityTypeId());
+        assertTrue(plan.steps().isEmpty());
+        assertEquals(Plan.PlanStatus.CREATED, plan.status());
     }
 
     @Test
     void shouldCreatePlanWithNullSteps() {
         Plan plan = new Plan("Building", "123", "action", null);
 
-        assertTrue(plan.getSteps().isEmpty());
+        assertTrue(plan.steps().isEmpty());
     }
 
     @Test
@@ -70,7 +70,7 @@ class PlanTest {
         
         Plan plan = new Plan("Building", "123", "action", originalSteps);
         
-        List<PlanStep> returnedSteps = plan.getSteps();
+        List<PlanStep> returnedSteps = plan.steps();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedSteps.add(PlanStep.explain("Шаг 2"));
         });
@@ -83,8 +83,8 @@ class PlanTest {
         
         Plan plan = new Plan(customId, "Building", "123", "action", steps, Plan.PlanStatus.EXECUTING);
 
-        assertEquals(customId, plan.getId());
-        assertEquals(Plan.PlanStatus.EXECUTING, plan.getStatus());
+        assertEquals(customId, plan.id());
+        assertEquals(Plan.PlanStatus.EXECUTING, plan.status());
     }
 
     @Test
@@ -104,16 +104,16 @@ class PlanTest {
     @Test
     void shouldCreateNewPlanWithUpdatedStatus() {
         Plan originalPlan = new Plan("Building", "123", "action", List.of());
-        assertEquals(Plan.PlanStatus.CREATED, originalPlan.getStatus());
+        assertEquals(Plan.PlanStatus.CREATED, originalPlan.status());
 
         Plan updatedPlan = originalPlan.withStatus(Plan.PlanStatus.EXECUTING);
         
-        assertEquals(Plan.PlanStatus.EXECUTING, updatedPlan.getStatus());
-        assertEquals(originalPlan.getId(), updatedPlan.getId());
-        assertEquals(originalPlan.getEntityTypeId(), updatedPlan.getEntityTypeId());
-        assertEquals(originalPlan.getEntityId(), updatedPlan.getEntityId());
-        assertEquals(originalPlan.getActionId(), updatedPlan.getActionId());
-        assertEquals(originalPlan.getSteps(), updatedPlan.getSteps());
+        assertEquals(Plan.PlanStatus.EXECUTING, updatedPlan.status());
+        assertEquals(originalPlan.id(), updatedPlan.id());
+        assertEquals(originalPlan.entityTypeId(), updatedPlan.entityTypeId());
+        assertEquals(originalPlan.entityId(), updatedPlan.entityId());
+        assertEquals(originalPlan.actionId(), updatedPlan.actionId());
+        assertEquals(originalPlan.steps(), updatedPlan.steps());
     }
 
     @Test
@@ -126,11 +126,11 @@ class PlanTest {
         Plan failed = new Plan("id", "Building", "123", "action", steps, Plan.PlanStatus.FAILED);
         Plan cancelled = new Plan("id", "Building", "123", "action", steps, Plan.PlanStatus.CANCELLED);
 
-        assertEquals(Plan.PlanStatus.CREATED, created.getStatus());
-        assertEquals(Plan.PlanStatus.EXECUTING, executing.getStatus());
-        assertEquals(Plan.PlanStatus.COMPLETED, completed.getStatus());
-        assertEquals(Plan.PlanStatus.FAILED, failed.getStatus());
-        assertEquals(Plan.PlanStatus.CANCELLED, cancelled.getStatus());
+        assertEquals(Plan.PlanStatus.CREATED, created.status());
+        assertEquals(Plan.PlanStatus.EXECUTING, executing.status());
+        assertEquals(Plan.PlanStatus.COMPLETED, completed.status());
+        assertEquals(Plan.PlanStatus.FAILED, failed.status());
+        assertEquals(Plan.PlanStatus.CANCELLED, cancelled.status());
     }
 
     @Test

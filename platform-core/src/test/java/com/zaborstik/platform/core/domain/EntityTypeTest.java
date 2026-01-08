@@ -13,26 +13,26 @@ class EntityTypeTest {
         Map<String, Object> metadata = Map.of("description", "Test entity");
         EntityType entityType = new EntityType("Building", "Здание", metadata);
 
-        assertEquals("Building", entityType.getId());
-        assertEquals("Здание", entityType.getName());
-        assertEquals(metadata, entityType.getMetadata());
+        assertEquals("Building", entityType.id());
+        assertEquals("Здание", entityType.name());
+        assertEquals(metadata, entityType.metadata());
     }
 
     @Test
     void shouldCreateEntityTypeWithNullMetadata() {
         EntityType entityType = new EntityType("Building", "Здание", null);
 
-        assertEquals("Building", entityType.getId());
-        assertEquals("Здание", entityType.getName());
-        assertTrue(entityType.getMetadata().isEmpty());
+        assertEquals("Building", entityType.id());
+        assertEquals("Здание", entityType.name());
+        assertTrue(entityType.metadata().isEmpty());
     }
 
     @Test
     void shouldCreateEntityTypeWithEmptyMetadata() {
         EntityType entityType = new EntityType("Building", "Здание", Map.of());
 
-        assertEquals("Building", entityType.getId());
-        assertTrue(entityType.getMetadata().isEmpty());
+        assertEquals("Building", entityType.id());
+        assertTrue(entityType.metadata().isEmpty());
     }
 
     @Test
@@ -54,7 +54,7 @@ class EntityTypeTest {
         Map<String, Object> originalMetadata = Map.of("key", "value");
         EntityType entityType = new EntityType("Building", "Здание", originalMetadata);
 
-        Map<String, Object> returnedMetadata = entityType.getMetadata();
+        Map<String, Object> returnedMetadata = entityType.metadata();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedMetadata.put("newKey", "newValue");
         });

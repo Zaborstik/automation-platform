@@ -21,15 +21,15 @@ public class InMemoryResolver implements Resolver {
     private final Map<String, UIBinding> uiBindings = new ConcurrentHashMap<>();
 
     public void registerEntityType(EntityType entityType) {
-        entityTypes.put(entityType.getId(), entityType);
+        entityTypes.put(entityType.id(), entityType);
     }
 
     public void registerAction(Action action) {
-        actions.put(action.getId(), action);
+        actions.put(action.id(), action);
     }
 
     public void registerUIBinding(UIBinding uiBinding) {
-        uiBindings.put(uiBinding.getActionId(), uiBinding);
+        uiBindings.put(uiBinding.actionId(), uiBinding);
     }
 
     @Override

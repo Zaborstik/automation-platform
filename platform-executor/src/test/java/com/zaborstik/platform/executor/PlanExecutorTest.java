@@ -63,7 +63,7 @@ class PlanExecutorTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(testPlan.getId(), result.getPlanId());
+        assertEquals(testPlan.id(), result.getPlanId());
         assertTrue(result.isSuccess());
         assertEquals(5, result.getLogEntries().size());
         assertEquals(5, result.getStepResults().size());
@@ -195,7 +195,7 @@ class PlanExecutorTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(emptyPlan.getId(), result.getPlanId());
+        assertEquals(emptyPlan.id(), result.getPlanId());
         assertTrue(result.isSuccess()); // Пустой план считается успешным
         assertTrue(result.getLogEntries().isEmpty());
         assertTrue(result.getStepResults().isEmpty());
@@ -253,13 +253,13 @@ class PlanExecutorTest {
 
         // Then
         ExecutionLogEntry entry0 = result.getLogEntries().get(0);
-        assertEquals("open_page", entry0.getStep().getType());
-        assertEquals("/buildings/93939", entry0.getStep().getTarget());
-        assertEquals("Открываю карточку здания", entry0.getStep().getExplanation());
+        assertEquals("open_page", entry0.getStep().type());
+        assertEquals("/buildings/93939", entry0.getStep().target());
+        assertEquals("Открываю карточку здания", entry0.getStep().explanation());
 
         ExecutionLogEntry entry1 = result.getLogEntries().get(1);
-        assertEquals("explain", entry1.getStep().getType());
-        assertEquals("Выполняю действие", entry1.getStep().getExplanation());
+        assertEquals("explain", entry1.getStep().type());
+        assertEquals("Выполняю действие", entry1.getStep().explanation());
     }
 
     @Test

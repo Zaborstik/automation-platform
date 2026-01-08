@@ -91,17 +91,17 @@ public class ExecutionService {
      * Преобразует Plan в PlanDTO.
      */
     private PlanDTO toPlanDTO(Plan plan) {
-        List<PlanStepDTO> stepDTOs = plan.getSteps().stream()
+        List<PlanStepDTO> stepDTOs = plan.steps().stream()
             .map(this::toPlanStepDTO)
             .collect(Collectors.toList());
 
         return new PlanDTO(
-            plan.getId(),
-            plan.getEntityTypeId(),
-            plan.getEntityId(),
-            plan.getActionId(),
+            plan.id(),
+            plan.entityTypeId(),
+            plan.entityId(),
+            plan.actionId(),
             stepDTOs,
-            plan.getStatus().name()
+            plan.status().name()
         );
     }
 
@@ -110,10 +110,10 @@ public class ExecutionService {
      */
     private PlanStepDTO toPlanStepDTO(PlanStep step) {
         return new PlanStepDTO(
-            step.getType(),
-            step.getTarget(),
-            step.getExplanation(),
-            step.getParameters()
+            step.type(),
+            step.target(),
+            step.explanation(),
+            step.parameters()
         );
     }
 }

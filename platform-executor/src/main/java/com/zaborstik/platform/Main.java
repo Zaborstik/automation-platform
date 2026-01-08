@@ -41,7 +41,7 @@ public class Main {
             "order_egrn_extract",
             "Заказать выписку ЕГРН",
             "Заказать выписку ЕГРН по зданию",
-            java.util.Set.of(building.getId()),
+            java.util.Set.of(building.id()),
             java.util.Map.of()
         );
         resolver.registerAction(orderEgrn);
@@ -49,7 +49,7 @@ public class Main {
         // Привязка действия к UI (селектор условный, адаптируется под конкретное приложение)
         // Action binding to UI (selector is conditional, adapts to specific application)
         UIBinding binding = new UIBinding(
-            orderEgrn.getId(),
+            orderEgrn.id(),
             "button[data-action='order_egrn_extract']",
             UIBinding.SelectorType.CSS,
             java.util.Map.of()
@@ -60,14 +60,14 @@ public class Main {
         // 2. Build plan manually (in production it will come from core/ExecutionEngine)
         String entityId = "93939";
         Plan plan = new Plan(
-            building.getId(),
+            building.id(),
             entityId,
-            orderEgrn.getId(),
+            orderEgrn.id(),
             List.of(
                 PlanStep.openPage("/buildings/" + entityId, "Открываю карточку здания"),
                 PlanStep.explain("Навожу курсор на действие 'Заказать выписку ЕГРН'"),
-                PlanStep.hover(orderEgrn.getId(), "Подсвечиваю действие"),
-                PlanStep.click(orderEgrn.getId(), "Запускаю заказ выписки"),
+                PlanStep.hover(orderEgrn.id(), "Подсвечиваю действие"),
+                PlanStep.click(orderEgrn.id(), "Запускаю заказ выписки"),
                 PlanStep.wait("result", "Жду результата выполнения действия")
             )
         );

@@ -50,7 +50,7 @@ public class AgentService {
      * @return list of step execution results
      */
     public List<StepExecutionResult> executePlan(Plan plan) {
-        log.info("Starting plan execution: {}", plan.getId());
+        log.info("Starting plan execution: {}", plan.id());
         List<StepExecutionResult> results = new ArrayList<>();
 
         try {
@@ -66,7 +66,7 @@ public class AgentService {
 
             // Выполняем каждый шаг плана
             // Execute each plan step
-            for (PlanStep step : plan.getSteps()) {
+            for (PlanStep step : plan.steps()) {
                 StepExecutionResult result = executeStep(step);
                 results.add(result);
 
@@ -82,7 +82,7 @@ public class AgentService {
 
         } catch (Exception e) {
             log.error("Plan execution failed", e);
-            results.add(StepExecutionResult.failure("plan", plan.getId(), 
+            results.add(StepExecutionResult.failure("plan", plan.id(),
                 "Plan execution failed: " + e.getMessage(), 0));
             return results;
         }
@@ -100,8 +100,8 @@ public class AgentService {
         try {
             AgentCommand command = convertToCommand(step);
             if (command == null) {
-                String error = "Unknown step type: " + step.getType();
-                return StepExecutionResult.failure(step.getType(), step.getTarget(), 
+                String error = "Unknown step type: " + step.type();
+                return StepExecutionResult.failure(step.type(), step.target(),
                     error, System.currentTimeMillis() - startTime);
             }
 
@@ -110,16 +110,16 @@ public class AgentService {
 
             if (response.isSuccess()) {
                 String screenshotPath = (String) response.getData().get("screenshot");
-                return StepExecutionResult.success(step.getType(), step.getTarget(), 
+                return StepExecutionResult.success(step.type(), step.target(),
                     response.getMessage(), executionTime, screenshotPath);
             } else {
-                return StepExecutionResult.failure(step.getType(), step.getTarget(), 
+                return StepExecutionResult.failure(step.type(), step.target(),
                     response.getError(), executionTime);
             }
 
         } catch (AgentException e) {
             long executionTime = System.currentTimeMillis() - startTime;
-            return StepExecutionResult.failure(step.getType(), step.getTarget(), 
+            return StepExecutionResult.failure(step.type(), step.target(),
                 e.getMessage(), executionTime);
         }
     }
@@ -130,9 +130,9 @@ public class AgentService {
      * Converts PlanStep to AgentCommand.
      */
     private AgentCommand convertToCommand(PlanStep step) {
-        String type = step.getType();
-        String target = step.getTarget();
-        String explanation = step.getExplanation();
+        String type = step.type();
+        String target = step.target();
+        String explanation = step.explanation();
 
         switch (type) {
             case "open_page":
@@ -145,7 +145,7 @@ public class AgentService {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
                     if (binding.isPresent()) {
-                        String selector = binding.get().getSelector();
+                        String selector = binding.get().selector();
                         return AgentCommand.click(selector, explanation);
                     } else {
                         log.warn("UIBinding not found for action: {}, using target as selector", actionId);
@@ -161,7 +161,7 @@ public class AgentService {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
                     if (binding.isPresent()) {
-                        String selector = binding.get().getSelector();
+                        String selector = binding.get().selector();
                         return AgentCommand.hover(selector, explanation);
                     } else {
                         log.warn("UIBinding not found for action: {}, using target as selector", actionId);
@@ -171,12 +171,12 @@ public class AgentService {
                 return AgentCommand.hover(target, explanation);
 
             case "type":
-                String text = (String) step.getParameters().get("text");
+                String text = (String) step.parameters().get("text");
                 return AgentCommand.type(target, text, explanation);
 
             case "wait":
-                long timeout = step.getParameters().containsKey("timeout") 
-                    ? ((Number) step.getParameters().get("timeout")).longValue()
+                long timeout = step.parameters().containsKey("timeout")
+                    ? ((Number) step.parameters().get("timeout")).longValue()
                     : 5000L; // default 5 seconds
                 return AgentCommand.wait(target, explanation, timeout);
 

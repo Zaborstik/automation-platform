@@ -11,7 +11,7 @@ import java.util.Objects;
  * - hover: action(order_egrn_extract)
  * - click: action(order_egrn_extract)
  * - wait: result
- * 
+ * <p>
  * Plan execution step.
  * Examples:
  * - open_page: /buildings/{id}
@@ -20,33 +20,12 @@ import java.util.Objects;
  * - click: action(order_egrn_extract)
  * - wait: result
  */
-public class PlanStep {
-    private final String type;
-    private final String target;
-    private final String explanation;
-    private final Map<String, Object> parameters;
-
+public record PlanStep(String type, String target, String explanation, Map<String, Object> parameters) {
     public PlanStep(String type, String target, String explanation, Map<String, Object> parameters) {
         this.type = Objects.requireNonNull(type, "Step type cannot be null");
         this.target = target;
         this.explanation = explanation;
         this.parameters = parameters != null ? Map.copyOf(parameters) : Map.of();
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public String getExplanation() {
-        return explanation;
-    }
-
-    public Map<String, Object> getParameters() {
-        return parameters;
     }
 
     public static PlanStep openPage(String url, String explanation) {
@@ -75,8 +54,8 @@ public class PlanStep {
 
     @Override
     public String toString() {
-        return "PlanStep{type='" + type + "', target='" + target + 
-               "', explanation='" + explanation + "'}";
+        return "PlanStep{type='" + type + "', target='" + target +
+                "', explanation='" + explanation + "'}";
     }
 }
 

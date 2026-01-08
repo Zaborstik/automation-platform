@@ -6,31 +6,15 @@ import java.util.Objects;
 /**
  * Состояние сущности или системы.
  * Используется для проверки preconditions/postconditions и state transitions.
- * 
+ * <p>
  * Entity or system state.
  * Used for checking preconditions/postconditions and state transitions.
  */
-public class State {
-    private final String id;
-    private final String name;
-    private final Map<String, Object> properties;
-
+public record State(String id, String name, Map<String, Object> properties) {
     public State(String id, String name, Map<String, Object> properties) {
         this.id = Objects.requireNonNull(id, "State id cannot be null");
         this.name = Objects.requireNonNull(name, "State name cannot be null");
         this.properties = properties != null ? Map.copyOf(properties) : Map.of();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Map<String, Object> getProperties() {
-        return properties;
     }
 
     @Override

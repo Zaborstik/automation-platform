@@ -84,7 +84,7 @@ public class ExampleUsage {
         System.out.println("Создан план выполнения:");
         System.out.println(plan);
         System.out.println("\nШаги плана:");
-        plan.getSteps().forEach(step -> {
+        plan.steps().forEach(step -> {
             System.out.println("  - " + step);
         });
     }

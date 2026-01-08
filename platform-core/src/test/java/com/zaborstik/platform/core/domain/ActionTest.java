@@ -22,11 +22,11 @@ class ActionTest {
             metadata
         );
 
-        assertEquals("order_egrn_extract", action.getId());
-        assertEquals("Заказать выписку из ЕГРН", action.getName());
-        assertEquals("Описание действия", action.getDescription());
-        assertEquals(applicableTypes, action.getApplicableEntityTypes());
-        assertEquals(metadata, action.getMetadata());
+        assertEquals("order_egrn_extract", action.id());
+        assertEquals("Заказать выписку из ЕГРН", action.name());
+        assertEquals("Описание действия", action.description());
+        assertEquals(applicableTypes, action.applicableEntityTypes());
+        assertEquals(metadata, action.metadata());
     }
 
     @Test
@@ -39,7 +39,7 @@ class ActionTest {
             Map.of()
         );
 
-        assertNull(action.getDescription());
+        assertNull(action.description());
     }
 
     @Test
@@ -52,7 +52,7 @@ class ActionTest {
             Map.of()
         );
 
-        assertTrue(action.getApplicableEntityTypes().isEmpty());
+        assertTrue(action.applicableEntityTypes().isEmpty());
     }
 
     @Test
@@ -65,7 +65,7 @@ class ActionTest {
             null
         );
 
-        assertTrue(action.getMetadata().isEmpty());
+        assertTrue(action.metadata().isEmpty());
     }
 
     @Test
@@ -87,7 +87,7 @@ class ActionTest {
         Set<String> originalTypes = Set.of("Building");
         Action action = new Action("id", "name", "desc", originalTypes, Map.of());
 
-        Set<String> returnedTypes = action.getApplicableEntityTypes();
+        Set<String> returnedTypes = action.applicableEntityTypes();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedTypes.add("Contract");
         });
@@ -98,7 +98,7 @@ class ActionTest {
         Map<String, Object> originalMetadata = Map.of("key", "value");
         Action action = new Action("id", "name", "desc", Set.of(), originalMetadata);
 
-        Map<String, Object> returnedMetadata = action.getMetadata();
+        Map<String, Object> returnedMetadata = action.metadata();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedMetadata.put("newKey", "newValue");
         });

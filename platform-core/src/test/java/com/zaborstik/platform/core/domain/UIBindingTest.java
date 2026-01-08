@@ -18,10 +18,10 @@ class UIBindingTest {
             metadata
         );
 
-        assertEquals("order_egrn_extract", binding.getActionId());
-        assertEquals("[data-action='order_egrn_extract']", binding.getSelector());
-        assertEquals(UIBinding.SelectorType.CSS, binding.getSelectorType());
-        assertEquals(metadata, binding.getMetadata());
+        assertEquals("order_egrn_extract", binding.actionId());
+        assertEquals("[data-action='order_egrn_extract']", binding.selector());
+        assertEquals(UIBinding.SelectorType.CSS, binding.selectorType());
+        assertEquals(metadata, binding.metadata());
     }
 
     @Test
@@ -33,23 +33,23 @@ class UIBindingTest {
             null
         );
 
-        assertEquals("order_egrn_extract", binding.getActionId());
-        assertTrue(binding.getMetadata().isEmpty());
+        assertEquals("order_egrn_extract", binding.actionId());
+        assertTrue(binding.metadata().isEmpty());
     }
 
     @Test
     void shouldCreateUIBindingWithAllSelectorTypes() {
         UIBinding cssBinding = new UIBinding("action1", "div.class", UIBinding.SelectorType.CSS, null);
-        assertEquals(UIBinding.SelectorType.CSS, cssBinding.getSelectorType());
+        assertEquals(UIBinding.SelectorType.CSS, cssBinding.selectorType());
 
         UIBinding xpathBinding = new UIBinding("action2", "//div", UIBinding.SelectorType.XPATH, null);
-        assertEquals(UIBinding.SelectorType.XPATH, xpathBinding.getSelectorType());
+        assertEquals(UIBinding.SelectorType.XPATH, xpathBinding.selectorType());
 
         UIBinding textBinding = new UIBinding("action3", "Button text", UIBinding.SelectorType.TEXT, null);
-        assertEquals(UIBinding.SelectorType.TEXT, textBinding.getSelectorType());
+        assertEquals(UIBinding.SelectorType.TEXT, textBinding.selectorType());
 
         UIBinding actionIdBinding = new UIBinding("action4", "action_id", UIBinding.SelectorType.ACTION_ID, null);
-        assertEquals(UIBinding.SelectorType.ACTION_ID, actionIdBinding.getSelectorType());
+        assertEquals(UIBinding.SelectorType.ACTION_ID, actionIdBinding.selectorType());
     }
 
     @Test
@@ -78,7 +78,7 @@ class UIBindingTest {
         Map<String, Object> originalMetadata = Map.of("key", "value");
         UIBinding binding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, originalMetadata);
 
-        Map<String, Object> returnedMetadata = binding.getMetadata();
+        Map<String, Object> returnedMetadata = binding.metadata();
         assertThrows(UnsupportedOperationException.class, () -> {
             returnedMetadata.put("newKey", "newValue");
         });

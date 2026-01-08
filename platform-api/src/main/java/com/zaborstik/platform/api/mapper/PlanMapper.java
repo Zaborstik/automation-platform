@@ -23,17 +23,17 @@ public class PlanMapper {
      */
     public PlanEntity toEntity(Plan plan) {
         PlanEntity entity = new PlanEntity(
-            plan.getId(),
-            plan.getEntityTypeId(),
-            plan.getEntityId(),
-            plan.getActionId(),
-            convertStatus(plan.getStatus())
+            plan.id(),
+            plan.entityTypeId(),
+            plan.entityId(),
+            plan.actionId(),
+            convertStatus(plan.status())
         );
 
         // Преобразуем шаги
         List<PlanStepEntity> stepEntities = new java.util.ArrayList<>();
-        for (int i = 0; i < plan.getSteps().size(); i++) {
-            stepEntities.add(toStepEntity(entity, i, plan.getSteps().get(i)));
+        for (int i = 0; i < plan.steps().size(); i++) {
+            stepEntities.add(toStepEntity(entity, i, plan.steps().get(i)));
         }
         entity.setSteps(stepEntities);
 
@@ -62,7 +62,7 @@ public class PlanMapper {
      * Преобразует PlanStep в PlanStepEntity.
      */
     private PlanStepEntity toStepEntity(PlanEntity planEntity, int index, PlanStep step) {
-        Map<String, String> parameters = step.getParameters().entrySet().stream()
+        Map<String, String> parameters = step.parameters().entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> entry.getValue() != null ? entry.getValue().toString() : null
@@ -71,9 +71,9 @@ public class PlanMapper {
         return new PlanStepEntity(
             planEntity,
             index,
-            step.getType(),
-            step.getTarget(),
-            step.getExplanation(),
+            step.type(),
+            step.target(),
+            step.explanation(),
             parameters
         );
     }

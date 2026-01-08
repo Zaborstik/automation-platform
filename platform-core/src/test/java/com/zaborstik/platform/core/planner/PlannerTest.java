@@ -62,36 +62,36 @@ class PlannerTest {
 
         // Проверяем результат
         assertNotNull(plan);
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertEquals(Plan.PlanStatus.CREATED, plan.getStatus());
+        assertEquals("Building", plan.entityTypeId());
+        assertEquals("93939", plan.entityId());
+        assertEquals("order_egrn_extract", plan.actionId());
+        assertEquals(Plan.PlanStatus.CREATED, plan.status());
 
         // Проверяем шаги плана
-        var steps = plan.getSteps();
+        var steps = plan.steps();
         assertFalse(steps.isEmpty());
         assertEquals(5, steps.size());
 
         // Проверяем структуру шагов
         PlanStep step1 = steps.get(0);
-        assertEquals("open_page", step1.getType());
-        assertTrue(step1.getTarget().contains("/buildings/93939"));
+        assertEquals("open_page", step1.type());
+        assertTrue(step1.target().contains("/buildings/93939"));
 
         PlanStep step2 = steps.get(1);
-        assertEquals("explain", step2.getType());
-        assertNotNull(step2.getExplanation());
+        assertEquals("explain", step2.type());
+        assertNotNull(step2.explanation());
 
         PlanStep step3 = steps.get(2);
-        assertEquals("hover", step3.getType());
-        assertTrue(step3.getTarget().contains("order_egrn_extract"));
+        assertEquals("hover", step3.type());
+        assertTrue(step3.target().contains("order_egrn_extract"));
 
         PlanStep step4 = steps.get(3);
-        assertEquals("click", step4.getType());
-        assertTrue(step4.getTarget().contains("order_egrn_extract"));
+        assertEquals("click", step4.type());
+        assertTrue(step4.target().contains("order_egrn_extract"));
 
         PlanStep step5 = steps.get(4);
-        assertEquals("wait", step5.getType());
-        assertEquals("result", step5.getTarget());
+        assertEquals("wait", step5.type());
+        assertEquals("result", step5.target());
     }
 
     @Test
@@ -184,10 +184,10 @@ class PlannerTest {
         ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
         Plan plan = planner.createPlan(request);
 
-        var steps = plan.getSteps();
+        var steps = plan.steps();
         PlanStep explainStep = steps.get(1);
-        assertEquals("explain", explainStep.getType());
-        assertEquals("Кастомное описание действия", explainStep.getExplanation());
+        assertEquals("explain", explainStep.type());
+        assertEquals("Кастомное описание действия", explainStep.explanation());
     }
 
     @Test
@@ -210,10 +210,10 @@ class PlannerTest {
         ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
         Plan plan = planner.createPlan(request);
 
-        var steps = plan.getSteps();
+        var steps = plan.steps();
         PlanStep explainStep = steps.get(1);
-        assertEquals("explain", explainStep.getType());
-        assertTrue(explainStep.getExplanation().contains("Название действия"));
+        assertEquals("explain", explainStep.type());
+        assertTrue(explainStep.explanation().contains("Название действия"));
     }
 
     @Test
@@ -230,10 +230,10 @@ class PlannerTest {
         ExecutionRequest request = new ExecutionRequest("Building", "93939", "action", Map.of());
         Plan plan = planner.createPlan(request);
 
-        var steps = plan.getSteps();
+        var steps = plan.steps();
         PlanStep openPageStep = steps.get(0);
-        assertEquals("open_page", openPageStep.getType());
-        assertEquals("/buildings/93939", openPageStep.getTarget());
+        assertEquals("open_page", openPageStep.type());
+        assertEquals("/buildings/93939", openPageStep.target());
     }
 
     @Test
@@ -252,12 +252,12 @@ class PlannerTest {
         // План для Building
         ExecutionRequest request1 = new ExecutionRequest("Building", "123", "action", Map.of());
         Plan plan1 = planner.createPlan(request1);
-        assertEquals("Building", plan1.getEntityTypeId());
+        assertEquals("Building", plan1.entityTypeId());
 
         // План для Contract
         ExecutionRequest request2 = new ExecutionRequest("Contract", "456", "action", Map.of());
         Plan plan2 = planner.createPlan(request2);
-        assertEquals("Contract", plan2.getEntityTypeId());
+        assertEquals("Contract", plan2.entityTypeId());
     }
 }
 

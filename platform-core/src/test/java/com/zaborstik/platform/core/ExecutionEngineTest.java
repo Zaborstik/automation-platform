@@ -61,10 +61,10 @@ class ExecutionEngineTest {
 
         // Проверяем результат
         assertNotNull(plan);
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertFalse(plan.getSteps().isEmpty());
+        assertEquals("Building", plan.entityTypeId());
+        assertEquals("93939", plan.entityId());
+        assertEquals("order_egrn_extract", plan.actionId());
+        assertFalse(plan.steps().isEmpty());
     }
 
     @Test
@@ -158,16 +158,16 @@ class ExecutionEngineTest {
         ExecutionRequest request1 = new ExecutionRequest("Building", "123", "action", Map.of());
         Plan plan1 = engine.createPlan(request1);
         assertNotNull(plan1);
-        assertEquals("123", plan1.getEntityId());
+        assertEquals("123", plan1.entityId());
 
         // Второй запрос
         ExecutionRequest request2 = new ExecutionRequest("Building", "456", "action", Map.of());
         Plan plan2 = engine.createPlan(request2);
         assertNotNull(plan2);
-        assertEquals("456", plan2.getEntityId());
+        assertEquals("456", plan2.entityId());
 
         // Планы должны быть разными
-        assertNotEquals(plan1.getId(), plan2.getId());
+        assertNotEquals(plan1.id(), plan2.id());
     }
 
     @Test
@@ -184,13 +184,13 @@ class ExecutionEngineTest {
         ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
         Plan plan = engine.createPlan(request);
 
-        var steps = plan.getSteps();
+        var steps = plan.steps();
         assertEquals(5, steps.size());
-        assertEquals("open_page", steps.get(0).getType());
-        assertEquals("explain", steps.get(1).getType());
-        assertEquals("hover", steps.get(2).getType());
-        assertEquals("click", steps.get(3).getType());
-        assertEquals("wait", steps.get(4).getType());
+        assertEquals("open_page", steps.get(0).type());
+        assertEquals("explain", steps.get(1).type());
+        assertEquals("hover", steps.get(2).type());
+        assertEquals("click", steps.get(3).type());
+        assertEquals("wait", steps.get(4).type());
     }
 }
 

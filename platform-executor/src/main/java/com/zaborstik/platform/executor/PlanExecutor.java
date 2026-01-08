@@ -46,12 +46,12 @@ public class PlanExecutor {
     public PlanExecutionResult execute(Plan plan) {
         Objects.requireNonNull(plan, "plan cannot be null");
         log.info("Executing plan {} for entityType={} entityId={} action={}",
-            plan.getId(), plan.getEntityTypeId(), plan.getEntityId(), plan.getActionId());
+            plan.id(), plan.entityTypeId(), plan.entityId(), plan.actionId());
 
         Instant startedAt = Instant.now();
         List<ExecutionLogEntry> logEntries = new ArrayList<>();
 
-        List<PlanStep> steps = plan.getSteps();
+        List<PlanStep> steps = plan.steps();
         List<StepExecutionResult> results = agentService.executePlan(plan);
 
         int stepsSize = steps.size();
@@ -62,7 +62,7 @@ public class PlanExecutor {
             PlanStep step = steps.get(i);
             StepExecutionResult result = results.get(i);
             logEntries.add(new ExecutionLogEntry(
-                plan.getId(),
+                plan.id(),
                 i,
                 step,
                 result,
@@ -76,13 +76,13 @@ public class PlanExecutor {
             for (int i = resultsSize; i < stepsSize; i++) {
                 PlanStep step = steps.get(i);
                 StepExecutionResult syntheticFailure = StepExecutionResult.failure(
-                    step.getType(),
-                    step.getTarget(),
+                    step.type(),
+                    step.target(),
                     "Step was not executed by agent (no result returned)",
                     0
                 );
                 logEntries.add(new ExecutionLogEntry(
-                    plan.getId(),
+                    plan.id(),
                     i,
                     step,
                     syntheticFailure,
@@ -95,7 +95,7 @@ public class PlanExecutor {
         Instant finishedAt = Instant.now();
 
         PlanExecutionResult executionResult = new PlanExecutionResult(
-            plan.getId(),
+            plan.id(),
             success,
             startedAt,
             finishedAt,
@@ -103,7 +103,7 @@ public class PlanExecutor {
         );
 
         log.info("Plan {} execution finished with status={}, steps={}",
-            plan.getId(), success ? "SUCCESS" : "FAILED", logEntries.size());
+            plan.id(), success ? "SUCCESS" : "FAILED", logEntries.size());
 
         return executionResult;
     }
