@@ -1,6 +1,6 @@
 -- Migration: Create base tables for Platform API
 -- Created: 2026-01-07
--- Note: Uses PostgreSQL syntax (BIGSERIAL). For H2, Flyway will auto-convert to AUTO_INCREMENT
+-- Note: Uses H2 syntax (AUTO_INCREMENT). For PostgreSQL, use BIGSERIAL or separate migration
 
 -- Entity Types table
 CREATE TABLE IF NOT EXISTS entity_types (
@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS entity_types (
 -- Entity Type Metadata table
 CREATE TABLE IF NOT EXISTS entity_type_metadata (
     entity_type_id VARCHAR(255) NOT NULL,
-    key VARCHAR(255) NOT NULL,
-    value TEXT,
-    PRIMARY KEY (entity_type_id, key),
+    "key" VARCHAR(255) NOT NULL,
+    "value" TEXT,
+    PRIMARY KEY (entity_type_id, "key"),
     FOREIGN KEY (entity_type_id) REFERENCES entity_types(id) ON DELETE CASCADE
 );
 
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS action_applicable_entity_types (
 -- Action Metadata table
 CREATE TABLE IF NOT EXISTS action_metadata (
     action_id VARCHAR(255) NOT NULL,
-    key VARCHAR(255) NOT NULL,
-    value TEXT,
-    PRIMARY KEY (action_id, key),
+    "key" VARCHAR(255) NOT NULL,
+    "value" TEXT,
+    PRIMARY KEY (action_id, "key"),
     FOREIGN KEY (action_id) REFERENCES actions(id) ON DELETE CASCADE
 );
 
@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS ui_bindings (
 -- UI Binding Metadata table
 CREATE TABLE IF NOT EXISTS ui_binding_metadata (
     action_id VARCHAR(255) NOT NULL,
-    key VARCHAR(255) NOT NULL,
-    value TEXT,
-    PRIMARY KEY (action_id, key),
+    "key" VARCHAR(255) NOT NULL,
+    "value" TEXT,
+    PRIMARY KEY (action_id, "key"),
     FOREIGN KEY (action_id) REFERENCES ui_bindings(action_id) ON DELETE CASCADE
 );
 
@@ -78,29 +78,29 @@ CREATE TABLE IF NOT EXISTS plans (
 
 -- Plan Steps table
 CREATE TABLE IF NOT EXISTS plan_steps (
-    pk BIGSERIAL PRIMARY KEY,
+    pk BIGINT PRIMARY KEY AUTO_INCREMENT,
     plan_id VARCHAR(255) NOT NULL,
     step_index INTEGER NOT NULL,
-    type VARCHAR(50) NOT NULL,
+    "type" VARCHAR(50) NOT NULL,
     target VARCHAR(1000),
     explanation VARCHAR(2000),
     created_at TIMESTAMP NOT NULL,
     FOREIGN KEY (plan_id) REFERENCES plans(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_plan_step (plan_id, step_index)
+    CONSTRAINT unique_plan_step UNIQUE (plan_id, step_index)
 );
 
 -- Plan Step Parameters table
 CREATE TABLE IF NOT EXISTS plan_step_parameters (
     step_pk BIGINT NOT NULL,
-    key VARCHAR(255) NOT NULL,
-    value TEXT,
-    PRIMARY KEY (step_pk, key),
+    "key" VARCHAR(255) NOT NULL,
+    "value" TEXT,
+    PRIMARY KEY (step_pk, "key"),
     FOREIGN KEY (step_pk) REFERENCES plan_steps(pk) ON DELETE CASCADE
 );
 
 -- Execution Results table
 CREATE TABLE IF NOT EXISTS execution_results (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     plan_id VARCHAR(255) NOT NULL UNIQUE,
     success BOOLEAN NOT NULL,
     started_at TIMESTAMP NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS execution_results (
 
 -- Execution Log Entries table
 CREATE TABLE IF NOT EXISTS execution_log_entries (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     execution_result_id BIGINT NOT NULL,
     plan_id VARCHAR(255) NOT NULL,
     step_index INTEGER NOT NULL,
