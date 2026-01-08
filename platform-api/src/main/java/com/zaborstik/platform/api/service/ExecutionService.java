@@ -22,10 +22,6 @@ import java.util.stream.Collectors;
  * Сервис для работы с выполнением действий.
  * Преобразует DTO в доменные объекты и обратно.
  * Сохраняет планы в БД.
- * 
- * Service for working with action execution.
- * Converts DTOs to domain objects and back.
- * Saves plans to database.
  */
 @Service
 public class ExecutionService {

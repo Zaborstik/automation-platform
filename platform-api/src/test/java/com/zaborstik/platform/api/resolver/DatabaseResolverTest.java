@@ -82,9 +82,9 @@ class DatabaseResolverTest {
         // Then
         assertTrue(result.isPresent());
         EntityType entityType = result.get();
-        assertEquals("Building", entityType.getId());
-        assertEquals("Здание", entityType.getName());
-        assertTrue(entityType.getMetadata().containsKey("description"));
+        assertEquals("Building", entityType.id());
+        assertEquals("Здание", entityType.name());
+        assertTrue(entityType.metadata().containsKey("description"));
     }
 
     @Test
@@ -104,8 +104,8 @@ class DatabaseResolverTest {
         // Then
         assertTrue(result.isPresent());
         Action action = result.get();
-        assertEquals("order_egrn_extract", action.getId());
-        assertEquals("Заказать выписку из ЕГРН", action.getName());
+        assertEquals("order_egrn_extract", action.id());
+        assertEquals("Заказать выписку из ЕГРН", action.name());
         assertTrue(action.isApplicableTo("Building"));
         assertFalse(action.isApplicableTo("Contract"));
     }
@@ -127,9 +127,9 @@ class DatabaseResolverTest {
         // Then
         assertTrue(result.isPresent());
         UIBinding uiBinding = result.get();
-        assertEquals("order_egrn_extract", uiBinding.getActionId());
-        assertEquals("[data-action='order_egrn_extract']", uiBinding.getSelector());
-        assertEquals(UIBinding.SelectorType.CSS, uiBinding.getSelectorType());
+        assertEquals("order_egrn_extract", uiBinding.actionId());
+        assertEquals("[data-action='order_egrn_extract']", uiBinding.selector());
+        assertEquals(UIBinding.SelectorType.CSS, uiBinding.selectorType());
     }
 
     @Test
@@ -165,6 +165,6 @@ class DatabaseResolverTest {
 
         // Then
         assertTrue(result.isPresent());
-        assertEquals(UIBinding.SelectorType.XPATH, result.get().getSelectorType());
+        assertEquals(UIBinding.SelectorType.XPATH, result.get().selectorType());
     }
 }

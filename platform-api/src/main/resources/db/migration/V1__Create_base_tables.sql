@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS plan_steps (
     pk BIGINT PRIMARY KEY AUTO_INCREMENT,
     plan_id VARCHAR(255) NOT NULL,
     step_index INTEGER NOT NULL,
-    "type" VARCHAR(50) NOT NULL,
+    step_type VARCHAR(50) NOT NULL,
     target VARCHAR(1000),
     explanation VARCHAR(2000),
     created_at TIMESTAMP NOT NULL,

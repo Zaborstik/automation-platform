@@ -25,7 +25,7 @@ public class PlanStepEntity {
     @Column(name = "step_index", nullable = false)
     private Integer stepIndex;
 
-    @Column(name = "type", nullable = false, length = 50)
+    @Column(name = "step_type", nullable = false, length = 50)
     private String type;
 
     @Column(name = "target", length = 1000)

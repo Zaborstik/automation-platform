@@ -24,7 +24,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ExecutionService.class, ExecutionEngine.class, com.zaborstik.platform.api.resolver.DatabaseResolver.class, 
+@Import({ExecutionService.class, com.zaborstik.platform.api.config.PlatformConfiguration.class, 
+        com.zaborstik.platform.api.resolver.DatabaseResolver.class, 
         com.zaborstik.platform.api.mapper.PlanMapper.class})
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"

@@ -138,8 +138,8 @@ class PlatformConfigurationTest {
         assertFalse(resolver.findEntityType("NonExistent").isPresent());
 
         var building = resolver.findEntityType("Building").orElseThrow();
-        assertEquals("Building", building.getId());
-        assertEquals("Здание", building.getName());
+        assertEquals("Building", building.id());
+        assertEquals("Здание", building.name());
     }
 
     @Test
@@ -151,8 +151,8 @@ class PlatformConfigurationTest {
         assertFalse(resolver.findAction("non_existent").isPresent());
 
         var action = resolver.findAction("order_egrn_extract").orElseThrow();
-        assertEquals("order_egrn_extract", action.getId());
-        assertEquals("Заказать выписку из ЕГРН", action.getName());
+        assertEquals("order_egrn_extract", action.id());
+        assertEquals("Заказать выписку из ЕГРН", action.name());
         assertTrue(action.isApplicableTo("Building"));
         assertFalse(action.isApplicableTo("Contract"));
     }
@@ -166,8 +166,8 @@ class PlatformConfigurationTest {
         assertFalse(resolver.findUIBinding("non_existent").isPresent());
 
         var uiBinding = resolver.findUIBinding("order_egrn_extract").orElseThrow();
-        assertEquals("order_egrn_extract", uiBinding.getActionId());
-        assertEquals("[data-action='order_egrn_extract']", uiBinding.getSelector());
+        assertEquals("order_egrn_extract", uiBinding.actionId());
+        assertEquals("[data-action='order_egrn_extract']", uiBinding.selector());
     }
 
     @Test
@@ -198,10 +198,10 @@ class PlatformConfigurationTest {
 
         // Then
         assertNotNull(plan);
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertFalse(plan.getSteps().isEmpty());
+        assertEquals("Building", plan.entityTypeId());
+        assertEquals("93939", plan.entityId());
+        assertEquals("order_egrn_extract", plan.actionId());
+        assertFalse(plan.steps().isEmpty());
     }
 
     @Test
