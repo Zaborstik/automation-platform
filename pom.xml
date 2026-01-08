@@ -37,6 +37,20 @@
                         <parameters>true</parameters>
                     </configuration>
                 </plugin>
+                <!-- OWASP Dependency Check Plugin для проверки уязвимостей -->
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>10.0.4</version>
+                    <configuration>
+                        <failBuildOnCVSS>7</failBuildOnCVSS>
+                        <formats>
+                            <format>HTML</format>
+                            <format>JSON</format>
+                        </formats>
+                        <autoUpdate>true</autoUpdate>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

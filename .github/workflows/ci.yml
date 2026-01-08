@@ -121,16 +121,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
       
-      # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check
+      # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check Maven Plugin
       - name: Run OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'automation-platform'
-          path: '.'
-          format: 'HTML'
-          args: >
-            --failOnCVSS 7
-            --enableRetired
+        run: mvn dependency-check:check
+        continue-on-error: false  # Не останавливаем pipeline при найденных уязвимостях
       
       # Шаг 4: Загрузка отчета безопасности
       - name: Upload security report
@@ -138,5 +132,7 @@ jobs:
         if: always()
         with:
           name: security-report
-          path: reports/
+          path: |
+            **/target/dependency-check-report.html
+            **/target/dependency-check-report.json
           retention-days: 30
