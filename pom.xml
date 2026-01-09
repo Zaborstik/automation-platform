@@ -49,7 +49,7 @@
                             <format>JSON</format>
                         </formats>
                         <autoUpdate>true</autoUpdate>
-                        <cveValidForHours>24</cveValidForHours>  <!-- Обновлять БД раз в день, не каждый раз -->
+                        <cveValidForHours>168</cveValidForHours>  <!-- 7 дней - обновлять реже -->
                     </configuration>
                 </plugin>
             </plugins>
