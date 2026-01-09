@@ -15,12 +15,12 @@ version: "1.0"
 profile:
   name: qodana.recommended
 
-# Enable specific inspections (раскомментируйте, если нужно включить дополнительные проверки)
+# Enable specific inspections
 # include:
 #   - name: JavaDoc
 #   - name: ConstantConditions
 
-# Disable inspections for specific paths (например, для сгенерированного кода)
+# Disable inspections for specific paths
 exclude:
   - name: UnusedImport
     paths:

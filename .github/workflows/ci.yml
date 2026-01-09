@@ -7,6 +7,8 @@
 # 3. Запускает тесты
 # 4. Проверяет качество кода с помощью Qodana
 # 5. Собирает артефакты (JAR файлы)
+# 
+# Примечание: Security scan выполняется через GitHub Dependabot (настроен отдельно)
 
 name: CI/CD Pipeline
 
@@ -103,49 +105,49 @@ jobs:
           path: ${{ runner.temp }}/qodana/results
           retention-days: 30
 
-  # Job 3: Проверка безопасности зависимостей
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 60  # Увеличен таймаут для первого запуска (скачивание БД)
-    # Запускаем только на main ветке, чтобы не блокировать PR
-    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
-    continue-on-error: true  # Не блокируем pipeline, даже если найдены уязвимости
-    
-    steps:
-      # Шаг 1: Checkout кода
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      # Шаг 2: Установка Java
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: maven
-      
-      # Шаг 2.5: Кеширование базы данных OWASP Dependency Check
-      - name: Cache OWASP Dependency Check database
-        uses: actions/cache@v4
-        with:
-          path: ~/.dependency-check/data
-          key: dependency-check-db-${{ runner.os }}
-          restore-keys: |
-            dependency-check-db-${{ runner.os }}
-      
-      # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check Maven Plugin
-      - name: Run OWASP Dependency Check
-        run: mvn dependency-check:check || echo "Security scan completed with warnings/errors"
-        continue-on-error: true  # Не блокируем pipeline при ошибках (парсинг NVD, сетевые проблемы и т.д.)
-      
-      # Шаг 4: Загрузка отчета безопасности
-      - name: Upload security report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-report
-          path: |
-            **/target/dependency-check-report.html
-            **/target/dependency-check-report.json
-          retention-days: 30
+  # Job 3: Проверка безопасности зависимостей (закомментировано - используется GitHub Dependabot)
+  # security-scan:
+  #   name: Security Scan
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 60  # Увеличен таймаут для первого запуска (скачивание БД)
+  #   # Запускаем только на main ветке, чтобы не блокировать PR
+  #   if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+  #   continue-on-error: true  # Не блокируем pipeline, даже если найдены уязвимости
+  #   
+  #   steps:
+  #     # Шаг 1: Checkout кода
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     
+  #     # Шаг 2: Установка Java
+  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: ${{ env.JAVA_VERSION }}
+  #         distribution: 'temurin'
+  #         cache: maven
+  #     
+  #     # Шаг 2.5: Кеширование базы данных OWASP Dependency Check
+  #     - name: Cache OWASP Dependency Check database
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.dependency-check/data
+  #         key: dependency-check-db-${{ runner.os }}
+  #         restore-keys: |
+  #           dependency-check-db-${{ runner.os }}
+  #     
+  #     # Шаг 3: Проверка уязвимостей с помощью OWASP Dependency Check Maven Plugin
+  #     - name: Run OWASP Dependency Check
+  #       run: mvn dependency-check:check || echo "Security scan completed with warnings/errors"
+  #       continue-on-error: true  # Не блокируем pipeline при ошибках (парсинг NVD, сетевые проблемы и т.д.)
+  #     
+  #     # Шаг 4: Загрузка отчета безопасности
+  #     - name: Upload security report
+  #       uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: security-report
+  #         path: |
+  #           **/target/dependency-check-report.html
+  #           **/target/dependency-check-report.json
+  #         retention-days: 30
