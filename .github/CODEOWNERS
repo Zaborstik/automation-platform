@@ -1,0 +1,22 @@
+# CODEOWNERS файл
+# Этот файл определяет, кто автоматически назначается reviewer для изменений
+# Синтаксис: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @Zaborstik
+
+/platform-api/ @Zaborstik
+/platform-core/ @Zaborstik
+# /platform-agent/ @Zaborstik
+/platform-executor/ @Zaborstik
+
+# CI/CD и конфигурация
+/.github/ @Zaborstik
+/.github/workflows/ @Zaborstik
+
+# Документация
+*.md @Zaborstik
+/CONTRIBUTING.md @Zaborstik
+
+# Конфигурация проекта
+/pom.xml @Zaborstik
+/qodana.yaml @Zaborstik
