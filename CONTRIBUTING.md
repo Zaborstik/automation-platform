@@ -7,7 +7,7 @@
 ### Сообщение об ошибках (Bug Reports)
 
 Если вы нашли ошибку, пожалуйста:
-1. Проверьте, что проблема еще не описана в [Issues](https://github.com/your-username/automation-platform/issues)
+1. Проверьте, что проблема еще не описана в [Issues](https://github.com/Zaborstik/automation-platform/issues)
 2. Создайте новый issue с шаблоном "Bug Report"
 3. Укажите:
    - Описание проблемы
