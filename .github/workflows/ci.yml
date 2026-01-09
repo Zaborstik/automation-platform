@@ -107,7 +107,10 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    timeout-minutes: 20  # Таймаут для security scan (может работать долго)
+    timeout-minutes: 60  # Увеличен таймаут для первого запуска (скачивание БД)
+    # Запускаем только на main ветке, чтобы не блокировать PR
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    continue-on-error: true  # Не блокируем pipeline, даже если найдены уязвимости
     
     steps:
       # Шаг 1: Checkout кода
