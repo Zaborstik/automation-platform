@@ -2,7 +2,7 @@
 # Этот файл определяет, кто автоматически назначается reviewer для изменений
 # Синтаксис: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-* @Zaborstik
+* @Zaborstik @dianagalina
 
 /platform-api/ @Zaborstik
 /platform-core/ @Zaborstik
