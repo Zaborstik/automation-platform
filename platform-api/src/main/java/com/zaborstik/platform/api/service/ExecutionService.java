@@ -48,7 +48,6 @@ public class ExecutionService {
         ExecutionRequest request = toExecutionRequest(requestDTO);
         Plan plan = executionEngine.createPlan(request);
         
-        // Сохраняем план в БД
         PlanEntity planEntity = planMapper.toEntity(plan);
         planRepository.save(planEntity);
         
