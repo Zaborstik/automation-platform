@@ -1,11 +1,7 @@
 package com.zaborstik.platform.api.config;
 
-import com.zaborstik.platform.api.entity.ActionEntity;
-import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.UIBindingEntity;
-import com.zaborstik.platform.api.repository.ActionRepository;
-import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.UIBindingRepository;
+import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.repository.EntityRepository;
 import com.zaborstik.platform.api.resolver.DatabaseResolver;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
@@ -14,16 +10,18 @@ import com.zaborstik.platform.core.resolver.Resolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@EntityScan("com.zaborstik.platform.api.dto")
 @Import({PlatformConfiguration.class, DatabaseResolver.class})
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -31,13 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class PlatformConfigurationTest {
 
     @Autowired
-    private EntityTypeRepository entityTypeRepository;
-
-    @Autowired
-    private ActionRepository actionRepository;
-
-    @Autowired
-    private UIBindingRepository uiBindingRepository;
+    private EntityRepository entityRepository;
 
     @Autowired
     private Resolver resolver;
@@ -47,76 +39,29 @@ class PlatformConfigurationTest {
 
     @BeforeEach
     void setUp() {
-        // Очищаем БД
-        uiBindingRepository.deleteAll();
-        actionRepository.deleteAll();
-        entityTypeRepository.deleteAll();
+        entityRepository.findById_TableName(EntityDTO.TABLE_UI_BINDINGS).forEach(entityRepository::delete);
+        entityRepository.findById_TableName(EntityDTO.TABLE_ACTIONS).forEach(entityRepository::delete);
+        entityRepository.findById_TableName(EntityDTO.TABLE_ENTITY_TYPES).forEach(entityRepository::delete);
 
-        // Создаем тестовые данные (имитируем миграцию V2)
-        EntityTypeEntity buildingType = new EntityTypeEntity(
-            "Building",
-            "Здание",
-            Map.of("description", "Тип сущности для работы со зданиями")
-        );
-        entityTypeRepository.save(buildingType);
-
-        EntityTypeEntity contractType = new EntityTypeEntity(
-            "Contract",
-            "Договор",
-            Map.of("description", "Тип сущности для работы с договорами")
-        );
-        entityTypeRepository.save(contractType);
-
-        ActionEntity action1 = new ActionEntity(
-            "order_egrn_extract",
-            "Заказать выписку из ЕГРН",
-            "Заказывает выписку из ЕГРН для указанного здания",
-            Set.of("Building"),
-            Map.of("category", "document")
-        );
-        actionRepository.save(action1);
-
-        ActionEntity action2 = new ActionEntity(
-            "close_contract",
-            "Закрыть договор",
-            "Закрывает указанный договор",
-            Set.of("Contract"),
-            Map.of("category", "workflow")
-        );
-        actionRepository.save(action2);
-
-        ActionEntity action3 = new ActionEntity(
-            "assign_owner",
-            "Назначить владельца",
-            "Назначает владельца для указанного здания",
-            Set.of("Building"),
-            Map.of("category", "management")
-        );
-        actionRepository.save(action3);
-
-        UIBindingEntity uiBinding1 = new UIBindingEntity(
-            "order_egrn_extract",
-            "[data-action='order_egrn_extract']",
-            UIBindingEntity.SelectorType.CSS,
-            Map.of("highlight", "true")
-        );
-        uiBindingRepository.save(uiBinding1);
-
-        UIBindingEntity uiBinding2 = new UIBindingEntity(
-            "close_contract",
-            "//button[contains(@class, 'close-contract-btn')]",
-            UIBindingEntity.SelectorType.XPATH,
-            Map.of("highlight", "true")
-        );
-        uiBindingRepository.save(uiBinding2);
-
-        UIBindingEntity uiBinding3 = new UIBindingEntity(
-            "assign_owner",
-            "[data-action='assign_owner']",
-            UIBindingEntity.SelectorType.CSS,
-            Map.of("highlight", "true")
-        );
-        uiBindingRepository.save(uiBinding3);
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Building",
+                Map.of("name", "Здание", "metadata", Map.of("description", "Тип сущности для работы со зданиями"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Contract",
+                Map.of("name", "Договор", "metadata", Map.of("description", "Тип сущности для работы с договорами"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "order_egrn_extract",
+                Map.of("name", "Заказать выписку из ЕГРН", "description", "Заказывает выписку из ЕГРН для указанного здания",
+                        "applicableEntityTypes", List.of("Building"), "metadata", Map.of("category", "document"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "close_contract",
+                Map.of("name", "Закрыть договор", "description", "Закрывает указанный договор",
+                        "applicableEntityTypes", List.of("Contract"), "metadata", Map.of("category", "workflow"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "assign_owner",
+                Map.of("name", "Назначить владельца", "description", "Назначает владельца для указанного здания",
+                        "applicableEntityTypes", List.of("Building"), "metadata", Map.of("category", "management"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract",
+                Map.of("selector", "[data-action='order_egrn_extract']", "selectorType", "CSS", "metadata", Map.of("highlight", "true"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "close_contract",
+                Map.of("selector", "//button[contains(@class, 'close-contract-btn')]", "selectorType", "XPATH", "metadata", Map.of("highlight", "true"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "assign_owner",
+                Map.of("selector", "[data-action='assign_owner']", "selectorType", "CSS", "metadata", Map.of("highlight", "true"))));
     }
 
     @Test
@@ -132,11 +77,9 @@ class PlatformConfigurationTest {
 
     @Test
     void shouldFindRegisteredEntityTypes() {
-        // Then
         assertTrue(resolver.findEntityType("Building").isPresent());
         assertTrue(resolver.findEntityType("Contract").isPresent());
         assertFalse(resolver.findEntityType("NonExistent").isPresent());
-
         var building = resolver.findEntityType("Building").orElseThrow();
         assertEquals("Building", building.id());
         assertEquals("Здание", building.name());
@@ -144,12 +87,10 @@ class PlatformConfigurationTest {
 
     @Test
     void shouldFindRegisteredActions() {
-        // Then
         assertTrue(resolver.findAction("order_egrn_extract").isPresent());
         assertTrue(resolver.findAction("close_contract").isPresent());
         assertTrue(resolver.findAction("assign_owner").isPresent());
         assertFalse(resolver.findAction("non_existent").isPresent());
-
         var action = resolver.findAction("order_egrn_extract").orElseThrow();
         assertEquals("order_egrn_extract", action.id());
         assertEquals("Заказать выписку из ЕГРН", action.name());
@@ -159,12 +100,10 @@ class PlatformConfigurationTest {
 
     @Test
     void shouldFindRegisteredUIBindings() {
-        // Then
         assertTrue(resolver.findUIBinding("order_egrn_extract").isPresent());
         assertTrue(resolver.findUIBinding("close_contract").isPresent());
         assertTrue(resolver.findUIBinding("assign_owner").isPresent());
         assertFalse(resolver.findUIBinding("non_existent").isPresent());
-
         var uiBinding = resolver.findUIBinding("order_egrn_extract").orElseThrow();
         assertEquals("order_egrn_extract", uiBinding.actionId());
         assertEquals("[data-action='order_egrn_extract']", uiBinding.selector());
@@ -172,31 +111,18 @@ class PlatformConfigurationTest {
 
     @Test
     void shouldCheckActionApplicability() {
-        // Then
         assertTrue(resolver.isActionApplicable("order_egrn_extract", "Building"));
         assertFalse(resolver.isActionApplicable("order_egrn_extract", "Contract"));
-
         assertTrue(resolver.isActionApplicable("close_contract", "Contract"));
         assertFalse(resolver.isActionApplicable("close_contract", "Building"));
-
         assertTrue(resolver.isActionApplicable("assign_owner", "Building"));
         assertFalse(resolver.isActionApplicable("assign_owner", "Contract"));
     }
 
     @Test
     void shouldCreatePlanWithConfiguredResolver() {
-        // Given
-        ExecutionRequest request = new ExecutionRequest(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
-
-        // When
+        ExecutionRequest request = new ExecutionRequest("Building", "93939", "order_egrn_extract", Map.of());
         Plan plan = executionEngine.createPlan(request);
-
-        // Then
         assertNotNull(plan);
         assertEquals("Building", plan.entityTypeId());
         assertEquals("93939", plan.entityId());
@@ -206,33 +132,13 @@ class PlatformConfigurationTest {
 
     @Test
     void shouldThrowExceptionForNonExistentEntityType() {
-        // Given
-        ExecutionRequest request = new ExecutionRequest(
-            "NonExistent",
-            "123",
-            "order_egrn_extract",
-            Map.of()
-        );
-
-        // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            executionEngine.createPlan(request);
-        });
+        ExecutionRequest request = new ExecutionRequest("NonExistent", "123", "order_egrn_extract", Map.of());
+        assertThrows(IllegalArgumentException.class, () -> executionEngine.createPlan(request));
     }
 
     @Test
     void shouldThrowExceptionForNonApplicableAction() {
-        // Given
-        ExecutionRequest request = new ExecutionRequest(
-            "Contract",
-            "123",
-            "order_egrn_extract", // Это действие применимо только к Building
-            Map.of()
-        );
-
-        // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            executionEngine.createPlan(request);
-        });
+        ExecutionRequest request = new ExecutionRequest("Contract", "123", "order_egrn_extract", Map.of());
+        assertThrows(IllegalArgumentException.class, () -> executionEngine.createPlan(request));
     }
 }

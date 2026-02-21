@@ -1,25 +1,24 @@
--- Migration: Insert initial data (EntityTypes, Actions, UIBindings)
--- Created: 2026-01-07
+-- Migration: Insert initial data по схеме drawio (zbrstk.entity_type, system.action, system.ui_binding)
 
--- Insert Entity Types
-INSERT INTO entity_types (id, name, created_at, updated_at) VALUES
+-- Entity types (zbrstk.entity_type: shortname, displayname, created_time, updated_time)
+INSERT INTO zbrstk.entity_type (shortname, displayname, created_time, updated_time) VALUES
     ('Building', 'Здание', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('Contract', 'Договор', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- Insert Actions
-INSERT INTO actions (id, name, description, created_at, updated_at) VALUES
+-- Actions (system.action: shortname, displayname, description, created_time, updated_time)
+INSERT INTO system.action (shortname, displayname, description, created_time, updated_time) VALUES
     ('order_egrn_extract', 'Заказать выписку из ЕГРН', 'Заказывает выписку из ЕГРН для указанного здания', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('close_contract', 'Закрыть договор', 'Закрывает указанный договор', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('assign_owner', 'Назначить владельца', 'Назначает владельца для указанного здания', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- Insert Action Applicable Entity Types
-INSERT INTO action_applicable_entity_types (action_id, entity_type_id) VALUES
+-- Action applicable entity types (system.action_applicable_entity_type: action, entity_type)
+INSERT INTO system.action_applicable_entity_type (action, entity_type) VALUES
     ('order_egrn_extract', 'Building'),
     ('close_contract', 'Contract'),
     ('assign_owner', 'Building');
 
--- Insert UI Bindings
-INSERT INTO ui_bindings (action_id, selector, selector_type, created_at, updated_at) VALUES
+-- UI Bindings (system.ui_binding: action, selector, selector_type, created_time, updated_time)
+INSERT INTO system.ui_binding (action, selector, selector_type, created_time, updated_time) VALUES
     ('order_egrn_extract', '[data-action=''order_egrn_extract'']', 'CSS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('close_contract', '//button[contains(@class, ''close-contract-btn'')]', 'XPATH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     ('assign_owner', '[data-action=''assign_owner'']', 'CSS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

@@ -19,129 +19,72 @@ class DTOsSerializationTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        // Добавляем поддержку Java 8 time API для работы с Instant
-        // Add Java 8 time API support for working with Instant
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @Test
-    void shouldSerializeAndDeserializeExecutionRequestDTO() throws Exception {
-        // Given
-        ExecutionRequestDTO original = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of("param1", "value1", "param2", 123)
-        );
+    void shouldSerializeAndDeserializeEntityDTO() throws Exception {
+        EntityDTO original = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null,
+                Map.of("entity", "Building", "entityId", "93939", "action", "order_egrn_extract", "parameters", Map.of("param1", "value1")));
 
-        // When
         String json = objectMapper.writeValueAsString(original);
-        ExecutionRequestDTO deserialized = objectMapper.readValue(json, ExecutionRequestDTO.class);
+        EntityDTO deserialized = objectMapper.readValue(json, EntityDTO.class);
 
-        // Then
         assertNotNull(json);
-        assertEquals("Building", deserialized.getEntityType());
-        assertEquals("93939", deserialized.getEntityId());
-        assertEquals("order_egrn_extract", deserialized.getAction());
-        assertNotNull(deserialized.getParameters());
-        assertEquals("value1", deserialized.getParameters().get("param1"));
-        assertEquals(123, deserialized.getParameters().get("param2"));
+        assertEquals(EntityDTO.TABLE_EXECUTION_REQUEST, deserialized.getTableName());
+        assertEquals("Building", deserialized.get("entity"));
+        assertEquals("93939", deserialized.get("entityId"));
+        assertEquals("order_egrn_extract", deserialized.get("action"));
+        assertEquals("value1", ((Map<?, ?>) deserialized.get("parameters")).get("param1"));
     }
 
     @Test
-    void shouldSerializeAndDeserializeExecutionRequestDTOWithNullParameters() throws Exception {
-        // Given
-        ExecutionRequestDTO original = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            null
-        );
+    void shouldSerializeAndDeserializeEntityDTOWithPlansTableName() throws Exception {
+        EntityDTO original = new EntityDTO(EntityDTO.TABLE_PLANS, "plan-1",
+                Map.of("entityTypeId", "Building", "entityId", "93939", "actionId", "order_egrn_extract", "status", "CREATED", "steps", List.of()));
 
-        // When
         String json = objectMapper.writeValueAsString(original);
-        ExecutionRequestDTO deserialized = objectMapper.readValue(json, ExecutionRequestDTO.class);
+        EntityDTO deserialized = objectMapper.readValue(json, EntityDTO.class);
 
-        // Then
         assertNotNull(json);
-        assertEquals("Building", deserialized.getEntityType());
-        assertEquals("93939", deserialized.getEntityId());
-        assertEquals("order_egrn_extract", deserialized.getAction());
+        assertEquals(EntityDTO.TABLE_PLANS, deserialized.getTableName());
+        assertEquals("plan-1", deserialized.getId());
+        assertEquals("Building", deserialized.get("entityTypeId"));
+        assertEquals("CREATED", deserialized.get("status"));
     }
 
     @Test
-    void shouldSerializeAndDeserializePlanStepDTO() throws Exception {
-        // Given
-        PlanStepDTO original = new PlanStepDTO(
-            "click",
-            "action(order_egrn_extract)",
-            "Выполняю действие",
-            Map.of("highlight", true, "waitAfterClick", 2000)
-        );
+    void shouldSerializeAndDeserializeAttachmentDTO() throws Exception {
+        AttachmentDTO original = new AttachmentDTO("att-1", Map.of(
+                "parentTable", "plans",
+                "parentId", "plan-123",
+                "filename", "doc.pdf",
+                "contentType", "application/pdf"
+        ));
 
-        // When
         String json = objectMapper.writeValueAsString(original);
-        PlanStepDTO deserialized = objectMapper.readValue(json, PlanStepDTO.class);
+        AttachmentDTO deserialized = objectMapper.readValue(json, AttachmentDTO.class);
 
-        // Then
         assertNotNull(json);
-        assertEquals("click", deserialized.getType());
-        assertEquals("action(order_egrn_extract)", deserialized.getTarget());
-        assertEquals("Выполняю действие", deserialized.getExplanation());
-        assertNotNull(deserialized.getParameters());
-        assertEquals(true, deserialized.getParameters().get("highlight"));
-        assertEquals(2000, deserialized.getParameters().get("waitAfterClick"));
-    }
-
-    @Test
-    void shouldSerializeAndDeserializePlanDTO() throws Exception {
-        // Given
-        PlanStepDTO step1 = new PlanStepDTO("open_page", "/buildings/93939", "Открываю карточку", Map.of());
-        PlanStepDTO step2 = new PlanStepDTO("click", "action(order_egrn_extract)", "Кликаю", Map.of());
-        
-        PlanDTO original = new PlanDTO(
-            "plan-id-123",
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            List.of(step1, step2),
-            "CREATED"
-        );
-
-        // When
-        String json = objectMapper.writeValueAsString(original);
-        PlanDTO deserialized = objectMapper.readValue(json, PlanDTO.class);
-
-        // Then
-        assertNotNull(json);
-        assertEquals("plan-id-123", deserialized.getId());
-        assertEquals("Building", deserialized.getEntityTypeId());
-        assertEquals("93939", deserialized.getEntityId());
-        assertEquals("order_egrn_extract", deserialized.getActionId());
-        assertEquals("CREATED", deserialized.getStatus());
-        assertNotNull(deserialized.getSteps());
-        assertEquals(2, deserialized.getSteps().size());
-        assertEquals("open_page", deserialized.getSteps().get(0).getType());
-        assertEquals("click", deserialized.getSteps().get(1).getType());
+        assertEquals(EntityDTO.TABLE_ATTACHMENTS, deserialized.getTableName());
+        assertEquals("att-1", deserialized.getId());
+        assertEquals("plans", deserialized.getParentTable());
+        assertEquals("plan-123", deserialized.getParentId());
+        assertEquals("doc.pdf", deserialized.getFilename());
+        assertEquals("application/pdf", deserialized.getContentType());
     }
 
     @Test
     void shouldSerializeAndDeserializeErrorResponseDTO() throws Exception {
-        // Given
         ErrorResponseDTO original = new ErrorResponseDTO(
-            400,
-            "Bad Request",
-            "Validation failed",
-            "/api/execution/plan"
+                400, "Bad Request", "Validation failed", "/api/execution/plan"
         );
 
-        // When
         String json = objectMapper.writeValueAsString(original);
         ErrorResponseDTO deserialized = objectMapper.readValue(json, ErrorResponseDTO.class);
 
-        // Then
         assertNotNull(json);
         assertEquals(400, deserialized.getStatus());
         assertEquals("Bad Request", deserialized.getError());
@@ -151,22 +94,16 @@ class DTOsSerializationTest {
     }
 
     @Test
-    void shouldHandleJsonPropertyAnnotations() throws Exception {
-        // Given - проверяем, что JSON использует правильные имена полей
-        ExecutionRequestDTO dto = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+    void shouldDistinguishByTableName() throws Exception {
+        EntityDTO executionRequest = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null, Map.of("entity", "Building", "entityId", "1", "action", "a"));
+        EntityDTO plan = new EntityDTO(EntityDTO.TABLE_PLANS, "p1", Map.of("entityTypeId", "Building", "status", "CREATED"));
 
-        // When
-        String json = objectMapper.writeValueAsString(dto);
+        String jsonReq = objectMapper.writeValueAsString(executionRequest);
+        String jsonPlan = objectMapper.writeValueAsString(plan);
 
-        // Then
-        assertTrue(json.contains("\"entity\":\"Building\""));
-        assertTrue(json.contains("\"entityId\":\"93939\""));
-        assertTrue(json.contains("\"action\":\"order_egrn_extract\""));
+        assertTrue(jsonReq.contains("\"tableName\":\"execution_request\""));
+        assertTrue(jsonPlan.contains("\"tableName\":\"plans\""));
+        assertEquals(EntityDTO.TABLE_EXECUTION_REQUEST, objectMapper.readValue(jsonReq, EntityDTO.class).getTableName());
+        assertEquals(EntityDTO.TABLE_PLANS, objectMapper.readValue(jsonPlan, EntityDTO.class).getTableName());
     }
 }
-

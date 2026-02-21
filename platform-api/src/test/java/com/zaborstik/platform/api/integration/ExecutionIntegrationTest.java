@@ -1,8 +1,8 @@
 package com.zaborstik.platform.api.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zaborstik.platform.api.dto.ExecutionRequestDTO;
-import com.zaborstik.platform.api.dto.PlanDTO;
+import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.PlatformApiApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,8 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import com.zaborstik.platform.api.PlatformApiApplication;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,170 +30,122 @@ class ExecutionIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private EntityDTO executionRequest(String entity, String entityId, String action, Map<String, Object> parameters) {
+        return new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null,
+                Map.of("entity", entity, "entityId", entityId, "action", action, "parameters", parameters != null ? parameters : Map.of()));
+    }
+
     @Test
     void shouldCreatePlanForBuildingEntity() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+        EntityDTO request = executionRequest("Building", "93939", "order_egrn_extract", Map.of());
 
-        // When
         MvcResult result = mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").exists())
-            .andExpect(jsonPath("$.entityType").value("Building"))
-            .andExpect(jsonPath("$.entityId").value("93939"))
-            .andExpect(jsonPath("$.action").value("order_egrn_extract"))
-            .andExpect(jsonPath("$.status").value("CREATED"))
-            .andExpect(jsonPath("$.steps").isArray())
-            .andExpect(jsonPath("$.steps.length()").value(5))
-            .andReturn();
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tableName").value(EntityDTO.TABLE_PLANS))
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.data.entityTypeId").value("Building"))
+                .andExpect(jsonPath("$.data.entityId").value("93939"))
+                .andExpect(jsonPath("$.data.actionId").value("order_egrn_extract"))
+                .andExpect(jsonPath("$.data.status").value("CREATED"))
+                .andExpect(jsonPath("$.data.steps").isArray())
+                .andReturn();
 
-        // Then - проверяем структуру ответа
-        String responseContent = result.getResponse().getContentAsString();
-        PlanDTO plan = objectMapper.readValue(responseContent, PlanDTO.class);
-        
-        assertNotNull(plan);
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertEquals(5, plan.getSteps().size());
-        
-        // Проверяем типы шагов
-        assertEquals("open_page", plan.getSteps().get(0).getType());
-        assertEquals("explain", plan.getSteps().get(1).getType());
-        assertEquals("hover", plan.getSteps().get(2).getType());
-        assertEquals("click", plan.getSteps().get(3).getType());
-        assertEquals("wait", plan.getSteps().get(4).getType());
+        EntityDTO plan = objectMapper.readValue(result.getResponse().getContentAsString(), EntityDTO.class);
+        assertEquals(EntityDTO.TABLE_PLANS, plan.getTableName());
+        assertEquals("Building", plan.get("entityTypeId"));
+        assertEquals("93939", plan.get("entityId"));
+        assertEquals("order_egrn_extract", plan.get("actionId"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> steps = (List<Map<String, Object>>) plan.get("steps");
+        assertNotNull(steps);
+        assertEquals(5, steps.size());
+        assertEquals("open_page", steps.get(0).get("type"));
+        assertEquals("explain", steps.get(1).get("type"));
+        assertEquals("hover", steps.get(2).get("type"));
+        assertEquals("click", steps.get(3).get("type"));
+        assertEquals("wait", steps.get(4).get("type"));
     }
 
     @Test
     void shouldCreatePlanForContractEntity() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Contract",
-            "contract-123",
-            "close_contract",
-            Map.of()
-        );
+        EntityDTO request = executionRequest("Contract", "contract-123", "close_contract", Map.of());
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.entityType").value("Contract"))
-            .andExpect(jsonPath("$.entityId").value("contract-123"))
-            .andExpect(jsonPath("$.action").value("close_contract"))
-            .andExpect(jsonPath("$.steps.length()").value(5));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tableName").value(EntityDTO.TABLE_PLANS))
+                .andExpect(jsonPath("$.data.entityTypeId").value("Contract"))
+                .andExpect(jsonPath("$.data.entityId").value("contract-123"))
+                .andExpect(jsonPath("$.data.actionId").value("close_contract"))
+                .andExpect(jsonPath("$.data.steps").isArray());
     }
 
     @Test
     void shouldReturnBadRequestForNonExistentEntityType() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "NonExistent",
-            "123",
-            "order_egrn_extract",
-            Map.of()
-        );
+        EntityDTO request = executionRequest("NonExistent", "123", "order_egrn_extract", Map.of());
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("Invalid Request"))
-            .andExpect(jsonPath("$.message").exists());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid Request"))
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
     void shouldReturnBadRequestForNonApplicableAction() throws Exception {
-        // Given - order_egrn_extract применимо только к Building, а не к Contract
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Contract",
-            "123",
-            "order_egrn_extract",
-            Map.of()
-        );
+        EntityDTO request = executionRequest("Contract", "123", "order_egrn_extract", Map.of());
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("Invalid Request"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid Request"));
     }
 
     @Test
     void shouldReturnBadRequestForNonExistentAction() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Building",
-            "123",
-            "non_existent_action",
-            Map.of()
-        );
+        EntityDTO request = executionRequest("Building", "123", "non_existent_action", Map.of());
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("Invalid Request"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid Request"));
     }
 
     @Test
     void shouldHandleRequestWithParameters() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of("param1", "value1", "param2", 123, "param3", true)
-        );
+        EntityDTO request = executionRequest("Building", "93939", "order_egrn_extract",
+                Map.of("param1", "value1", "param2", 123, "param3", true));
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").exists());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists());
     }
 
     @Test
-    void shouldReturnValidationErrorForEmptyEntityType() throws Exception {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+    void shouldReturnBadRequestWhenDataMissingRequiredFields() throws Exception {
+        EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null, Map.of("entity", "Building"));
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("Validation Failed"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void shouldReturnValidationErrorForMissingFields() throws Exception {
-        // Given - создаем JSON без обязательных полей
-        String invalidJson = "{\"entity\":\"Building\"}";
+    void shouldReturnBadRequestWhenTableNameNotExecutionRequest() throws Exception {
+        String invalidJson = "{\"tableName\":\"other\",\"id\":null,\"data\":{\"entity\":\"Building\",\"entityId\":\"93939\",\"action\":\"x\"}}";
 
-        // When & Then
         mockMvc.perform(post("/api/execution/plan")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidJson))
-            .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest());
     }
 }
-

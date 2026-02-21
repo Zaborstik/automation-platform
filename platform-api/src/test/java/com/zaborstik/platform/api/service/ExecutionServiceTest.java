@@ -1,10 +1,8 @@
 package com.zaborstik.platform.api.service;
 
-import com.zaborstik.platform.api.dto.ExecutionRequestDTO;
-import com.zaborstik.platform.api.dto.PlanDTO;
-import com.zaborstik.platform.api.dto.PlanStepDTO;
+import com.zaborstik.platform.api.dto.EntityDTO;
 import com.zaborstik.platform.api.mapper.PlanMapper;
-import com.zaborstik.platform.api.repository.PlanRepository;
+import com.zaborstik.platform.api.repository.EntityRepository;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
@@ -31,7 +29,7 @@ class ExecutionServiceTest {
     private ExecutionEngine executionEngine;
 
     @Mock
-    private PlanRepository planRepository;
+    private EntityRepository entityRepository;
 
     @Mock
     private PlanMapper planMapper;
@@ -44,225 +42,78 @@ class ExecutionServiceTest {
     @BeforeEach
     void setUp() {
         List<PlanStep> steps = List.of(
-            PlanStep.openPage("/buildings/93939", "Открываю карточку"),
-            PlanStep.explain("Выполняю действие"),
-            PlanStep.hover("order_egrn_extract", "Навожу курсор"),
-            PlanStep.click("order_egrn_extract", "Кликаю"),
-            PlanStep.wait("result", "Жду результат")
+                PlanStep.openPage("/buildings/93939", "Открываю карточку"),
+                PlanStep.explain("Выполняю действие"),
+                PlanStep.hover("order_egrn_extract", "Навожу курсор"),
+                PlanStep.click("order_egrn_extract", "Кликаю"),
+                PlanStep.wait("result", "Жду результат")
         );
-
-        testPlan = new Plan(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            steps
-        );
+        testPlan = new Plan("Building", "93939", "order_egrn_extract", steps);
     }
 
     @Test
     void shouldCreatePlanSuccessfully() {
-        // Given
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+        EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null,
+                Map.of("entity", "Building", "entityId", "93939", "action", "order_egrn_extract", "parameters", Map.of()));
+
+        EntityDTO planDto = new EntityDTO(EntityDTO.TABLE_PLANS, testPlan.id(),
+                Map.of("entityTypeId", "Building", "entityId", "93939", "actionId", "order_egrn_extract", "status", "CREATED", "steps", List.of()));
 
         when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
-        when(planMapper.toEntity(any(Plan.class))).thenReturn(
-            new com.zaborstik.platform.api.entity.PlanEntity(
-                testPlan.id(),
-                testPlan.entityTypeId(),
-                testPlan.entityId(),
-                testPlan.actionId(),
-                com.zaborstik.platform.api.entity.PlanEntity.PlanStatus.CREATED
-            )
-        );
-        when(planRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(planMapper.toEntityDTO(any(Plan.class))).thenReturn(planDto);
+        when(entityRepository.save(any(EntityDTO.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When
-        PlanDTO result = executionService.createPlan(requestDTO);
+        EntityDTO result = executionService.createPlan(request);
 
-        // Then
         assertNotNull(result);
-        assertEquals("Building", result.getEntityTypeId());
-        assertEquals("93939", result.getEntityId());
-        assertEquals("order_egrn_extract", result.getActionId());
-        assertEquals("CREATED", result.getStatus());
-        assertEquals(5, result.getSteps().size());
-        
-        // Проверяем, что план был сохранен в БД
-        verify(planRepository, times(1)).save(any());
-        verify(planMapper, times(1)).toEntity(testPlan);
+        assertEquals(EntityDTO.TABLE_PLANS, result.getTableName());
+        assertEquals(testPlan.id(), result.getId());
+        assertEquals("Building", result.get("entityTypeId"));
+        assertEquals("93939", result.get("entityId"));
+        assertEquals("order_egrn_extract", result.get("actionId"));
+        assertEquals("CREATED", result.get("status"));
+        verify(entityRepository, times(1)).save(any(EntityDTO.class));
+        verify(planMapper, times(1)).toEntityDTO(testPlan);
     }
 
     @Test
-    void shouldConvertPlanStepsCorrectly() {
-        // Given
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+    void shouldThrowWhenTableNameNotExecutionRequest() {
+        EntityDTO request = new EntityDTO("other", null, Map.of("entity", "B", "entityId", "1", "action", "a"));
 
-        when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
-
-        // When
-        PlanDTO result = executionService.createPlan(requestDTO);
-
-        // Then
-        List<PlanStepDTO> steps = result.getSteps();
-        assertEquals(5, steps.size());
-
-        PlanStepDTO step1 = steps.get(0);
-        assertEquals("open_page", step1.getType());
-        assertEquals("/buildings/93939", step1.getTarget());
-        assertEquals("Открываю карточку", step1.getExplanation());
-
-        PlanStepDTO step2 = steps.get(1);
-        assertEquals("explain", step2.getType());
-        assertEquals("Выполняю действие", step2.getExplanation());
-
-        PlanStepDTO step3 = steps.get(2);
-        assertEquals("hover", step3.getType());
-        assertEquals("action(order_egrn_extract)", step3.getTarget());
-
-        PlanStepDTO step4 = steps.get(3);
-        assertEquals("click", step4.getType());
-        assertEquals("action(order_egrn_extract)", step4.getTarget());
-
-        PlanStepDTO step5 = steps.get(4);
-        assertEquals("wait", step5.getType());
-        assertEquals("result", step5.getTarget());
+        assertThrows(IllegalArgumentException.class, () -> executionService.createPlan(request));
     }
 
     @Test
-    void shouldHandleRequestWithParameters() {
-        // Given
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of("param1", "value1", "param2", 123)
-        );
+    void shouldThrowWhenDataMissingRequiredFields() {
+        EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null, Map.of("entity", "Building"));
 
-        when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
-
-        // When
-        PlanDTO result = executionService.createPlan(requestDTO);
-
-        // Then
-        assertNotNull(result);
-    }
-
-    @Test
-    void shouldHandleRequestWithNullParameters() {
-        // Given
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            null
-        );
-
-        when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
-
-        // When
-        PlanDTO result = executionService.createPlan(requestDTO);
-
-        // Then
-        assertNotNull(result);
-    }
-
-    @Test
-    void shouldPropagateExceptionFromEngine() {
-        // Given
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
-
-        when(executionEngine.createPlan(any(ExecutionRequest.class)))
-            .thenThrow(new IllegalArgumentException("EntityType not found"));
-
-        // When & Then
-        assertThrows(IllegalArgumentException.class, () -> {
-            executionService.createPlan(requestDTO);
-        });
-    }
-
-    @Test
-    void shouldConvertEmptyStepsList() {
-        // Given
-        Plan planWithNoSteps = new Plan(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            List.of()
-        );
-
-        ExecutionRequestDTO requestDTO = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
-
-        when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(planWithNoSteps);
-
-        // When
-        PlanDTO result = executionService.createPlan(requestDTO);
-
-        // Then
-        assertNotNull(result);
-        assertTrue(result.getSteps().isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> executionService.createPlan(request));
     }
 
     @Test
     void shouldGetPlanFromDatabase() {
-        // Given
         String planId = "test-plan-id";
-        com.zaborstik.platform.api.entity.PlanEntity planEntity = new com.zaborstik.platform.api.entity.PlanEntity(
-            planId,
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            com.zaborstik.platform.api.entity.PlanEntity.PlanStatus.CREATED
-        );
+        EntityDTO planDto = new EntityDTO(EntityDTO.TABLE_PLANS, planId,
+                Map.of("entityTypeId", "Building", "entityId", "93939", "actionId", "order_egrn_extract", "status", "CREATED", "steps", List.of()));
 
-        when(planRepository.findById(planId)).thenReturn(Optional.of(planEntity));
-        when(planMapper.toDomain(planEntity)).thenReturn(testPlan);
+        when(entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, planId)).thenReturn(Optional.of(planDto));
 
-        // When
-        Optional<PlanDTO> result = executionService.getPlan(planId);
+        Optional<EntityDTO> result = executionService.getPlan(planId);
 
-        // Then
         assertTrue(result.isPresent());
-        PlanDTO planDTO = result.get();
-        assertEquals("Building", planDTO.getEntityTypeId());
-        assertEquals("93939", planDTO.getEntityId());
-        verify(planRepository, times(1)).findById(planId);
-        verify(planMapper, times(1)).toDomain(planEntity);
+        assertEquals(EntityDTO.TABLE_PLANS, result.get().getTableName());
+        assertEquals("Building", result.get().get("entityTypeId"));
+        assertEquals("93939", result.get().get("entityId"));
+        verify(entityRepository, times(1)).findByTableNameAndId(EntityDTO.TABLE_PLANS, planId);
     }
 
     @Test
     void shouldReturnEmptyWhenPlanNotFound() {
-        // Given
-        String planId = "non-existent-plan";
+        when(entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, "non-existent")).thenReturn(Optional.empty());
 
-        when(planRepository.findById(planId)).thenReturn(Optional.empty());
+        Optional<EntityDTO> result = executionService.getPlan("non-existent");
 
-        // When
-        Optional<PlanDTO> result = executionService.getPlan(planId);
-
-        // Then
         assertFalse(result.isPresent());
-        verify(planRepository, times(1)).findById(planId);
-        verify(planMapper, never()).toDomain(any());
+        verify(entityRepository, times(1)).findByTableNameAndId(EntityDTO.TABLE_PLANS, "non-existent");
     }
 }
-

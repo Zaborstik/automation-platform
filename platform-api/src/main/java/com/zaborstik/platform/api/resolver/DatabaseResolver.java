@@ -1,110 +1,99 @@
 package com.zaborstik.platform.api.resolver;
 
-import com.zaborstik.platform.api.entity.ActionEntity;
-import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.UIBindingEntity;
-import com.zaborstik.platform.api.repository.ActionRepository;
-import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.UIBindingRepository;
+import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.repository.EntityRepository;
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.resolver.Resolver;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Database реализация Resolver.
- * Использует JPA репозитории для поиска EntityType, Action и UIBinding.
- * 
- * Database implementation of Resolver.
- * Uses JPA repositories to find EntityType, Action and UIBinding.
+ * Resolver через единую таблицу entities (EntityDTO).
  */
 @Component
 public class DatabaseResolver implements Resolver {
-    private final EntityTypeRepository entityTypeRepository;
-    private final ActionRepository actionRepository;
-    private final UIBindingRepository uiBindingRepository;
+    private final EntityRepository entityRepository;
 
-    public DatabaseResolver(EntityTypeRepository entityTypeRepository,
-                           ActionRepository actionRepository,
-                           UIBindingRepository uiBindingRepository) {
-        this.entityTypeRepository = entityTypeRepository;
-        this.actionRepository = actionRepository;
-        this.uiBindingRepository = uiBindingRepository;
+    public DatabaseResolver(EntityRepository entityRepository) {
+        this.entityRepository = entityRepository;
     }
 
     @Override
     public Optional<EntityType> findEntityType(String entityTypeId) {
-        return entityTypeRepository.findById(entityTypeId)
-            .map(this::toEntityType);
+        return entityRepository.findByTableNameAndId(EntityDTO.TABLE_ENTITY_TYPES, entityTypeId)
+                .map(this::toEntityType);
     }
 
     @Override
     public Optional<Action> findAction(String actionId) {
-        return actionRepository.findById(actionId)
-            .map(this::toAction);
+        return entityRepository.findByTableNameAndId(EntityDTO.TABLE_ACTIONS, actionId)
+                .map(this::toAction);
     }
 
     @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
-        return uiBindingRepository.findByActionId(actionId)
-            .map(this::toUIBinding);
+        return entityRepository.findByTableNameAndId(EntityDTO.TABLE_UI_BINDINGS, actionId)
+                .map(this::toUIBinding);
     }
 
-    /**
-     * Преобразует EntityTypeEntity в EntityType.
-     */
-    private EntityType toEntityType(EntityTypeEntity entity) {
-        Map<String, Object> metadata = entity.getMetadata().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new EntityType(entity.getId(), entity.getName(), metadata);
+    private EntityType toEntityType(EntityDTO dto) {
+        String name = dto.get("name");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> metadata = (Map<String, Object>) dto.getData().get("metadata");
+        if (metadata == null) metadata = Map.of();
+        Map<String, Object> meta = metadata.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> (Object) String.valueOf(e.getValue())));
+        return new EntityType(dto.getId(), name != null ? name : dto.getId(), meta);
     }
 
-    /**
-     * Преобразует ActionEntity в Action.
-     */
-    private Action toAction(ActionEntity entity) {
-        Set<String> applicableEntityTypes = entity.getApplicableEntityTypes();
-        Map<String, Object> metadata = entity.getMetadata().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    private Action toAction(EntityDTO dto) {
+        String name = dto.get("name");
+        String description = dto.get("description");
+        @SuppressWarnings("unchecked")
+        Set<String> applicableEntityTypes = dto.get("applicableEntityTypes") != null
+                ? new java.util.HashSet<>((Collection<String>) dto.get("applicableEntityTypes"))
+                : Set.of();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> metadata = (Map<String, Object>) dto.getData().get("metadata");
+        if (metadata == null) metadata = Map.of();
+        Map<String, Object> meta = metadata.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> (Object) String.valueOf(e.getValue())));
         return new Action(
-            entity.getId(),
-            entity.getName(),
-            entity.getDescription(),
-            applicableEntityTypes,
-            metadata
+                dto.getId(),
+                name != null ? name : dto.getId(),
+                description != null ? description : "",
+                applicableEntityTypes,
+                meta
         );
     }
 
-    /**
-     * Преобразует UIBindingEntity в UIBinding.
-     */
-    private UIBinding toUIBinding(UIBindingEntity entity) {
-        UIBinding.SelectorType selectorType = convertSelectorType(entity.getSelectorType());
-        Map<String, Object> metadata = entity.getMetadata().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new UIBinding(
-            entity.getActionId(),
-            entity.getSelector(),
-            selectorType,
-            metadata
-        );
+    private UIBinding toUIBinding(EntityDTO dto) {
+        String selector = dto.get("selector");
+        String selectorTypeStr = dto.get("selectorType");
+        UIBinding.SelectorType selectorType = toSelectorType(selectorTypeStr);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> metadata = (Map<String, Object>) dto.getData().get("metadata");
+        if (metadata == null) metadata = Map.of();
+        Map<String, Object> meta = metadata.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> (Object) String.valueOf(e.getValue())));
+        return new UIBinding(dto.getId(), selector != null ? selector : "", selectorType, meta);
     }
 
-    /**
-     * Преобразует UIBindingEntity.SelectorType в UIBinding.SelectorType.
-     */
-    private UIBinding.SelectorType convertSelectorType(UIBindingEntity.SelectorType entityType) {
-        return switch (entityType) {
-            case CSS -> UIBinding.SelectorType.CSS;
-            case XPATH -> UIBinding.SelectorType.XPATH;
-            case TEXT -> UIBinding.SelectorType.TEXT;
-            case ACTION_ID -> UIBinding.SelectorType.ACTION_ID;
+    private static UIBinding.SelectorType toSelectorType(String s) {
+        if (s == null) return UIBinding.SelectorType.CSS;
+        return switch (s) {
+            case "CSS" -> UIBinding.SelectorType.CSS;
+            case "XPATH" -> UIBinding.SelectorType.XPATH;
+            case "TEXT" -> UIBinding.SelectorType.TEXT;
+            case "ACTION_ID" -> UIBinding.SelectorType.ACTION_ID;
+            default -> UIBinding.SelectorType.CSS;
         };
     }
 }

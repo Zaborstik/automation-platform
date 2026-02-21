@@ -1,121 +1,90 @@
 package com.zaborstik.platform.api.mapper;
 
-import com.zaborstik.platform.api.entity.PlanEntity;
-import com.zaborstik.platform.api.entity.PlanStepEntity;
+import com.zaborstik.platform.api.dto.EntityDTO;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Маппер для преобразования между Plan/PlanStep и PlanEntity/PlanStepEntity.
- * 
- * Mapper for converting between Plan/PlanStep and PlanEntity/PlanStepEntity.
+ * Маппер Plan ↔ EntityDTO (единая таблица entities).
  */
 @Component
 public class PlanMapper {
 
-    /**
-     * Преобразует Plan в PlanEntity.
-     */
-    public PlanEntity toEntity(Plan plan) {
-        PlanEntity entity = new PlanEntity(
-            plan.id(),
-            plan.entityTypeId(),
-            plan.entityId(),
-            plan.actionId(),
-            convertStatus(plan.status())
-        );
+    public EntityDTO toEntityDTO(Plan plan) {
+        List<Map<String, Object>> stepsData = plan.steps().stream()
+                .map(this::stepToMap)
+                .collect(Collectors.toList());
 
-        // Преобразуем шаги
-        List<PlanStepEntity> stepEntities = new java.util.ArrayList<>();
-        for (int i = 0; i < plan.steps().size(); i++) {
-            stepEntities.add(toStepEntity(entity, i, plan.steps().get(i)));
+        Map<String, Object> data = new HashMap<>(Map.of(
+                "entityTypeId", plan.entityTypeId(),
+                "entityId", plan.entityId(),
+                "actionId", plan.actionId(),
+                "status", plan.status().name(),
+                "steps", stepsData
+        ));
+
+        return new EntityDTO(EntityDTO.TABLE_PLANS, plan.id(), data);
+    }
+
+    public Plan toPlan(EntityDTO dto) {
+        if (dto == null || !EntityDTO.TABLE_PLANS.equals(dto.getTableName())) {
+            throw new IllegalArgumentException("Expected EntityDTO with tableName=plans");
         }
-        entity.setSteps(stepEntities);
+        String id = dto.getId();
+        String entityTypeId = (String) dto.getData().get("entityTypeId");
+        String entityId = (String) dto.getData().get("entityId");
+        String actionId = (String) dto.getData().get("actionId");
+        String statusStr = (String) dto.getData().get("status");
+        Plan.PlanStatus status = parseStatus(statusStr);
 
-        return entity;
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> stepsData = (List<Map<String, Object>>) dto.getData().get("steps");
+        List<PlanStep> steps = stepsData != null
+                ? stepsData.stream().map(this::mapToStep).collect(Collectors.toList())
+                : List.of();
+
+        return new Plan(id, entityTypeId, entityId, actionId, steps, status);
     }
 
-    /**
-     * Преобразует PlanEntity в Plan.
-     */
-    public Plan toDomain(PlanEntity entity) {
-        List<PlanStep> steps = entity.getSteps().stream()
-            .map(this::toStep)
-            .collect(Collectors.toList());
-
-        return new Plan(
-            entity.getId(),
-            entity.getEntityTypeId(),
-            entity.getEntityId(),
-            entity.getActionId(),
-            steps,
-            convertStatus(entity.getStatus())
-        );
+    private Map<String, Object> stepToMap(PlanStep step) {
+        Map<String, Object> m = new HashMap<>(Map.of(
+                "type", step.type(),
+                "target", step.target() != null ? step.target() : "",
+                "explanation", step.explanation() != null ? step.explanation() : ""
+        ));
+        if (step.parameters() != null && !step.parameters().isEmpty()) {
+            m.put("parameters", new HashMap<>(step.parameters()));
+        }
+        return m;
     }
 
-    /**
-     * Преобразует PlanStep в PlanStepEntity.
-     */
-    private PlanStepEntity toStepEntity(PlanEntity planEntity, int index, PlanStep step) {
-        Map<String, String> parameters = step.parameters().entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue() != null ? entry.getValue().toString() : null
-            ));
-
-        return new PlanStepEntity(
-            planEntity,
-            index,
-            step.type(),
-            step.target(),
-            step.explanation(),
-            parameters
-        );
-    }
-
-    /**
-     * Преобразует PlanStepEntity в PlanStep.
-     */
-    private PlanStep toStep(PlanStepEntity entity) {
-        Map<String, Object> parameters = entity.getParameters().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
+    private PlanStep mapToStep(Map<String, Object> m) {
+        String type = (String) m.get("type");
+        String target = (String) m.get("target");
+        String explanation = (String) m.get("explanation");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> parameters = (Map<String, Object>) m.get("parameters");
         return new PlanStep(
-            entity.getType(),
-            entity.getTarget(),
-            entity.getExplanation(),
-            parameters
+                type != null ? type : "explain",
+                target,
+                explanation,
+                parameters != null ? parameters : Map.of()
         );
     }
 
-    /**
-     * Преобразует Plan.PlanStatus в PlanEntity.PlanStatus.
-     */
-    private PlanEntity.PlanStatus convertStatus(Plan.PlanStatus status) {
-        return switch (status) {
-            case CREATED -> PlanEntity.PlanStatus.CREATED;
-            case EXECUTING -> PlanEntity.PlanStatus.EXECUTING;
-            case COMPLETED -> PlanEntity.PlanStatus.COMPLETED;
-            case FAILED -> PlanEntity.PlanStatus.FAILED;
-            case CANCELLED -> PlanEntity.PlanStatus.CANCELLED;
-        };
-    }
-
-    /**
-     * Преобразует PlanEntity.PlanStatus в Plan.PlanStatus.
-     */
-    private Plan.PlanStatus convertStatus(PlanEntity.PlanStatus status) {
-        return switch (status) {
-            case CREATED -> Plan.PlanStatus.CREATED;
-            case EXECUTING -> Plan.PlanStatus.EXECUTING;
-            case COMPLETED -> Plan.PlanStatus.COMPLETED;
-            case FAILED -> Plan.PlanStatus.FAILED;
-            case CANCELLED -> Plan.PlanStatus.CANCELLED;
+    private static Plan.PlanStatus parseStatus(String s) {
+        if (s == null) return Plan.PlanStatus.CREATED;
+        return switch (s) {
+            case "CREATED" -> Plan.PlanStatus.CREATED;
+            case "EXECUTING" -> Plan.PlanStatus.EXECUTING;
+            case "COMPLETED" -> Plan.PlanStatus.COMPLETED;
+            case "FAILED" -> Plan.PlanStatus.FAILED;
+            case "CANCELLED" -> Plan.PlanStatus.CANCELLED;
+            default -> Plan.PlanStatus.CREATED;
         };
     }
 }

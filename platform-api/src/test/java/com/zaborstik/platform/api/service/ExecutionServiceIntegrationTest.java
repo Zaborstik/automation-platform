@@ -1,31 +1,24 @@
 package com.zaborstik.platform.api.service;
 
-import com.zaborstik.platform.api.dto.ExecutionRequestDTO;
-import com.zaborstik.platform.api.dto.PlanDTO;
-import com.zaborstik.platform.api.entity.ActionEntity;
-import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.UIBindingEntity;
-import com.zaborstik.platform.api.repository.ActionRepository;
-import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.PlanRepository;
-import com.zaborstik.platform.api.repository.UIBindingRepository;
-import com.zaborstik.platform.core.ExecutionEngine;
+import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.repository.EntityRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@Import({ExecutionService.class, com.zaborstik.platform.api.config.PlatformConfiguration.class, 
-        com.zaborstik.platform.api.resolver.DatabaseResolver.class, 
+@EntityScan("com.zaborstik.platform.api.dto")
+@Import({ExecutionService.class, com.zaborstik.platform.api.config.PlatformConfiguration.class,
+        com.zaborstik.platform.api.resolver.DatabaseResolver.class,
         com.zaborstik.platform.api.mapper.PlanMapper.class})
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -36,108 +29,64 @@ class ExecutionServiceIntegrationTest {
     private ExecutionService executionService;
 
     @Autowired
-    private EntityTypeRepository entityTypeRepository;
-
-    @Autowired
-    private ActionRepository actionRepository;
-
-    @Autowired
-    private UIBindingRepository uiBindingRepository;
-
-    @Autowired
-    private PlanRepository planRepository;
+    private EntityRepository entityRepository;
 
     @BeforeEach
     void setUp() {
-        planRepository.deleteAll();
-        uiBindingRepository.deleteAll();
-        actionRepository.deleteAll();
-        entityTypeRepository.deleteAll();
+        entityRepository.findById_TableName(EntityDTO.TABLE_PLANS).forEach(entityRepository::delete);
+        entityRepository.findById_TableName(EntityDTO.TABLE_ENTITY_TYPES).forEach(entityRepository::delete);
+        entityRepository.findById_TableName(EntityDTO.TABLE_ACTIONS).forEach(entityRepository::delete);
+        entityRepository.findById_TableName(EntityDTO.TABLE_UI_BINDINGS).forEach(entityRepository::delete);
 
-        // Создаем тестовые данные
-        EntityTypeEntity entityType = new EntityTypeEntity(
-            "Building",
-            "Здание",
-            Map.of("description", "Тип сущности для работы со зданиями")
-        );
-        entityTypeRepository.save(entityType);
-
-        ActionEntity action = new ActionEntity(
-            "order_egrn_extract",
-            "Заказать выписку из ЕГРН",
-            "Заказывает выписку из ЕГРН для указанного здания",
-            Set.of("Building"),
-            Map.of("category", "document")
-        );
-        actionRepository.save(action);
-
-        UIBindingEntity uiBinding = new UIBindingEntity(
-            "order_egrn_extract",
-            "[data-action='order_egrn_extract']",
-            UIBindingEntity.SelectorType.CSS,
-            Map.of("highlight", "true")
-        );
-        uiBindingRepository.save(uiBinding);
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Building",
+                Map.of("name", "Здание", "metadata", Map.of("description", "Тип сущности для работы со зданиями"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "order_egrn_extract",
+                Map.of("name", "Заказать выписку из ЕГРН", "description", "Заказывает выписку из ЕГРН для указанного здания",
+                        "applicableEntityTypes", java.util.List.of("Building"), "metadata", Map.of("category", "document"))));
+        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract",
+                Map.of("selector", "[data-action='order_egrn_extract']", "selectorType", "CSS", "metadata", Map.of("highlight", "true"))));
     }
 
     @Test
     void shouldCreateAndSavePlan() {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
+        EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null,
+                Map.of("entity", "Building", "entityId", "93939", "action", "order_egrn_extract", "parameters", Map.of()));
 
-        // When
-        PlanDTO plan = executionService.createPlan(request);
+        EntityDTO plan = executionService.createPlan(request);
 
-        // Then
         assertNotNull(plan);
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
+        assertEquals(EntityDTO.TABLE_PLANS, plan.getTableName());
+        assertEquals("Building", plan.get("entityTypeId"));
+        assertEquals("93939", plan.get("entityId"));
+        assertEquals("order_egrn_extract", plan.get("actionId"));
         assertNotNull(plan.getId());
-        assertFalse(plan.getSteps().isEmpty());
+        assertNotNull(plan.get("steps"));
+        assertFalse(((java.util.Collection<?>) plan.get("steps")).isEmpty());
 
-        // Проверяем, что план сохранен в БД
-        Optional<com.zaborstik.platform.api.entity.PlanEntity> savedPlan = planRepository.findById(plan.getId());
+        Optional<EntityDTO> savedPlan = entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, plan.getId());
         assertTrue(savedPlan.isPresent());
-        assertEquals("Building", savedPlan.get().getEntityTypeId());
-        assertEquals(plan.getSteps().size(), savedPlan.get().getSteps().size());
+        assertEquals("Building", savedPlan.get().get("entityTypeId"));
     }
 
     @Test
     void shouldRetrievePlanFromDatabase() {
-        // Given
-        ExecutionRequestDTO request = new ExecutionRequestDTO(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
-        PlanDTO createdPlan = executionService.createPlan(request);
+        EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null,
+                Map.of("entity", "Building", "entityId", "93939", "action", "order_egrn_extract", "parameters", Map.of()));
+        EntityDTO createdPlan = executionService.createPlan(request);
 
-        // When
-        Optional<PlanDTO> retrievedPlan = executionService.getPlan(createdPlan.getId());
+        Optional<EntityDTO> retrievedPlan = executionService.getPlan(createdPlan.getId());
 
-        // Then
         assertTrue(retrievedPlan.isPresent());
-        PlanDTO plan = retrievedPlan.get();
+        EntityDTO plan = retrievedPlan.get();
         assertEquals(createdPlan.getId(), plan.getId());
-        assertEquals("Building", plan.getEntityTypeId());
-        assertEquals("93939", plan.getEntityId());
-        assertEquals("order_egrn_extract", plan.getActionId());
-        assertEquals(createdPlan.getSteps().size(), plan.getSteps().size());
+        assertEquals("Building", plan.get("entityTypeId"));
+        assertEquals("93939", plan.get("entityId"));
+        assertEquals("order_egrn_extract", plan.get("actionId"));
     }
 
     @Test
     void shouldReturnEmptyForNonExistentPlan() {
-        // When
-        Optional<PlanDTO> result = executionService.getPlan("non-existent-id");
-
-        // Then
+        Optional<EntityDTO> result = executionService.getPlan("non-existent-id");
         assertFalse(result.isPresent());
     }
 }

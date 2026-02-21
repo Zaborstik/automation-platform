@@ -1,7 +1,6 @@
 package com.zaborstik.platform.api.mapper;
 
-import com.zaborstik.platform.api.entity.PlanEntity;
-import com.zaborstik.platform.api.entity.PlanStepEntity;
+import com.zaborstik.platform.api.dto.EntityDTO;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,8 +21,7 @@ class PlanMapperTest {
     }
 
     @Test
-    void shouldConvertPlanToEntity() {
-        // Given
+    void shouldConvertPlanToEntityDTO() {
         List<PlanStep> steps = List.of(
             PlanStep.openPage("/buildings/93939", "Открываю карточку"),
             PlanStep.explain("Выполняю действие"),
@@ -31,42 +29,34 @@ class PlanMapperTest {
         );
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", steps);
 
-        // When
-        PlanEntity entity = planMapper.toEntity(plan);
+        EntityDTO dto = planMapper.toEntityDTO(plan);
 
-        // Then
-        assertNotNull(entity);
-        assertEquals(plan.id(), entity.getId());
-        assertEquals("Building", entity.getEntityTypeId());
-        assertEquals("93939", entity.getEntityId());
-        assertEquals("order_egrn_extract", entity.getActionId());
-        assertEquals(PlanEntity.PlanStatus.CREATED, entity.getStatus());
-        assertEquals(3, entity.getSteps().size());
+        assertNotNull(dto);
+        assertEquals(EntityDTO.TABLE_PLANS, dto.getTableName());
+        assertEquals(plan.id(), dto.getId());
+        assertEquals("Building", dto.get("entityTypeId"));
+        assertEquals("93939", dto.get("entityId"));
+        assertEquals("order_egrn_extract", dto.get("actionId"));
+        assertEquals(Plan.PlanStatus.CREATED.name(), dto.get("status"));
+        assertEquals(3, ((List<?>) dto.get("steps")).size());
     }
 
     @Test
-    void shouldConvertEntityToPlan() {
-        // Given
-        PlanEntity entity = new PlanEntity(
-            "plan-id",
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            PlanEntity.PlanStatus.CREATED
-        );
+    void shouldConvertEntityDTOToPlan() {
+        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_PLANS, "plan-id",
+                Map.of(
+                        "entityTypeId", "Building",
+                        "entityId", "93939",
+                        "actionId", "order_egrn_extract",
+                        "status", "CREATED",
+                        "steps", List.of(
+                                Map.of("type", "open_page", "target", "/buildings/93939", "explanation", "Открываю карточку"),
+                                Map.of("type", "click", "target", "action(order_egrn_extract)", "explanation", "Кликаю")
+                        )
+                ));
 
-        PlanStepEntity step1 = new PlanStepEntity(
-            entity, 0, "open_page", "/buildings/93939", "Открываю карточку", Map.of()
-        );
-        PlanStepEntity step2 = new PlanStepEntity(
-            entity, 1, "click", "action(order_egrn_extract)", "Кликаю", Map.of()
-        );
-        entity.setSteps(List.of(step1, step2));
+        Plan plan = planMapper.toPlan(dto);
 
-        // When
-        Plan plan = planMapper.toDomain(entity);
-
-        // Then
         assertNotNull(plan);
         assertEquals("plan-id", plan.id());
         assertEquals("Building", plan.entityTypeId());
@@ -80,66 +70,41 @@ class PlanMapperTest {
 
     @Test
     void shouldConvertPlanStepParameters() {
-        // Given
         PlanStep step = PlanStep.type("input", "test text", "Ввожу текст");
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", List.of(step));
 
-        // When
-        PlanEntity entity = planMapper.toEntity(plan);
+        EntityDTO dto = planMapper.toEntityDTO(plan);
 
-        // Then
-        assertNotNull(entity);
-        assertEquals(1, entity.getSteps().size());
-        PlanStepEntity stepEntity = entity.getSteps().get(0);
-        assertEquals("type", stepEntity.getType());
-        assertTrue(stepEntity.getParameters().containsKey("text"));
-        assertEquals("test text", stepEntity.getParameters().get("text"));
+        assertNotNull(dto);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> stepsData = (List<Map<String, Object>>) dto.get("steps");
+        assertEquals(1, stepsData.size());
+        assertEquals("type", stepsData.get(0).get("type"));
+        assertEquals("test text", ((Map<?, ?>) stepsData.get(0).get("parameters")).get("text"));
     }
 
     @Test
     void shouldConvertAllPlanStatuses() {
-        // Test CREATED
-        PlanEntity entity1 = new PlanEntity("id1", "Building", "123", "action", PlanEntity.PlanStatus.CREATED);
-        Plan plan1 = planMapper.toDomain(entity1);
-        assertEquals(Plan.PlanStatus.CREATED, plan1.status());
-
-        // Test EXECUTING
-        PlanEntity entity2 = new PlanEntity("id2", "Building", "123", "action", PlanEntity.PlanStatus.EXECUTING);
-        Plan plan2 = planMapper.toDomain(entity2);
-        assertEquals(Plan.PlanStatus.EXECUTING, plan2.status());
-
-        // Test COMPLETED
-        PlanEntity entity3 = new PlanEntity("id3", "Building", "123", "action", PlanEntity.PlanStatus.COMPLETED);
-        Plan plan3 = planMapper.toDomain(entity3);
-        assertEquals(Plan.PlanStatus.COMPLETED, plan3.status());
-
-        // Test FAILED
-        PlanEntity entity4 = new PlanEntity("id4", "Building", "123", "action", PlanEntity.PlanStatus.FAILED);
-        Plan plan4 = planMapper.toDomain(entity4);
-        assertEquals(Plan.PlanStatus.FAILED, plan4.status());
-
-        // Test CANCELLED
-        PlanEntity entity5 = new PlanEntity("id5", "Building", "123", "action", PlanEntity.PlanStatus.CANCELLED);
-        Plan plan5 = planMapper.toDomain(entity5);
-        assertEquals(Plan.PlanStatus.CANCELLED, plan5.status());
+        for (Plan.PlanStatus status : Plan.PlanStatus.values()) {
+            EntityDTO dto = new EntityDTO(EntityDTO.TABLE_PLANS, "id",
+                    Map.of("entityTypeId", "B", "entityId", "1", "actionId", "a", "status", status.name(), "steps", List.of()));
+            Plan plan = planMapper.toPlan(dto);
+            assertEquals(status, plan.status());
+        }
     }
 
     @Test
     void shouldHandleEmptySteps() {
-        // Given
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", List.of());
 
-        // When
-        PlanEntity entity = planMapper.toEntity(plan);
+        EntityDTO dto = planMapper.toEntityDTO(plan);
 
-        // Then
-        assertNotNull(entity);
-        assertTrue(entity.getSteps().isEmpty());
+        assertNotNull(dto);
+        assertTrue(((List<?>) dto.get("steps")).isEmpty());
     }
 
     @Test
     void shouldPreserveStepOrder() {
-        // Given
         List<PlanStep> steps = List.of(
             PlanStep.openPage("/page", "Step 1"),
             PlanStep.explain("Step 2"),
@@ -147,11 +112,9 @@ class PlanMapperTest {
         );
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", steps);
 
-        // When
-        PlanEntity entity = planMapper.toEntity(plan);
-        Plan convertedPlan = planMapper.toDomain(entity);
+        EntityDTO dto = planMapper.toEntityDTO(plan);
+        Plan convertedPlan = planMapper.toPlan(dto);
 
-        // Then
         assertEquals(3, convertedPlan.steps().size());
         assertEquals("open_page", convertedPlan.steps().get(0).type());
         assertEquals("explain", convertedPlan.steps().get(1).type());
