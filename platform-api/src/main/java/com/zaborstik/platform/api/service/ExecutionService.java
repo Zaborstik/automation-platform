@@ -1,8 +1,9 @@
 package com.zaborstik.platform.api.service;
 
 import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.entity.PlanEntity;
 import com.zaborstik.platform.api.mapper.PlanMapper;
-import com.zaborstik.platform.api.repository.EntityRepository;
+import com.zaborstik.platform.api.repository.PlanRepository;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
@@ -13,19 +14,19 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Сервис выполнения. Работает только с EntityDTO и единой таблицей entities.
+ * Сервис выполнения. Схема по newdatabase.drawio: plan/plan_step в system.
  */
 @Service
 public class ExecutionService {
     private final ExecutionEngine executionEngine;
-    private final EntityRepository entityRepository;
+    private final PlanRepository planRepository;
     private final PlanMapper planMapper;
 
     public ExecutionService(ExecutionEngine executionEngine,
-                            EntityRepository entityRepository,
+                            PlanRepository planRepository,
                             PlanMapper planMapper) {
         this.executionEngine = executionEngine;
-        this.entityRepository = entityRepository;
+        this.planRepository = planRepository;
         this.planMapper = planMapper;
     }
 
@@ -37,13 +38,16 @@ public class ExecutionService {
         ExecutionRequest execRequest = toExecutionRequest(request);
         Plan plan = executionEngine.createPlan(execRequest);
 
-        EntityDTO dto = planMapper.toEntityDTO(plan);
-        return entityRepository.save(dto);
+        PlanEntity entity = planMapper.toEntity(plan);
+        planRepository.save(entity);
+        return planMapper.toEntityDTO(plan);
     }
 
     @Transactional(readOnly = true)
     public Optional<EntityDTO> getPlan(String planId) {
-        return entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, planId);
+        return planRepository.findById(planId)
+                .map(planMapper::toDomain)
+                .map(planMapper::toEntityDTO);
     }
 
     private ExecutionRequest toExecutionRequest(EntityDTO dto) {

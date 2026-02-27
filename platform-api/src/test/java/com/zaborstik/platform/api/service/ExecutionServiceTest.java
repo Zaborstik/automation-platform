@@ -1,8 +1,9 @@
 package com.zaborstik.platform.api.service;
 
 import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.entity.PlanEntity;
 import com.zaborstik.platform.api.mapper.PlanMapper;
-import com.zaborstik.platform.api.repository.EntityRepository;
+import com.zaborstik.platform.api.repository.PlanRepository;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
@@ -29,7 +30,7 @@ class ExecutionServiceTest {
     private ExecutionEngine executionEngine;
 
     @Mock
-    private EntityRepository entityRepository;
+    private PlanRepository planRepository;
 
     @Mock
     private PlanMapper planMapper;
@@ -60,8 +61,9 @@ class ExecutionServiceTest {
                 Map.of("entityTypeId", "Building", "entityId", "93939", "actionId", "order_egrn_extract", "status", "CREATED", "steps", List.of()));
 
         when(executionEngine.createPlan(any(ExecutionRequest.class))).thenReturn(testPlan);
+        when(planMapper.toEntity(any(Plan.class))).thenReturn(new PlanEntity());
         when(planMapper.toEntityDTO(any(Plan.class))).thenReturn(planDto);
-        when(entityRepository.save(any(EntityDTO.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(planRepository.save(any(PlanEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         EntityDTO result = executionService.createPlan(request);
 
@@ -72,48 +74,47 @@ class ExecutionServiceTest {
         assertEquals("93939", result.get("entityId"));
         assertEquals("order_egrn_extract", result.get("actionId"));
         assertEquals("CREATED", result.get("status"));
-        verify(entityRepository, times(1)).save(any(EntityDTO.class));
+        verify(planRepository, times(1)).save(any(PlanEntity.class));
         verify(planMapper, times(1)).toEntityDTO(testPlan);
     }
 
     @Test
     void shouldThrowWhenTableNameNotExecutionRequest() {
         EntityDTO request = new EntityDTO("other", null, Map.of("entity", "B", "entityId", "1", "action", "a"));
-
         assertThrows(IllegalArgumentException.class, () -> executionService.createPlan(request));
     }
 
     @Test
     void shouldThrowWhenDataMissingRequiredFields() {
         EntityDTO request = new EntityDTO(EntityDTO.TABLE_EXECUTION_REQUEST, null, Map.of("entity", "Building"));
-
         assertThrows(IllegalArgumentException.class, () -> executionService.createPlan(request));
     }
 
     @Test
     void shouldGetPlanFromDatabase() {
         String planId = "test-plan-id";
+        PlanEntity planEntity = new PlanEntity();
+        planEntity.setShortname(planId);
         EntityDTO planDto = new EntityDTO(EntityDTO.TABLE_PLANS, planId,
                 Map.of("entityTypeId", "Building", "entityId", "93939", "actionId", "order_egrn_extract", "status", "CREATED", "steps", List.of()));
 
-        when(entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, planId)).thenReturn(Optional.of(planDto));
+        when(planRepository.findById(planId)).thenReturn(Optional.of(planEntity));
+        when(planMapper.toDomain(planEntity)).thenReturn(testPlan);
+        when(planMapper.toEntityDTO(testPlan)).thenReturn(planDto);
 
         Optional<EntityDTO> result = executionService.getPlan(planId);
 
         assertTrue(result.isPresent());
         assertEquals(EntityDTO.TABLE_PLANS, result.get().getTableName());
         assertEquals("Building", result.get().get("entityTypeId"));
-        assertEquals("93939", result.get().get("entityId"));
-        verify(entityRepository, times(1)).findByTableNameAndId(EntityDTO.TABLE_PLANS, planId);
+        verify(planRepository, times(1)).findById(planId);
     }
 
     @Test
     void shouldReturnEmptyWhenPlanNotFound() {
-        when(entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, "non-existent")).thenReturn(Optional.empty());
-
+        when(planRepository.findById("non-existent")).thenReturn(Optional.empty());
         Optional<EntityDTO> result = executionService.getPlan("non-existent");
-
         assertFalse(result.isPresent());
-        verify(entityRepository, times(1)).findByTableNameAndId(EntityDTO.TABLE_PLANS, "non-existent");
+        verify(planMapper, never()).toDomain(any());
     }
 }

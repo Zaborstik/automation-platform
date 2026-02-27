@@ -1,6 +1,10 @@
 package com.zaborstik.platform.api.repository;
 
-import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.entity.EntityTypeEntity;
+import com.zaborstik.platform.api.entity.PlanEntity;
+import com.zaborstik.platform.api.entity.PlanStepEntity;
+import com.zaborstik.platform.api.entity.UIBindingEntity;
 import com.zaborstik.platform.api.mapper.PlanMapper;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
@@ -15,11 +19,12 @@ import org.springframework.test.context.TestPropertySource;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@EntityScan("com.zaborstik.platform.api.dto")
+@EntityScan("com.zaborstik.platform.api.entity")
 @Import(PlanMapper.class)
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -27,92 +32,132 @@ import static org.junit.jupiter.api.Assertions.*;
 class RepositoryIntegrationTest {
 
     @Autowired
-    private EntityRepository entityRepository;
+    private EntityTypeRepository entityTypeRepository;
+
+    @Autowired
+    private ActionRepository actionRepository;
+
+    @Autowired
+    private UIBindingRepository uiBindingRepository;
+
+    @Autowired
+    private PlanRepository planRepository;
 
     @Autowired
     private PlanMapper planMapper;
 
     @BeforeEach
     void setUp() {
-        entityRepository.deleteAll();
+        planRepository.deleteAll();
+        uiBindingRepository.deleteAll();
+        actionRepository.deleteAll();
+        entityTypeRepository.deleteAll();
     }
 
     @Test
     void shouldSaveAndFindEntityType() {
-        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Building",
-                Map.of("name", "Здание", "metadata", Map.of("description", "Тип сущности")));
-        entityRepository.save(dto);
+        EntityTypeEntity et = new EntityTypeEntity();
+        et.setShortname("Building");
+        et.setDisplayname("Здание");
+        et.setMetadata(Map.of("description", "Тип сущности"));
+        entityTypeRepository.save(et);
 
-        Optional<EntityDTO> found = entityRepository.findByTableNameAndId(EntityDTO.TABLE_ENTITY_TYPES, "Building");
+        Optional<EntityTypeEntity> found = entityTypeRepository.findById("Building");
         assertTrue(found.isPresent());
         assertEquals("Building", found.get().getId());
-        assertEquals("Здание", found.get().get("name"));
-        assertTrue(((Map<?, ?>) found.get().getData().get("metadata")).containsKey("description"));
+        assertEquals("Здание", found.get().getName());
+        assertTrue(found.get().getMetadata().containsKey("description"));
     }
 
     @Test
     void shouldSaveAndFindAction() {
-        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_ACTIONS, "order_egrn_extract",
-                Map.of("name", "Заказать выписку", "description", "Описание",
-                        "applicableEntityTypes", List.of("Building"), "metadata", Map.of("category", "document")));
-        entityRepository.save(dto);
+        ActionEntity a = new ActionEntity();
+        a.setShortname("order_egrn_extract");
+        a.setDisplayname("Заказать выписку");
+        a.setDescription("Описание");
+        a.setApplicableEntityTypes(Set.of("Building"));
+        a.setMetadata(Map.of("category", "document"));
+        actionRepository.save(a);
 
-        Optional<EntityDTO> found = entityRepository.findByTableNameAndId(EntityDTO.TABLE_ACTIONS, "order_egrn_extract");
+        Optional<ActionEntity> found = actionRepository.findById("order_egrn_extract");
         assertTrue(found.isPresent());
-        assertEquals("order_egrn_extract", found.get().getId());
-        assertTrue(((List<?>) found.get().get("applicableEntityTypes")).contains("Building"));
+        assertTrue(found.get().getApplicableEntityTypes().contains("Building"));
     }
 
     @Test
     void shouldSaveAndFindUIBinding() {
-        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract",
-                Map.of("selector", "[data-action='order_egrn_extract']", "selectorType", "CSS", "metadata", Map.of("highlight", "true")));
-        entityRepository.save(dto);
+        UIBindingEntity ui = new UIBindingEntity();
+        ui.setAction("order_egrn_extract");
+        ui.setSelector("[data-action='order_egrn_extract']");
+        ui.setSelectorType(UIBindingEntity.SelectorType.CSS);
+        ui.setMetadata(Map.of("highlight", "true"));
+        uiBindingRepository.save(ui);
 
-        Optional<EntityDTO> found = entityRepository.findByTableNameAndId(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract");
+        Optional<UIBindingEntity> found = uiBindingRepository.findById("order_egrn_extract");
         assertTrue(found.isPresent());
-        assertEquals("order_egrn_extract", found.get().getId());
-        assertEquals("CSS", found.get().get("selectorType"));
+        assertEquals(UIBindingEntity.SelectorType.CSS, found.get().getSelectorType());
     }
 
     @Test
     void shouldSaveAndFindPlanWithSteps() {
+        ActionEntity action = new ActionEntity();
+        action.setShortname("order_egrn_extract");
+        action.setDisplayname("Action");
+        actionRepository.save(action);
+
         Plan plan = new Plan("plan-id", "Building", "93939", "order_egrn_extract",
                 List.of(
                         PlanStep.openPage("/buildings/93939", "Открываю карточку"),
                         PlanStep.click("order_egrn_extract", "Кликаю")
                 ),
                 Plan.PlanStatus.CREATED);
-        EntityDTO dto = planMapper.toEntityDTO(plan);
-        entityRepository.save(dto);
+        PlanEntity entity = planMapper.toEntity(plan);
+        planRepository.save(entity);
 
-        Optional<EntityDTO> found = entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, "plan-id");
+        Optional<PlanEntity> found = planRepository.findById("plan-id");
         assertTrue(found.isPresent());
-        assertEquals("plan-id", found.get().getId());
-        assertEquals(2, ((List<?>) found.get().get("steps")).size());
+        assertEquals(2, found.get().getSteps().size());
     }
 
     @Test
     void shouldDeletePlan() {
-        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_PLANS, "plan-id",
-                Map.of("entityTypeId", "B", "entityId", "1", "actionId", "a", "status", "CREATED", "steps", List.of()));
-        entityRepository.save(dto);
+        ActionEntity action = new ActionEntity();
+        action.setShortname("a");
+        action.setDisplayname("A");
+        actionRepository.save(action);
 
-        entityRepository.delete(dto);
-        assertFalse(entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, "plan-id").isPresent());
+        PlanEntity plan = new PlanEntity();
+        plan.setShortname("plan-id");
+        plan.setEntityTypeId("Building");
+        plan.setEntityId("1");
+        plan.setAction(action);
+        plan.setStatus(PlanEntity.PlanStatus.CREATED);
+        planRepository.save(plan);
+
+        planRepository.deleteById("plan-id");
+        assertFalse(planRepository.findById("plan-id").isPresent());
     }
 
     @Test
     void shouldUpdatePlanStatus() {
-        EntityDTO dto = new EntityDTO(EntityDTO.TABLE_PLANS, "plan-id",
-                Map.of("entityTypeId", "B", "entityId", "1", "actionId", "a", "status", "CREATED", "steps", List.of()));
-        entityRepository.save(dto);
+        ActionEntity action = new ActionEntity();
+        action.setShortname("a");
+        action.setDisplayname("A");
+        actionRepository.save(action);
 
-        dto.put("status", "EXECUTING");
-        entityRepository.save(dto);
+        PlanEntity plan = new PlanEntity();
+        plan.setShortname("plan-id");
+        plan.setEntityTypeId("B");
+        plan.setEntityId("1");
+        plan.setAction(action);
+        plan.setStatus(PlanEntity.PlanStatus.CREATED);
+        planRepository.save(plan);
 
-        Optional<EntityDTO> found = entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, "plan-id");
+        plan.setStatus(PlanEntity.PlanStatus.EXECUTING);
+        planRepository.save(plan);
+
+        Optional<PlanEntity> found = planRepository.findById("plan-id");
         assertTrue(found.isPresent());
-        assertEquals("EXECUTING", found.get().get("status"));
+        assertEquals(PlanEntity.PlanStatus.EXECUTING, found.get().getStatus());
     }
 }

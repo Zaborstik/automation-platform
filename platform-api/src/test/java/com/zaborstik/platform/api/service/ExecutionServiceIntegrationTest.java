@@ -1,7 +1,13 @@
 package com.zaborstik.platform.api.service;
 
 import com.zaborstik.platform.api.dto.EntityDTO;
-import com.zaborstik.platform.api.repository.EntityRepository;
+import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.entity.EntityTypeEntity;
+import com.zaborstik.platform.api.entity.UIBindingEntity;
+import com.zaborstik.platform.api.repository.ActionRepository;
+import com.zaborstik.platform.api.repository.EntityTypeRepository;
+import com.zaborstik.platform.api.repository.PlanRepository;
+import com.zaborstik.platform.api.repository.UIBindingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +18,12 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@EntityScan("com.zaborstik.platform.api.dto")
+@EntityScan("com.zaborstik.platform.api.entity")
 @Import({ExecutionService.class, com.zaborstik.platform.api.config.PlatformConfiguration.class,
         com.zaborstik.platform.api.resolver.DatabaseResolver.class,
         com.zaborstik.platform.api.mapper.PlanMapper.class})
@@ -29,22 +36,44 @@ class ExecutionServiceIntegrationTest {
     private ExecutionService executionService;
 
     @Autowired
-    private EntityRepository entityRepository;
+    private PlanRepository planRepository;
+
+    @Autowired
+    private EntityTypeRepository entityTypeRepository;
+
+    @Autowired
+    private ActionRepository actionRepository;
+
+    @Autowired
+    private UIBindingRepository uiBindingRepository;
 
     @BeforeEach
     void setUp() {
-        entityRepository.findById_TableName(EntityDTO.TABLE_PLANS).forEach(entityRepository::delete);
-        entityRepository.findById_TableName(EntityDTO.TABLE_ENTITY_TYPES).forEach(entityRepository::delete);
-        entityRepository.findById_TableName(EntityDTO.TABLE_ACTIONS).forEach(entityRepository::delete);
-        entityRepository.findById_TableName(EntityDTO.TABLE_UI_BINDINGS).forEach(entityRepository::delete);
+        planRepository.deleteAll();
+        uiBindingRepository.deleteAll();
+        actionRepository.deleteAll();
+        entityTypeRepository.deleteAll();
 
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Building",
-                Map.of("name", "Здание", "metadata", Map.of("description", "Тип сущности для работы со зданиями"))));
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "order_egrn_extract",
-                Map.of("name", "Заказать выписку из ЕГРН", "description", "Заказывает выписку из ЕГРН для указанного здания",
-                        "applicableEntityTypes", java.util.List.of("Building"), "metadata", Map.of("category", "document"))));
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract",
-                Map.of("selector", "[data-action='order_egrn_extract']", "selectorType", "CSS", "metadata", Map.of("highlight", "true"))));
+        EntityTypeEntity et = new EntityTypeEntity();
+        et.setShortname("Building");
+        et.setDisplayname("Здание");
+        et.setMetadata(Map.of("description", "Тип сущности для работы со зданиями"));
+        entityTypeRepository.save(et);
+
+        ActionEntity action = new ActionEntity();
+        action.setShortname("order_egrn_extract");
+        action.setDisplayname("Заказать выписку из ЕГРН");
+        action.setDescription("Заказывает выписку из ЕГРН для указанного здания");
+        action.setApplicableEntityTypes(Set.of("Building"));
+        action.setMetadata(Map.of("category", "document"));
+        actionRepository.save(action);
+
+        UIBindingEntity ui = new UIBindingEntity();
+        ui.setAction("order_egrn_extract");
+        ui.setSelector("[data-action='order_egrn_extract']");
+        ui.setSelectorType(UIBindingEntity.SelectorType.CSS);
+        ui.setMetadata(Map.of("highlight", "true"));
+        uiBindingRepository.save(ui);
     }
 
     @Test
@@ -63,9 +92,8 @@ class ExecutionServiceIntegrationTest {
         assertNotNull(plan.get("steps"));
         assertFalse(((java.util.Collection<?>) plan.get("steps")).isEmpty());
 
-        Optional<EntityDTO> savedPlan = entityRepository.findByTableNameAndId(EntityDTO.TABLE_PLANS, plan.getId());
-        assertTrue(savedPlan.isPresent());
-        assertEquals("Building", savedPlan.get().get("entityTypeId"));
+        assertTrue(planRepository.findById(plan.getId()).isPresent());
+        assertEquals("Building", planRepository.findById(plan.getId()).orElseThrow().getEntityTypeId());
     }
 
     @Test

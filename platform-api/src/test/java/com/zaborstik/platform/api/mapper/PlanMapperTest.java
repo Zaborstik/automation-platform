@@ -1,23 +1,34 @@
 package com.zaborstik.platform.api.mapper;
 
 import com.zaborstik.platform.api.dto.EntityDTO;
+import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.repository.ActionRepository;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class PlanMapperTest {
+
+    @Mock
+    private ActionRepository actionRepository;
 
     private PlanMapper planMapper;
 
     @BeforeEach
     void setUp() {
-        planMapper = new PlanMapper();
+        planMapper = new PlanMapper(actionRepository);
     }
 
     @Test
@@ -96,9 +107,7 @@ class PlanMapperTest {
     @Test
     void shouldHandleEmptySteps() {
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", List.of());
-
         EntityDTO dto = planMapper.toEntityDTO(plan);
-
         assertNotNull(dto);
         assertTrue(((List<?>) dto.get("steps")).isEmpty());
     }
@@ -111,13 +120,29 @@ class PlanMapperTest {
             PlanStep.click("action", "Step 3")
         );
         Plan plan = new Plan("Building", "93939", "order_egrn_extract", steps);
-
         EntityDTO dto = planMapper.toEntityDTO(plan);
         Plan convertedPlan = planMapper.toPlan(dto);
-
         assertEquals(3, convertedPlan.steps().size());
         assertEquals("open_page", convertedPlan.steps().get(0).type());
         assertEquals("explain", convertedPlan.steps().get(1).type());
         assertEquals("click", convertedPlan.steps().get(2).type());
+    }
+
+    @Test
+    void shouldConvertPlanToEntityWhenActionFound() {
+        ActionEntity action = new ActionEntity();
+        action.setShortname("order_egrn_extract");
+        action.setDisplayname("Action");
+        when(actionRepository.findById("order_egrn_extract")).thenReturn(Optional.of(action));
+
+        List<PlanStep> steps = List.of(PlanStep.explain("Шаг"));
+        Plan plan = new Plan("Building", "93939", "order_egrn_extract", steps);
+        var entity = planMapper.toEntity(plan);
+
+        assertNotNull(entity);
+        assertEquals(plan.id(), entity.getId());
+        assertEquals("Building", entity.getEntityTypeId());
+        assertEquals("93939", entity.getEntityId());
+        assertEquals(1, entity.getSteps().size());
     }
 }

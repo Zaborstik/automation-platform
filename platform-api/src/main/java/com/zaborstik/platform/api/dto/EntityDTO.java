@@ -1,54 +1,37 @@
 package com.zaborstik.platform.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.persistence.*;
-
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 
 /**
- * Единый класс для API и БД: tableName + id + data (JSON).
- * Одна таблица {@code entities}, различие записей по {@code table_name}.
+ * Универсальный DTO для API: tableName + id + data.
+ * Персистенция по схеме newdatabase.drawio (zbrtstk / system), ответ API в этом виде.
  */
-@Entity
-@Table(name = "entities", schema = "system", indexes = {
-    @Index(name = "idx_entities_table_name", columnList = "table_name"),
-    @Index(name = "idx_entities_table_id", columnList = "table_name, id")
-})
 public class EntityDTO {
 
     public static final String TABLE_EXECUTION_REQUEST = "execution_request";
     public static final String TABLE_PLANS = "plans";
     public static final String TABLE_PLAN_STEPS = "plan_steps";
     public static final String TABLE_ATTACHMENTS = "attachments";
-    public static final String TABLE_ENTITY_TYPES = "entity_types";
-    public static final String TABLE_ACTIONS = "actions";
-    public static final String TABLE_UI_BINDINGS = "ui_bindings";
 
-    @JsonIgnore
-    @EmbeddedId
-    private EntityId id;
+    @JsonProperty("tableName")
+    private String tableName;
+
+    @JsonProperty("id")
+    private String id;
 
     @JsonProperty("data")
-    @Convert(converter = JsonMapConverter.class)
-    @Column(name = "data", columnDefinition = "CLOB")
     private Map<String, Object> data;
 
-    @Column(name = "created_at")
-    private Instant createdAt;
-
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
     public EntityDTO() {
-        this.data = Collections.emptyMap();
+        this.data = Map.of();
     }
 
     public EntityDTO(String tableName, String id, Map<String, Object> data) {
-        this.id = new EntityId(tableName, id);
+        this.tableName = tableName;
+        this.id = id;
         this.data = data != null ? new java.util.HashMap<>(data) : new java.util.HashMap<>();
     }
 
@@ -56,37 +39,10 @@ public class EntityDTO {
         this(tableName, null, data);
     }
 
-    @PrePersist
-    protected void onCreate() {
-        Instant now = Instant.now();
-        if (createdAt == null) createdAt = now;
-        updatedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = Instant.now();
-    }
-
-    @JsonProperty("tableName")
-    public String getTableName() {
-        return id != null ? id.getTableName() : null;
-    }
-
-    public void setTableName(String tableName) {
-        if (id == null) id = new EntityId();
-        id.setTableName(tableName);
-    }
-
-    @JsonProperty("id")
-    public String getId() {
-        return id != null ? id.getId() : null;
-    }
-
-    public void setId(String id) {
-        if (this.id == null) this.id = new EntityId();
-        this.id.setId(id);
-    }
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
     public Map<String, Object> getData() {
         return data == null ? Collections.emptyMap() : Collections.unmodifiableMap(data);
@@ -94,31 +50,6 @@ public class EntityDTO {
 
     public void setData(Map<String, Object> data) {
         this.data = data != null ? new java.util.HashMap<>(data) : new java.util.HashMap<>();
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    @JsonIgnore
-    public EntityId getEntityId() {
-        return id;
-    }
-
-    public void setEntityId(EntityId id) {
-        this.id = id;
     }
 
     @SuppressWarnings("unchecked")

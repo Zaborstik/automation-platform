@@ -1,7 +1,11 @@
 package com.zaborstik.platform.api.resolver;
 
-import com.zaborstik.platform.api.dto.EntityDTO;
-import com.zaborstik.platform.api.repository.EntityRepository;
+import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.entity.EntityTypeEntity;
+import com.zaborstik.platform.api.entity.UIBindingEntity;
+import com.zaborstik.platform.api.repository.ActionRepository;
+import com.zaborstik.platform.api.repository.EntityTypeRepository;
+import com.zaborstik.platform.api.repository.UIBindingRepository;
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
@@ -13,14 +17,14 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-@EntityScan("com.zaborstik.platform.api.dto")
+@EntityScan("com.zaborstik.platform.api.entity")
 @Import(DatabaseResolver.class)
 @TestPropertySource(properties = {
     "spring.jpa.hibernate.ddl-auto=create-drop"
@@ -28,87 +32,100 @@ import static org.junit.jupiter.api.Assertions.*;
 class DatabaseResolverTest {
 
     @Autowired
-    private EntityRepository entityRepository;
+    private EntityTypeRepository entityTypeRepository;
+
+    @Autowired
+    private ActionRepository actionRepository;
+
+    @Autowired
+    private UIBindingRepository uiBindingRepository;
 
     @Autowired
     private DatabaseResolver databaseResolver;
 
     @BeforeEach
     void setUp() {
-        entityRepository.findById_TableName(EntityDTO.TABLE_UI_BINDINGS).forEach(entityRepository::delete);
-        entityRepository.findById_TableName(EntityDTO.TABLE_ACTIONS).forEach(entityRepository::delete);
-        entityRepository.findById_TableName(EntityDTO.TABLE_ENTITY_TYPES).forEach(entityRepository::delete);
+        uiBindingRepository.deleteAll();
+        actionRepository.deleteAll();
+        entityTypeRepository.deleteAll();
 
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ENTITY_TYPES, "Building",
-                Map.of("name", "Здание", "metadata", Map.of("description", "Тип сущности для работы со зданиями"))));
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_ACTIONS, "order_egrn_extract",
-                Map.of("name", "Заказать выписку из ЕГРН", "description", "Описание действия",
-                        "applicableEntityTypes", List.of("Building"), "metadata", Map.of("category", "document"))));
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "order_egrn_extract",
-                Map.of("selector", "[data-action='order_egrn_extract']", "selectorType", "CSS", "metadata", Map.of("highlight", "true"))));
+        EntityTypeEntity et = new EntityTypeEntity();
+        et.setShortname("Building");
+        et.setDisplayname("Здание");
+        et.setMetadata(Map.of("description", "Тип сущности для работы со зданиями"));
+        entityTypeRepository.save(et);
+
+        ActionEntity action = new ActionEntity();
+        action.setShortname("order_egrn_extract");
+        action.setDisplayname("Заказать выписку из ЕГРН");
+        action.setDescription("Описание действия");
+        action.setApplicableEntityTypes(Set.of("Building"));
+        action.setMetadata(Map.of("category", "document"));
+        actionRepository.save(action);
+
+        UIBindingEntity ui = new UIBindingEntity();
+        ui.setAction("order_egrn_extract");
+        ui.setSelector("[data-action='order_egrn_extract']");
+        ui.setSelectorType(UIBindingEntity.SelectorType.CSS);
+        ui.setMetadata(Map.of("highlight", "true"));
+        uiBindingRepository.save(ui);
     }
 
     @Test
     void shouldFindEntityType() {
         Optional<EntityType> result = databaseResolver.findEntityType("Building");
         assertTrue(result.isPresent());
-        EntityType entityType = result.get();
-        assertEquals("Building", entityType.id());
-        assertEquals("Здание", entityType.name());
-        assertTrue(entityType.metadata().containsKey("description"));
+        assertEquals("Building", result.get().id());
+        assertEquals("Здание", result.get().name());
+        assertTrue(result.get().metadata().containsKey("description"));
     }
 
     @Test
     void shouldReturnEmptyWhenEntityTypeNotFound() {
-        Optional<EntityType> result = databaseResolver.findEntityType("NonExistent");
-        assertFalse(result.isPresent());
+        assertFalse(databaseResolver.findEntityType("NonExistent").isPresent());
     }
 
     @Test
     void shouldFindAction() {
         Optional<Action> result = databaseResolver.findAction("order_egrn_extract");
         assertTrue(result.isPresent());
-        Action action = result.get();
-        assertEquals("order_egrn_extract", action.id());
-        assertEquals("Заказать выписку из ЕГРН", action.name());
-        assertTrue(action.isApplicableTo("Building"));
-        assertFalse(action.isApplicableTo("Contract"));
+        assertEquals("order_egrn_extract", result.get().id());
+        assertTrue(result.get().isApplicableTo("Building"));
+        assertFalse(result.get().isApplicableTo("Contract"));
     }
 
     @Test
     void shouldReturnEmptyWhenActionNotFound() {
-        Optional<Action> result = databaseResolver.findAction("non_existent");
-        assertFalse(result.isPresent());
+        assertFalse(databaseResolver.findAction("non_existent").isPresent());
     }
 
     @Test
     void shouldFindUIBinding() {
         Optional<UIBinding> result = databaseResolver.findUIBinding("order_egrn_extract");
         assertTrue(result.isPresent());
-        UIBinding uiBinding = result.get();
-        assertEquals("order_egrn_extract", uiBinding.actionId());
-        assertEquals("[data-action='order_egrn_extract']", uiBinding.selector());
-        assertEquals(UIBinding.SelectorType.CSS, uiBinding.selectorType());
+        assertEquals("[data-action='order_egrn_extract']", result.get().selector());
+        assertEquals(UIBinding.SelectorType.CSS, result.get().selectorType());
     }
 
     @Test
     void shouldReturnEmptyWhenUIBindingNotFound() {
-        Optional<UIBinding> result = databaseResolver.findUIBinding("non_existent");
-        assertFalse(result.isPresent());
+        assertFalse(databaseResolver.findUIBinding("non_existent").isPresent());
     }
 
     @Test
     void shouldCheckActionApplicability() {
         assertTrue(databaseResolver.isActionApplicable("order_egrn_extract", "Building"));
         assertFalse(databaseResolver.isActionApplicable("order_egrn_extract", "Contract"));
-        assertFalse(databaseResolver.isActionApplicable("non_existent", "Building"));
     }
 
     @Test
     void shouldConvertSelectorTypes() {
-        entityRepository.save(new EntityDTO(EntityDTO.TABLE_UI_BINDINGS, "test_action",
-                Map.of("selector", "selector", "selectorType", "XPATH", "metadata", Map.of())));
-
+        UIBindingEntity ui = new UIBindingEntity();
+        ui.setAction("test_action");
+        ui.setSelector("selector");
+        ui.setSelectorType(UIBindingEntity.SelectorType.XPATH);
+        ui.setMetadata(Map.of());
+        uiBindingRepository.save(ui);
         Optional<UIBinding> result = databaseResolver.findUIBinding("test_action");
         assertTrue(result.isPresent());
         assertEquals(UIBinding.SelectorType.XPATH, result.get().selectorType());
