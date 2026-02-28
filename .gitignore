@@ -29,8 +29,5 @@ target/
 
 ### Mac OS ###
 .DS_Store
-GITHUB_SETTINGS_RECOMMENDATIONS.md
-GIT_CHEATSHEET.md
 GIT_WORKFLOW.md
 SECURITY_SCAN_SETUP.md
-/docs/tasks/
