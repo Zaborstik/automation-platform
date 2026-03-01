@@ -1,37 +1,43 @@
 package com.zaborstik.platform.api.resolver;
 
-import com.zaborstik.platform.api.entity.ActionEntity;
-import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.UIBindingEntity;
-import com.zaborstik.platform.api.repository.ActionRepository;
-import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.UIBindingRepository;
+import com.zaborstik.platform.api.entity.*;
+import com.zaborstik.platform.api.repository.*;
 import com.zaborstik.platform.core.domain.Action;
+import com.zaborstik.platform.core.domain.ActionType;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
+import com.zaborstik.platform.core.domain.Workflow;
+import com.zaborstik.platform.core.domain.WorkflowStep;
 import com.zaborstik.platform.core.resolver.Resolver;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Resolver по схеме newdatabase.drawio: zbrtstk (entity_type), system (action, ui_binding).
+ * Resolver по БД (V1): entity_type, action_type, action, action_applicable_entity_type, workflow, workflow_step.
+ * UI binding в новой схеме нет — findUIBinding возвращает empty.
  */
 @Component
 public class DatabaseResolver implements Resolver {
+
     private final EntityTypeRepository entityTypeRepository;
+    private final ActionTypeRepository actionTypeRepository;
     private final ActionRepository actionRepository;
-    private final UIBindingRepository uiBindingRepository;
+    private final WorkflowRepository workflowRepository;
+    private final WorkflowStepRepository workflowStepRepository;
 
     public DatabaseResolver(EntityTypeRepository entityTypeRepository,
+                            ActionTypeRepository actionTypeRepository,
                             ActionRepository actionRepository,
-                            UIBindingRepository uiBindingRepository) {
+                            WorkflowRepository workflowRepository,
+                            WorkflowStepRepository workflowStepRepository) {
         this.entityTypeRepository = entityTypeRepository;
+        this.actionTypeRepository = actionTypeRepository;
         this.actionRepository = actionRepository;
-        this.uiBindingRepository = uiBindingRepository;
+        this.workflowRepository = workflowRepository;
+        this.workflowStepRepository = workflowStepRepository;
     }
 
     @Override
@@ -45,34 +51,79 @@ public class DatabaseResolver implements Resolver {
     }
 
     @Override
+    public Optional<ActionType> findActionType(String actionTypeId) {
+        return actionTypeRepository.findById(actionTypeId).map(this::toActionType);
+    }
+
+    @Override
+    public Optional<Workflow> findWorkflow(String workflowId) {
+        return workflowRepository.findById(workflowId).map(this::toWorkflow);
+    }
+
+    @Override
+    public Optional<WorkflowStep> findWorkflowStep(String workflowStepId) {
+        return workflowStepRepository.findById(workflowStepId).map(this::toWorkflowStep);
+    }
+
+    @Override
+    public Optional<WorkflowStep> findWorkflowStepByInternalName(String internalName) {
+        return workflowStepRepository.findByInternalname(internalName).map(this::toWorkflowStep);
+    }
+
+    @Override
+    public List<Action> findActionsApplicableToEntityType(String entityTypeId) {
+        return actionRepository.findByApplicableEntityTypes_Id(entityTypeId).stream()
+                .map(this::toAction)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean isActionApplicable(String actionId, String entityTypeId) {
+        return findActionsApplicableToEntityType(entityTypeId).stream()
+                .anyMatch(a -> a.id().equals(actionId));
+    }
+
+    @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
-        return uiBindingRepository.findById(actionId).map(this::toUIBinding);
+        return Optional.empty();
     }
 
     private EntityType toEntityType(EntityTypeEntity e) {
-        Map<String, Object> meta = e.getMetadata().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, v -> (Object) v.getValue()));
-        return new EntityType(e.getId(), e.getName(), meta);
+        return new EntityType(
+                e.getId(),
+                e.getDisplayname(),
+                e.getCreatedTime(),
+                e.getUpdatedTime(),
+                e.getKmArticle(),
+                e.getUiDescription(),
+                e.getEntityfieldlist(),
+                e.getButtons()
+        );
     }
 
     private Action toAction(ActionEntity e) {
-        Set<String> applicable = e.getApplicableEntityTypes();
-        Map<String, Object> meta = e.getMetadata().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, v -> (Object) v.getValue()));
-        return new Action(e.getId(), e.getName(), e.getDescription() != null ? e.getDescription() : "",
-                applicable, meta);
+        return new Action(
+                e.getId(),
+                e.getDisplayname(),
+                e.getInternalname(),
+                e.getMetaValue(),
+                e.getDescription(),
+                e.getActionType() != null ? e.getActionType().getId() : null,
+                e.getCreatedTime(),
+                e.getUpdatedTime()
+        );
     }
 
-    private UIBinding toUIBinding(UIBindingEntity e) {
-        UIBinding.SelectorType st = switch (e.getSelectorType().name()) {
-            case "CSS" -> UIBinding.SelectorType.CSS;
-            case "XPATH" -> UIBinding.SelectorType.XPATH;
-            case "TEXT" -> UIBinding.SelectorType.TEXT;
-            case "ACTION_ID" -> UIBinding.SelectorType.ACTION_ID;
-            default -> UIBinding.SelectorType.CSS;
-        };
-        Map<String, Object> meta = e.getMetadata().entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, v -> (Object) v.getValue()));
-        return new UIBinding(e.getActionId(), e.getSelector(), st, meta);
+    private ActionType toActionType(ActionTypeEntity e) {
+        return new ActionType(e.getId(), e.getInternalname(), e.getDisplayname());
+    }
+
+    private Workflow toWorkflow(WorkflowEntity e) {
+        String firstStepId = e.getFirststep() != null ? e.getFirststep().getId() : null;
+        return new Workflow(e.getId(), e.getDisplayname(), firstStepId != null ? firstStepId : "");
+    }
+
+    private WorkflowStep toWorkflowStep(WorkflowStepEntity e) {
+        return new WorkflowStep(e.getId(), e.getInternalname(), e.getDisplayname(), e.getSortorder());
     }
 }

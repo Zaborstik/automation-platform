@@ -45,8 +45,8 @@ public class PlanExecutor {
      */
     public PlanExecutionResult execute(Plan plan) {
         Objects.requireNonNull(plan, "plan cannot be null");
-        log.info("Executing plan {} for entityType={} entityId={} action={}",
-            plan.id(), plan.entityTypeId(), plan.entityId(), plan.actionId());
+        log.info("Executing plan {} target={}",
+            plan.id(), plan.target());
 
         Instant startedAt = Instant.now();
         List<ExecutionLogEntry> logEntries = new ArrayList<>();
@@ -76,8 +76,8 @@ public class PlanExecutor {
             for (int i = resultsSize; i < stepsSize; i++) {
                 PlanStep step = steps.get(i);
                 StepExecutionResult syntheticFailure = StepExecutionResult.failure(
-                    step.type(),
-                    step.target(),
+                    step.id(),
+                    step.displayName(),
                     "Step was not executed by agent (no result returned)",
                     0
                 );

@@ -1,11 +1,13 @@
 package com.zaborstik.platform.api.config;
 
 import com.zaborstik.platform.api.entity.ActionEntity;
+import com.zaborstik.platform.api.entity.ActionTypeEntity;
 import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.UIBindingEntity;
 import com.zaborstik.platform.api.repository.ActionRepository;
+import com.zaborstik.platform.api.repository.ActionTypeRepository;
 import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.UIBindingRepository;
+import com.zaborstik.platform.api.repository.WorkflowRepository;
+import com.zaborstik.platform.api.repository.WorkflowStepRepository;
 import com.zaborstik.platform.api.resolver.DatabaseResolver;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
@@ -15,9 +17,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Map;
 import java.util.Set;
@@ -25,21 +28,26 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @EntityScan("com.zaborstik.platform.api.entity")
 @Import({PlatformConfiguration.class, DatabaseResolver.class})
-@TestPropertySource(properties = {
-    "spring.jpa.hibernate.ddl-auto=create-drop"
-})
+@ActiveProfiles({"dev", "datajpa"})
 class PlatformConfigurationTest {
 
     @Autowired
     private EntityTypeRepository entityTypeRepository;
 
     @Autowired
+    private ActionTypeRepository actionTypeRepository;
+
+    @Autowired
     private ActionRepository actionRepository;
 
     @Autowired
-    private UIBindingRepository uiBindingRepository;
+    private WorkflowRepository workflowRepository;
+
+    @Autowired
+    private WorkflowStepRepository workflowStepRepository;
 
     @Autowired
     private Resolver resolver;
@@ -49,66 +57,54 @@ class PlatformConfigurationTest {
 
     @BeforeEach
     void setUp() {
-        uiBindingRepository.deleteAll();
         actionRepository.deleteAll();
         entityTypeRepository.deleteAll();
+        actionTypeRepository.deleteAll();
+        workflowStepRepository.deleteAll();
+        workflowRepository.deleteAll();
 
-        EntityTypeEntity et = new EntityTypeEntity();
-        et.setShortname("Building");
-        et.setDisplayname("Здание");
-        et.setMetadata(Map.of("description", "Тип сущности для работы со зданиями"));
-        entityTypeRepository.save(et);
+        EntityTypeEntity building = new EntityTypeEntity();
+        building.setId("Building");
+        building.setDisplayname("Здание");
+        entityTypeRepository.save(building);
 
-        et = new EntityTypeEntity();
-        et.setShortname("Contract");
-        et.setDisplayname("Договор");
-        et.setMetadata(Map.of("description", "Тип сущности для работы с договорами"));
-        entityTypeRepository.save(et);
+        EntityTypeEntity contract = new EntityTypeEntity();
+        contract.setId("Contract");
+        contract.setDisplayname("Договор");
+        entityTypeRepository.save(contract);
 
-        ActionEntity a = new ActionEntity();
-        a.setShortname("order_egrn_extract");
-        a.setDisplayname("Заказать выписку из ЕГРН");
-        a.setDescription("Заказывает выписку из ЕГРН для указанного здания");
-        a.setApplicableEntityTypes(Set.of("Building"));
-        a.setMetadata(Map.of("category", "document"));
-        actionRepository.save(a);
+        ActionTypeEntity actionType = new ActionTypeEntity();
+        actionType.setId("act-type-1");
+        actionType.setInternalname("interaction");
+        actionType.setDisplayname("Взаимодействие");
+        actionTypeRepository.save(actionType);
 
-        a = new ActionEntity();
-        a.setShortname("close_contract");
-        a.setDisplayname("Закрыть договор");
-        a.setDescription("Закрывает указанный договор");
-        a.setApplicableEntityTypes(Set.of("Contract"));
-        a.setMetadata(Map.of("category", "workflow"));
-        actionRepository.save(a);
+        ActionEntity orderEgrn = new ActionEntity();
+        orderEgrn.setId("order_egrn_extract");
+        orderEgrn.setDisplayname("Заказать выписку из ЕГРН");
+        orderEgrn.setInternalname("order_egrn_extract");
+        orderEgrn.setDescription("Заказывает выписку из ЕГРН для указанного здания");
+        orderEgrn.setActionType(actionType);
+        orderEgrn.setApplicableEntityTypes(Set.of(building));
+        actionRepository.save(orderEgrn);
 
-        a = new ActionEntity();
-        a.setShortname("assign_owner");
-        a.setDisplayname("Назначить владельца");
-        a.setDescription("Назначает владельца для указанного здания");
-        a.setApplicableEntityTypes(Set.of("Building"));
-        a.setMetadata(Map.of("category", "management"));
-        actionRepository.save(a);
+        ActionEntity closeContract = new ActionEntity();
+        closeContract.setId("close_contract");
+        closeContract.setDisplayname("Закрыть договор");
+        closeContract.setInternalname("close_contract");
+        closeContract.setDescription("Закрывает указанный договор");
+        closeContract.setActionType(actionType);
+        closeContract.setApplicableEntityTypes(Set.of(contract));
+        actionRepository.save(closeContract);
 
-        UIBindingEntity ui = new UIBindingEntity();
-        ui.setAction("order_egrn_extract");
-        ui.setSelector("[data-action='order_egrn_extract']");
-        ui.setSelectorType(UIBindingEntity.SelectorType.CSS);
-        ui.setMetadata(Map.of("highlight", "true"));
-        uiBindingRepository.save(ui);
-
-        ui = new UIBindingEntity();
-        ui.setAction("close_contract");
-        ui.setSelector("//button[contains(@class, 'close-contract-btn')]");
-        ui.setSelectorType(UIBindingEntity.SelectorType.XPATH);
-        ui.setMetadata(Map.of("highlight", "true"));
-        uiBindingRepository.save(ui);
-
-        ui = new UIBindingEntity();
-        ui.setAction("assign_owner");
-        ui.setSelector("[data-action='assign_owner']");
-        ui.setSelectorType(UIBindingEntity.SelectorType.CSS);
-        ui.setMetadata(Map.of("highlight", "true"));
-        uiBindingRepository.save(ui);
+        ActionEntity assignOwner = new ActionEntity();
+        assignOwner.setId("assign_owner");
+        assignOwner.setDisplayname("Назначить владельца");
+        assignOwner.setInternalname("assign_owner");
+        assignOwner.setDescription("Назначает владельца для указанного здания");
+        assignOwner.setActionType(actionType);
+        assignOwner.setApplicableEntityTypes(Set.of(building));
+        actionRepository.save(assignOwner);
     }
 
     @Test
@@ -128,7 +124,7 @@ class PlatformConfigurationTest {
         assertTrue(resolver.findEntityType("Contract").isPresent());
         assertFalse(resolver.findEntityType("NonExistent").isPresent());
         assertEquals("Building", resolver.findEntityType("Building").orElseThrow().id());
-        assertEquals("Здание", resolver.findEntityType("Building").orElseThrow().name());
+        assertEquals("Здание", resolver.findEntityType("Building").orElseThrow().displayName());
     }
 
     @Test
@@ -136,15 +132,13 @@ class PlatformConfigurationTest {
         assertTrue(resolver.findAction("order_egrn_extract").isPresent());
         assertTrue(resolver.findAction("close_contract").isPresent());
         assertTrue(resolver.findAction("assign_owner").isPresent());
-        assertTrue(resolver.findAction("order_egrn_extract").orElseThrow().isApplicableTo("Building"));
-        assertFalse(resolver.findAction("order_egrn_extract").orElseThrow().isApplicableTo("Contract"));
+        assertTrue(resolver.isActionApplicable("order_egrn_extract", "Building"));
+        assertFalse(resolver.isActionApplicable("order_egrn_extract", "Contract"));
     }
 
     @Test
-    void shouldFindRegisteredUIBindings() {
-        assertTrue(resolver.findUIBinding("order_egrn_extract").isPresent());
-        assertTrue(resolver.findUIBinding("close_contract").isPresent());
-        assertTrue(resolver.findUIBinding("assign_owner").isPresent());
+    void shouldReturnEmptyForUIBinding() {
+        assertFalse(resolver.findUIBinding("order_egrn_extract").isPresent());
     }
 
     @Test
@@ -160,10 +154,13 @@ class PlatformConfigurationTest {
         ExecutionRequest request = new ExecutionRequest("Building", "93939", "order_egrn_extract", Map.of());
         Plan plan = executionEngine.createPlan(request);
         assertNotNull(plan);
-        assertEquals("Building", plan.entityTypeId());
-        assertEquals("93939", plan.entityId());
-        assertEquals("order_egrn_extract", plan.actionId());
+        assertNotNull(plan.id());
+        assertEquals("wf-plan", plan.workflowId());
+        assertEquals("new", plan.workflowStepInternalName());
         assertFalse(plan.steps().isEmpty());
+        assertEquals("Building", plan.steps().get(0).entityTypeId());
+        assertEquals("93939", plan.steps().get(0).entityId());
+        assertEquals("order_egrn_extract", plan.steps().get(0).actions().get(0).actionId());
     }
 
     @Test

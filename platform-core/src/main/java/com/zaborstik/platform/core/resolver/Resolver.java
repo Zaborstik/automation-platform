@@ -1,49 +1,42 @@
 package com.zaborstik.platform.core.resolver;
 
 import com.zaborstik.platform.core.domain.Action;
+import com.zaborstik.platform.core.domain.ActionType;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
+import com.zaborstik.platform.core.domain.Workflow;
+import com.zaborstik.platform.core.domain.WorkflowStep;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
- * Resolver находит EntityType, Action и ActionUiBinding по запросу.
- * Это ключевой компонент для построения плана выполнения.
- * 
- * Resolver finds EntityType, Action and ActionUiBinding by request.
- * This is a key component for building execution plan.
+ * Resolver для поиска сущностей по данным БД.
+ * Применимость действий к типам сущностей задаётся таблицей action_applicable_entity_type.
  */
 public interface Resolver {
-    /**
-     * Находит EntityType по идентификатору.
-     * 
-     * Finds EntityType by identifier.
-     */
+
     Optional<EntityType> findEntityType(String entityTypeId);
 
-    /**
-     * Находит Action по идентификатору.
-     * 
-     * Finds Action by identifier.
-     */
     Optional<Action> findAction(String actionId);
 
+    Optional<ActionType> findActionType(String actionTypeId);
+
+    Optional<Workflow> findWorkflow(String workflowId);
+
+    Optional<WorkflowStep> findWorkflowStep(String workflowStepId);
+
+    Optional<WorkflowStep> findWorkflowStepByInternalName(String internalName);
+
     /**
-     * Находит UIBinding для действия.
-     * 
-     * Finds UIBinding for action.
+     * Действия, применимые к данному типу сущности (action_applicable_entity_type).
+     */
+    List<Action> findActionsApplicableToEntityType(String entityTypeId);
+
+    boolean isActionApplicable(String actionId, String entityTypeId);
+
+    /**
+     * Привязка действия к UI (опционально, для executor).
      */
     Optional<UIBinding> findUIBinding(String actionId);
-
-    /**
-     * Проверяет, применимо ли действие к типу сущности.
-     * 
-     * Checks if action is applicable to entity type.
-     */
-    default boolean isActionApplicable(String actionId, String entityTypeId) {
-        return findAction(actionId)
-            .map(action -> action.isApplicableTo(entityTypeId))
-            .orElse(false);
-    }
 }
-

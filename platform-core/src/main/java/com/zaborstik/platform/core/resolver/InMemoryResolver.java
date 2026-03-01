@@ -1,24 +1,32 @@
 package com.zaborstik.platform.core.resolver;
 
 import com.zaborstik.platform.core.domain.Action;
+import com.zaborstik.platform.core.domain.ActionType;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
+import com.zaborstik.platform.core.domain.Workflow;
+import com.zaborstik.platform.core.domain.WorkflowStep;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-memory реализация Resolver для MVP.
- * В будущем может быть заменена на репозиторий с БД.
- * 
- * In-memory Resolver implementation for MVP.
- * In the future can be replaced with DB repository.
+ * In-memory реализация Resolver.
+ * Хранит entity_type, action_type, action, workflow, workflow_step и связку action_applicable_entity_type.
  */
 public class InMemoryResolver implements Resolver {
-    private final Map<String, EntityType> entityTypes = new ConcurrentHashMap<>();
-    private final Map<String, Action> actions = new ConcurrentHashMap<>();
-    private final Map<String, UIBinding> uiBindings = new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, EntityType> entityTypes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Action> actions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ActionType> actionTypes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Workflow> workflows = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, WorkflowStep> workflowSteps = new ConcurrentHashMap<>();
+    /** (actionId, entityTypeId) */
+    private final Set<ActionEntityTypeKey> applicable = ConcurrentHashMap.newKeySet();
+    private final ConcurrentHashMap<String, UIBinding> uiBindings = new ConcurrentHashMap<>();
 
     public void registerEntityType(EntityType entityType) {
         entityTypes.put(entityType.id(), entityType);
@@ -26,6 +34,23 @@ public class InMemoryResolver implements Resolver {
 
     public void registerAction(Action action) {
         actions.put(action.id(), action);
+    }
+
+    public void registerActionType(ActionType actionType) {
+        actionTypes.put(actionType.id(), actionType);
+    }
+
+    public void registerWorkflow(Workflow workflow) {
+        workflows.put(workflow.id(), workflow);
+    }
+
+    public void registerWorkflowStep(WorkflowStep step) {
+        workflowSteps.put(step.id(), step);
+    }
+
+    /** Регистрация применимости действия к типу сущности (action_applicable_entity_type). */
+    public void registerActionApplicableToEntityType(String actionId, String entityTypeId) {
+        applicable.add(new ActionEntityTypeKey(actionId, entityTypeId));
     }
 
     public void registerUIBinding(UIBinding uiBinding) {
@@ -43,8 +68,47 @@ public class InMemoryResolver implements Resolver {
     }
 
     @Override
+    public Optional<ActionType> findActionType(String actionTypeId) {
+        return Optional.ofNullable(actionTypes.get(actionTypeId));
+    }
+
+    @Override
+    public Optional<Workflow> findWorkflow(String workflowId) {
+        return Optional.ofNullable(workflows.get(workflowId));
+    }
+
+    @Override
+    public Optional<WorkflowStep> findWorkflowStep(String workflowStepId) {
+        return Optional.ofNullable(workflowSteps.get(workflowStepId));
+    }
+
+    @Override
+    public Optional<WorkflowStep> findWorkflowStepByInternalName(String internalName) {
+        return workflowSteps.values().stream()
+            .filter(s -> s.internalName().equals(internalName))
+            .findFirst();
+    }
+
+    @Override
+    public List<Action> findActionsApplicableToEntityType(String entityTypeId) {
+        List<Action> result = new ArrayList<>();
+        for (ActionEntityTypeKey key : applicable) {
+            if (key.entityTypeId.equals(entityTypeId)) {
+                findAction(key.actionId).ifPresent(result::add);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean isActionApplicable(String actionId, String entityTypeId) {
+        return applicable.contains(new ActionEntityTypeKey(actionId, entityTypeId));
+    }
+
+    @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
         return Optional.ofNullable(uiBindings.get(actionId));
     }
-}
 
+    private record ActionEntityTypeKey(String actionId, String entityTypeId) {}
+}

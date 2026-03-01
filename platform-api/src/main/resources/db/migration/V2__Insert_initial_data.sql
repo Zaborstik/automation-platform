@@ -9,14 +9,14 @@ VALUES
     ('wfs-completed', 'completed', 'Завершена', 40),
     ('wfs-failed', 'failed', 'Ошибка', 50),
     ('wfs-cancelled', 'cancelled', 'Отменена', 60)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- workflow: ЖЦ для plan и plan_step
 INSERT INTO system.workflow (id, displayname, firststep)
 VALUES
     ('wf-plan', 'Жизненный цикл плана', 'wfs-new'),
     ('wf-plan-step', 'Жизненный цикл шага плана', 'wfs-new')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- action_type: типы действий в RAD/LLM-среде
 INSERT INTO system.action_type (id, internalname, displayname)
@@ -26,7 +26,7 @@ VALUES
     ('act-type-data-input', 'data_input', 'Ввод данных'),
     ('act-type-validation', 'validation', 'Проверка результата'),
     ('act-type-artifact', 'artifact', 'Артефакты выполнения')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- action: базовые действия платформы
 INSERT INTO system.action (
@@ -110,44 +110,38 @@ VALUES
         NOW(),
         NOW()
     )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
--- entity_type и применимость действий.
--- Блок безопасный: выполнится только если таблица zbrtstk.entity_type существует.
-DO $$
-BEGIN
-    IF to_regclass('zbrtstk.entity_type') IS NOT NULL THEN
-        INSERT INTO zbrtstk.entity_type (
-            id,
-            displayname,
-            created_time,
-            updated_time,
-            km_article,
-            ui_description,
-            entityfieldlist,
-            buttons
-        )
-        VALUES
-            ('ent-page', 'Страница', NOW(), NOW(), NULL, 'Контейнер экрана/вкладки.', NULL, NULL),
-            ('ent-form', 'Форма', NOW(), NOW(), NULL, 'Форма ввода данных.', NULL, NULL),
-            ('ent-input', 'Поле ввода', NOW(), NOW(), NULL, 'Текстовое поле/контрол ввода.', NULL, NULL),
-            ('ent-button', 'Кнопка', NOW(), NOW(), NULL, 'Кнопка действия.', NULL, NULL),
-            ('ent-link', 'Ссылка', NOW(), NOW(), NULL, 'Навигационная ссылка.', NULL, NULL),
-            ('ent-table', 'Таблица', NOW(), NOW(), NULL, 'Табличные данные.', NULL, NULL)
-        ON CONFLICT (id) DO NOTHING;
+-- entity_type и применимость действий (таблица system.entity_type создана в V1)
+INSERT INTO system.entity_type (
+    id,
+    displayname,
+    created_time,
+    updated_time,
+    km_article,
+    ui_description,
+    entityfieldlist,
+    buttons
+)
+VALUES
+    ('ent-page', 'Страница', NOW(), NOW(), NULL, 'Контейнер экрана/вкладки.', NULL, NULL),
+    ('ent-form', 'Форма', NOW(), NOW(), NULL, 'Форма ввода данных.', NULL, NULL),
+    ('ent-input', 'Поле ввода', NOW(), NOW(), NULL, 'Текстовое поле/контрол ввода.', NULL, NULL),
+    ('ent-button', 'Кнопка', NOW(), NOW(), NULL, 'Кнопка действия.', NULL, NULL),
+    ('ent-link', 'Ссылка', NOW(), NOW(), NULL, 'Навигационная ссылка.', NULL, NULL),
+    ('ent-table', 'Таблица', NOW(), NOW(), NULL, 'Табличные данные.', NULL, NULL)
+ON CONFLICT DO NOTHING;
 
-        INSERT INTO system.action_applicable_entity_type (action, entity_type)
-        VALUES
-            ('act-open-page', 'ent-page'),
-            ('act-click', 'ent-button'),
-            ('act-click', 'ent-link'),
-            ('act-input-text', 'ent-input'),
-            ('act-select-option', 'ent-input'),
-            ('act-wait-element', 'ent-page'),
-            ('act-wait-element', 'ent-form'),
-            ('act-read-text', 'ent-table'),
-            ('act-read-text', 'ent-page'),
-            ('act-take-screenshot', 'ent-page')
-        ON CONFLICT (action, entity_type) DO NOTHING;
-    END IF;
-END $$;
+INSERT INTO system.action_applicable_entity_type (action, entity_type)
+VALUES
+    ('act-open-page', 'ent-page'),
+    ('act-click', 'ent-button'),
+    ('act-click', 'ent-link'),
+    ('act-input-text', 'ent-input'),
+    ('act-select-option', 'ent-input'),
+    ('act-wait-element', 'ent-page'),
+    ('act-wait-element', 'ent-form'),
+    ('act-read-text', 'ent-table'),
+    ('act-read-text', 'ent-page'),
+    ('act-take-screenshot', 'ent-page')
+ON CONFLICT DO NOTHING;

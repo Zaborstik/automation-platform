@@ -1,51 +1,37 @@
 package com.zaborstik.platform.core.domain;
 
-import java.util.Map;
+import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * Действие - атом системы.
- * Это минимальная осмысленная операция, которую пользователь может выполнить через UI.
- * Примеры: "order_egrn_extract", "close_contract", "assign_owner"
- * <p>
- * Action - system atom.
- * This is the minimal meaningful operation that user can perform through UI.
- * Examples: "order_egrn_extract", "close_contract", "assign_owner"
+ * Действие платформы (system.action).
+ * Связано с action_type; применимость к entity_type задаётся отдельно (action_applicable_entity_type).
  */
-public record Action(String id, String name, String description, Set<String> applicableEntityTypes,
-                     Map<String, Object> metadata) {
-    public Action(String id, String name, String description,
-                  Set<String> applicableEntityTypes, Map<String, Object> metadata) {
-        this.id = Objects.requireNonNull(id, "Action id cannot be null");
-        this.name = Objects.requireNonNull(name, "Action name cannot be null");
+public record Action(
+    String id,
+    String displayName,
+    String internalName,
+    String metaValue,
+    String description,
+    String actionTypeId,
+    Instant createdAt,
+    Instant updatedAt
+) {
+    public Action(String id, String displayName, String internalName, String metaValue,
+                 String description, String actionTypeId, Instant createdAt, Instant updatedAt) {
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.displayName = Objects.requireNonNull(displayName, "displayName cannot be null");
+        this.internalName = Objects.requireNonNull(internalName, "internalName cannot be null");
+        this.metaValue = metaValue;
         this.description = description;
-        this.applicableEntityTypes = applicableEntityTypes != null
-                ? Set.copyOf(applicableEntityTypes)
-                : Set.of();
-        this.metadata = metadata != null ? Map.copyOf(metadata) : Map.of();
+        this.actionTypeId = Objects.requireNonNull(actionTypeId, "actionTypeId cannot be null");
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
-    public boolean isApplicableTo(String entityTypeId) {
-        return applicableEntityTypes.contains(entityTypeId);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Action action = (Action) o;
-        return Objects.equals(id, action.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return "Action{id='" + id + "', name='" + name + "'}";
+    /** Короткий конструктор без времени (для in-memory). */
+    public static Action of(String id, String displayName, String internalName, String description, String actionTypeId) {
+        Instant now = Instant.now();
+        return new Action(id, displayName, internalName, null, description, actionTypeId, now, now);
     }
 }
-

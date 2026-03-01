@@ -25,22 +25,39 @@ class PlanExecutorTest {
     private PlanExecutor executor;
     private Plan testPlan;
 
+    private static PlanStep step(String id, int sortOrder, String displayName) {
+        return new PlanStep(
+            id,
+            "plan-1",
+            "workflow-1",
+            "in_progress",
+            "Building",
+            "93939",
+            sortOrder,
+            displayName,
+            List.of()
+        );
+    }
+
     @BeforeEach
     void setUp() {
         executor = new PlanExecutor(agentService);
 
         List<PlanStep> steps = List.of(
-            PlanStep.openPage("/buildings/93939", "Открываю карточку здания"),
-            PlanStep.explain("Выполняю действие"),
-            PlanStep.hover("order_egrn_extract", "Навожу курсор"),
-            PlanStep.click("order_egrn_extract", "Кликаю"),
-            PlanStep.wait("result", "Жду результат")
+            step("step-1", 0, "Открываю карточку здания"),
+            step("step-2", 1, "Выполняю действие"),
+            step("step-3", 2, "Навожу курсор"),
+            step("step-4", 3, "Кликаю"),
+            step("step-5", 4, "Жду результат")
         );
 
         testPlan = new Plan(
-            "Building",
-            "93939",
-            "order_egrn_extract",
+            "plan-1",
+            "workflow-1",
+            "in_progress",
+            "step-1",
+            "Building 93939",
+            "Заказ выписки ЕГРН",
             steps
         );
     }
@@ -187,7 +204,15 @@ class PlanExecutorTest {
     @Test
     void shouldHandleEmptyPlan() {
         // Given
-        Plan emptyPlan = new Plan("Building", "123", "action", List.of());
+        Plan emptyPlan = new Plan(
+            "plan-empty",
+            "workflow-1",
+            "new",
+            "step-0",
+            null,
+            null,
+            List.of()
+        );
         when(agentService.executePlan(any(Plan.class))).thenReturn(List.of());
 
         // When
@@ -253,13 +278,12 @@ class PlanExecutorTest {
 
         // Then
         ExecutionLogEntry entry0 = result.getLogEntries().get(0);
-        assertEquals("open_page", entry0.getStep().type());
-        assertEquals("/buildings/93939", entry0.getStep().target());
-        assertEquals("Открываю карточку здания", entry0.getStep().explanation());
+        assertEquals("step-1", entry0.getStep().id());
+        assertEquals("Открываю карточку здания", entry0.getStep().displayName());
 
         ExecutionLogEntry entry1 = result.getLogEntries().get(1);
-        assertEquals("explain", entry1.getStep().type());
-        assertEquals("Выполняю действие", entry1.getStep().explanation());
+        assertEquals("step-2", entry1.getStep().id());
+        assertEquals("Выполняю действие", entry1.getStep().displayName());
     }
 
     @Test
@@ -272,10 +296,13 @@ class PlanExecutorTest {
         when(agentService.executePlan(any(Plan.class))).thenReturn(results);
 
         Plan planWithOneStep = new Plan(
-            "Building",
-            "123",
-            "action",
-            List.of(PlanStep.openPage("/test", "Test"))
+            "plan-one",
+            "workflow-1",
+            "in_progress",
+            "step-1",
+            "/test",
+            "Test",
+            List.of(step("step-1", 0, "Test"))
         );
 
         // When
@@ -297,10 +324,13 @@ class PlanExecutorTest {
     void shouldHandlePlanWithSingleStep() {
         // Given
         Plan singleStepPlan = new Plan(
-            "Building",
-            "123",
-            "action",
-            List.of(PlanStep.explain("Single step"))
+            "plan-single",
+            "workflow-1",
+            "in_progress",
+            "step-1",
+            null,
+            "Single step",
+            List.of(step("step-1", 0, "Single step"))
         );
 
         List<StepExecutionResult> results = List.of(

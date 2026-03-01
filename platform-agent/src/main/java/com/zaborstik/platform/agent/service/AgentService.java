@@ -100,8 +100,8 @@ public class AgentService {
         try {
             AgentCommand command = convertToCommand(step);
             if (command == null) {
-                String error = "Unknown step type: " + step.type();
-                return StepExecutionResult.failure(step.type(), step.target(),
+                String error = "Unknown step type: " + step.workflowStepInternalName();
+                return StepExecutionResult.failure(step.id(), step.displayName(),
                     error, System.currentTimeMillis() - startTime);
             }
 
@@ -110,75 +110,69 @@ public class AgentService {
 
             if (response.isSuccess()) {
                 String screenshotPath = (String) response.getData().get("screenshot");
-                return StepExecutionResult.success(step.type(), step.target(),
+                return StepExecutionResult.success(step.id(), step.displayName(),
                     response.getMessage(), executionTime, screenshotPath);
             } else {
-                return StepExecutionResult.failure(step.type(), step.target(),
+                return StepExecutionResult.failure(step.id(), step.displayName(),
                     response.getError(), executionTime);
             }
 
         } catch (AgentException e) {
             long executionTime = System.currentTimeMillis() - startTime;
-            return StepExecutionResult.failure(step.type(), step.target(),
+            return StepExecutionResult.failure(step.id(), step.displayName(),
                 e.getMessage(), executionTime);
         }
     }
 
     /**
      * Преобразует PlanStep в AgentCommand.
-     * 
-     * Converts PlanStep to AgentCommand.
+     * Использует workflowStepInternalName как тип шага, entityId как target, displayName как explanation.
+     * Действия шага (plan_step_action) задают actionId и metaValue.
      */
     private AgentCommand convertToCommand(PlanStep step) {
-        String type = step.type();
-        String target = step.target();
-        String explanation = step.explanation();
+        String type = step.workflowStepInternalName();
+        String target = step.entityId();
+        String explanation = step.displayName();
 
         switch (type) {
             case "open_page":
-                return AgentCommand.openPage(target, explanation);
+                return AgentCommand.openPage(target != null ? target : "", explanation);
 
             case "click":
-                // Если target в формате "action(actionId)", находим UIBinding
-                // If target is in format "action(actionId)", find UIBinding
                 if (target != null && target.startsWith("action(") && target.endsWith(")")) {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
                     if (binding.isPresent()) {
-                        String selector = binding.get().selector();
-                        return AgentCommand.click(selector, explanation);
-                    } else {
-                        log.warn("UIBinding not found for action: {}, using target as selector", actionId);
-                        return AgentCommand.click(target, explanation);
+                        return AgentCommand.click(binding.get().selector(), explanation);
                     }
+                    log.warn("UIBinding not found for action: {}, using target as selector", actionId);
                 }
-                return AgentCommand.click(target, explanation);
+                return AgentCommand.click(target != null ? target : "", explanation);
 
             case "hover":
-                // Аналогично click
-                // Similar to click
                 if (target != null && target.startsWith("action(") && target.endsWith(")")) {
                     String actionId = target.substring(7, target.length() - 1);
                     Optional<UIBinding> binding = resolver.findUIBinding(actionId);
                     if (binding.isPresent()) {
-                        String selector = binding.get().selector();
-                        return AgentCommand.hover(selector, explanation);
-                    } else {
-                        log.warn("UIBinding not found for action: {}, using target as selector", actionId);
-                        return AgentCommand.hover(target, explanation);
+                        return AgentCommand.hover(binding.get().selector(), explanation);
                     }
+                    log.warn("UIBinding not found for action: {}, using target as selector", actionId);
                 }
-                return AgentCommand.hover(target, explanation);
+                return AgentCommand.hover(target != null ? target : "", explanation);
 
             case "type":
-                String text = (String) step.parameters().get("text");
-                return AgentCommand.type(target, text, explanation);
+                String text = step.actions().isEmpty() ? ""
+                    : step.actions().get(0).metaValue() != null ? step.actions().get(0).metaValue() : "";
+                return AgentCommand.type(target != null ? target : "", text, explanation);
 
             case "wait":
-                long timeout = step.parameters().containsKey("timeout")
-                    ? ((Number) step.parameters().get("timeout")).longValue()
-                    : 5000L; // default 5 seconds
-                return AgentCommand.wait(target, explanation, timeout);
+                long timeout = 5000L;
+                if (!step.actions().isEmpty() && step.actions().get(0).metaValue() != null) {
+                    try {
+                        timeout = Long.parseLong(step.actions().get(0).metaValue());
+                    } catch (NumberFormatException ignored) { }
+                }
+                return AgentCommand.wait(target != null ? target : "result", explanation, timeout);
 
             case "explain":
                 return AgentCommand.explain(explanation);

@@ -1,111 +1,109 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
   <diagram id="db-schema" name="Database Schema">
-    <mxGraphModel dx="706" dy="467" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="entity_types" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="entity_type&lt;br&gt;Типы сущностей (справочник)&lt;br&gt;────────────────&lt;br&gt;shortname (PK) UUID&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;br&gt;&lt;font style=&quot;color: rgb(255, 7, 7);&quot;&gt;km_article (FK) UUID&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;color: rgb(255, 7, 7);&quot;&gt;ui_&lt;span style=&quot;background-color: transparent;&quot;&gt;description&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;TEXT&lt;/span&gt;&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;color: rgb(255, 71, 5);&quot;&gt;entityfiledlist&amp;nbsp;VJ&lt;br&gt;&lt;span style=&quot;caret-color: rgb(96, 96, 96);&quot;&gt;buttons&amp;nbsp;&lt;/span&gt;VJ&lt;/font&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="180" width="200" x="40" y="50" as="geometry" />
+
+        <mxCell id="entity_type" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.entity_type&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;br&gt;km_article VARCHAR(36)&lt;br&gt;ui_description TEXT&lt;br&gt;entityfieldlist VARCHAR(10000)&lt;br&gt;buttons VARCHAR(10000)">
+          <mxGeometry x="40" y="80" width="280" height="220" as="geometry" />
         </mxCell>
-        <mxCell id="entity_type_metadata" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="entity_type_metadata&lt;br&gt;Метаданные типа (ключ-значение)&lt;br&gt;────────────────&lt;br&gt;entity_type (PK,FK) UUID&lt;br&gt;meta_key (PK) UUID&lt;br&gt;meta_value TEXT" vertex="1">
-          <mxGeometry height="120" width="200" x="40" y="270" as="geometry" />
+
+        <mxCell id="workflow_step" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.workflow_step&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;sortorder INT">
+          <mxGeometry x="380" y="80" width="260" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="actions" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="action&lt;br&gt;Действия платформы&amp;nbsp;&lt;br&gt;────────────────&lt;br&gt;shortname (PK) UUID&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;description TEXT&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time&amp;nbsp;TIMESTAMP" vertex="1">
-          <mxGeometry height="130" width="200" x="390" y="40" as="geometry" />
+
+        <mxCell id="workflow" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.workflow&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;firststep (FK) VARCHAR(36)">
+          <mxGeometry x="700" y="80" width="260" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="action_applicable_entity_types" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="action_applicable_entity_type&lt;br&gt;Действие ↔ тип сущности&amp;nbsp;&lt;br&gt;────────────────&lt;br&gt;action (PK,FK) UUID&lt;br&gt;entity_type (PK) UUID" vertex="1">
-          <mxGeometry height="90" width="200" x="310" y="310" as="geometry" />
+
+        <mxCell id="action_type" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action_type&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;displayname VARCHAR(255)">
+          <mxGeometry x="1040" y="80" width="260" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="action_metadata" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="action_metadata&lt;br&gt;Метаданные действия&amp;nbsp;&lt;br&gt;────────────────&lt;br&gt;action (PK,FK) UUID&lt;br&gt;meta_key (PK) UUID&lt;br&gt;meta_value TEXT" vertex="1">
-          <mxGeometry height="120" width="210" x="520" y="310" as="geometry" />
+
+        <mxCell id="action" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;meta_value TEXT&lt;br&gt;description VARCHAR(255)&lt;br&gt;action_type (FK) VARCHAR(36)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP">
+          <mxGeometry x="1040" y="280" width="300" height="220" as="geometry" />
         </mxCell>
-        <mxCell id="ui_bindings" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="ui_binding&lt;br&gt;Привязка действия к UI (селектор)&lt;br&gt;────────────────&lt;br&gt;action (PK,FK) UUID&lt;br&gt;selector VARCHAR(1000)&lt;br&gt;selector_type VARCHAR(50)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time&amp;nbsp;TIMESTAMP" vertex="1">
-          <mxGeometry height="150" width="200" x="180" y="580" as="geometry" />
+
+        <mxCell id="action_applicable_entity_type" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action_applicable_entity_type&lt;br&gt;────────────────&lt;br&gt;action (PK, FK) VARCHAR(36)&lt;br&gt;entity_type (PK, FK) VARCHAR(36)">
+          <mxGeometry x="640" y="330" width="340" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="ui_binding_metadata" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="ui_binding_metadata&lt;br&gt;Метаданные привязки к UI&lt;br&gt;────────────────&lt;br&gt;ui_binding (PK,FK) UUID&lt;br&gt;meta_key (PK) UUID&lt;br&gt;meta_value TEXT" vertex="1">
-          <mxGeometry height="100" width="200" x="180" y="790" as="geometry" />
+
+        <mxCell id="attachment" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.attachment&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)">
+          <mxGeometry x="40" y="390" width="260" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="plans" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="plan&lt;br&gt;План выполнения&lt;br&gt;────────────────&lt;br&gt;&lt;div&gt;shortname (PK) UUID&lt;br&gt;action (FK) UUID&lt;br&gt;&lt;div&gt;wofkflow (FK)&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;UUID&lt;/span&gt;&lt;/div&gt;&lt;div&gt;workflowstepname VARCHAR&lt;/div&gt;&lt;div&gt;stopped_at_step (FK) (255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="160" width="210" x="790" y="30" as="geometry" />
+
+        <mxCell id="plan" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;workflow (FK) VARCHAR(36)&lt;br&gt;workflow_step_internalname VARCHAR(255)&lt;br&gt;stopped_at_plan_step VARCHAR(36)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;br&gt;target VARCHAR(510)&lt;br&gt;explanation VARCHAR(1020)">
+          <mxGeometry x="360" y="560" width="320" height="230" as="geometry" />
         </mxCell>
-        <mxCell id="plan_steps" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="plan_step&lt;br&gt;Шаги плана&lt;br&gt;────────────────&lt;br&gt;shortname (PK) UUID&lt;br&gt;plan (FK) UUID&lt;div&gt;&lt;div&gt;wofkflow (FK)&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;UUID&lt;/span&gt;&lt;/div&gt;&lt;div&gt;workflowstepname (&lt;span style=&quot;caret-color: rgb(96, 96, 96); background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;internalname&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;) VARCHAR&lt;/span&gt;&lt;/div&gt;entitytype (FK) UUID&amp;nbsp;&lt;br&gt;entity_shortname (FK) UUID&lt;br&gt;sortorder INT&lt;br&gt;step_type (FK) UUID&lt;br&gt;target VARCHAR (1000)&lt;br&gt;explanation VARCHAR (2000)&lt;/div&gt;&lt;div&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;/div&gt;" vertex="1">
-          <mxGeometry height="240" width="260" x="790" y="270" as="geometry" />
+
+        <mxCell id="plan_step" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;workflow (FK) VARCHAR(36)&lt;br&gt;workflow_step_internalname VARCHAR(255)&lt;br&gt;entitytype (FK) VARCHAR(36)&lt;br&gt;entity_id VARCHAR(36)&lt;br&gt;sortorder INT&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP">
+          <mxGeometry x="740" y="560" width="340" height="260" as="geometry" />
         </mxCell>
-        <mxCell id="plan_step_parameters" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="plan_step_parameter&lt;br&gt;Параметры шага (ключ-значение)&lt;br&gt;────────────────&lt;br&gt;&lt;div&gt;shortname (PK) UUID&lt;br&gt;&lt;div&gt;plan_step (FK) UUID&lt;br&gt;meta_key&amp;nbsp;(FK) UUID&lt;br&gt;meta_value TEXT&lt;/div&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="120" width="210" x="815" y="560" as="geometry" />
+
+        <mxCell id="plan_step_action" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_action&lt;br&gt;────────────────&lt;br&gt;plan_step (PK, FK) VARCHAR(36)&lt;br&gt;action (PK, FK) VARCHAR(36)&lt;br&gt;meta_value TEXT">
+          <mxGeometry x="1140" y="560" width="300" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="execution_results" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="execution_results&lt;br&gt;Итог выполнения плана (успех, время)&lt;br&gt;────────────────&lt;br&gt;&lt;div&gt;shortname (PK) UUID&lt;br&gt;plan (FK) UUID&lt;br&gt;success BOOLEAN&lt;br&gt;started_time TIMESTAMP&lt;br&gt;finished_&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;time&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;TIMESTAMP&lt;/span&gt;&lt;/div&gt;&lt;div&gt;created_&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;time&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;TIMESTAMP&lt;/span&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="165" width="220" x="1090" y="27.5" as="geometry" />
+
+        <mxCell id="plan_result" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_result&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;success BOOLEAN&lt;br&gt;started_time TIMESTAMP&lt;br&gt;finished_time TIMESTAMP">
+          <mxGeometry x="360" y="860" width="300" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="execution_log_entries" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="execution_log_entries&lt;br&gt;Лог по шагам (результат, ошибка, скриншот)&lt;br&gt;────────────────&lt;br&gt;id (PK) BIGINT&lt;div&gt;shortname (PK) UUID&lt;br&gt;execution_result (FK) UUID&lt;br&gt;plan&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(FK) UUID&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;plan_step&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(FK) UUID&lt;/span&gt;&lt;/div&gt;&lt;div&gt;step_type&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(FK)&lt;/span&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;(UUID)&lt;/span&gt;&lt;/div&gt;&lt;div&gt;message&lt;br&gt;error&lt;br&gt;executed_time&lt;br&gt;execution_time_ms&lt;br&gt;attacment&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(FK) UUID&lt;/span&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="230" width="220" x="1090" y="270" as="geometry" />
+
+        <mxCell id="plan_step_log_entry" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log_entry&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)">
+          <mxGeometry x="740" y="860" width="360" height="270" as="geometry" />
         </mxCell>
-        <mxCell id="link_et_etm" edge="1" parent="1" source="entity_types" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="entity_type_metadata">
+
+        <mxCell id="legend" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=left;spacingLeft=8;verticalAlign=top;" value="Automation Platform — актуальная схема по V1__Create_schemas_and_tables.sql&#xa;PK = первичный ключ, FK = внешний ключ.&#xa;Связи на диаграмме показывают все реальные FOREIGN KEY из V1." >
+          <mxGeometry x="40" y="1180" width="1060" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_workflow_firststep" parent="1" edge="1" source="workflow" target="workflow_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_act_aaet" edge="1" parent="1" source="actions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="action_applicable_entity_types">
+        <mxCell id="e_plan_workflow" parent="1" edge="1" source="plan" target="workflow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_act_am" edge="1" parent="1" source="actions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="action_metadata">
+        <mxCell id="e_plan_step_plan" parent="1" edge="1" source="plan_step" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_act_ui" edge="1" parent="1" source="actions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERone;startFill=0;" target="ui_bindings">
+        <mxCell id="e_plan_step_workflow" parent="1" edge="1" source="plan_step" target="workflow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_ui_ubm" edge="1" parent="1" source="ui_bindings" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="ui_binding_metadata">
+        <mxCell id="e_plan_step_entitytype" parent="1" edge="1" source="plan_step" target="entity_type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_act_plans" edge="1" parent="1" source="actions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="plans">
+        <mxCell id="e_action_action_type" parent="1" edge="1" source="action" target="action_type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_plans_steps" edge="1" parent="1" source="plans" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="plan_steps">
+        <mxCell id="e_aaet_action" parent="1" edge="1" source="action_applicable_entity_type" target="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_steps_params" edge="1" parent="1" source="plan_steps" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="plan_step_parameters">
+        <mxCell id="e_aaet_entity_type" parent="1" edge="1" source="action_applicable_entity_type" target="entity_type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_plans_results" edge="1" parent="1" source="plans" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERone;endFill=0;startArrow=ERone;startFill=0;" target="execution_results">
+        <mxCell id="e_plan_step_action_plan_step" parent="1" edge="1" source="plan_step_action" target="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link_results_log" edge="1" parent="1" source="execution_results" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;" target="execution_log_entries">
+        <mxCell id="e_plan_step_action_action" parent="1" edge="1" source="plan_step_action" target="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="legend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=left;spacingLeft=8;verticalAlign=top;" value="Automation Platform — схема БД&#xa;Справочники (синий/зелёный/жёлтый/фиолетовый) │ Планы (красный) │ Выполнение (оранжевый)" vertex="1">
-          <mxGeometry height="60" width="620" x="40" y="1070" as="geometry" />
+        <mxCell id="e_plan_result_plan" parent="1" edge="1" source="plan_result" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="step_type Типы действия&amp;nbsp;&lt;br&gt;────────────────&lt;br&gt;&lt;div&gt;shortname (PK) UUID&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="120" width="210" x="510" y="560" as="geometry" />
+        <mxCell id="e_log_plan" parent="1" edge="1" source="plan_step_log_entry" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="wofkflow ЖЦ&lt;br&gt;────────────────&lt;br&gt;shortname (PK) UUID&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;firststep UUID" vertex="1">
-          <mxGeometry height="120" width="210" x="510" y="710" as="geometry" />
+        <mxCell id="e_log_plan_step" parent="1" edge="1" source="plan_step_log_entry" target="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="wofkflow_step Шаг ЖЦ&lt;br&gt;────────────────&lt;br&gt;shortname (PK) UUID&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;&lt;span style=&quot;caret-color: rgb(96, 96, 96);&quot;&gt;internalname&amp;nbsp;&lt;/span&gt;VARCHAR(255)&lt;div&gt;sortorder INT&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="120" width="210" x="510" y="880" as="geometry" />
+        <mxCell id="e_log_plan_result" parent="1" edge="1" source="plan_step_log_entry" target="plan_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="attacment Вложение&amp;nbsp;&lt;br&gt;────────────────&lt;br&gt;shortname&amp;nbsp;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255)); background-color: transparent;&quot;&gt;(&lt;/span&gt;PK&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255)); background-color: transparent;&quot;&gt;) UUID&lt;/span&gt;&lt;div&gt;displayname VARCHAR(255)&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="120" width="200" x="1100" y="550" as="geometry" />
+        <mxCell id="e_log_action" parent="1" edge="1" source="plan_step_log_entry" target="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-7" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Zm00x3EVsO6Lex2uRiNJ-6">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1199.74" y="500" as="sourcePoint" />
-            <mxPoint x="1199.74" y="570" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-8" edge="1" parent="1" source="plan_steps" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;exitX=0.473;exitY=1.008;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Zm00x3EVsO6Lex2uRiNJ-3">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="889" y="520" />
-              <mxPoint x="610" y="520" />
-            </Array>
-            <mxPoint x="750" y="500" as="sourcePoint" />
-            <mxPoint x="610" y="540" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="Zm00x3EVsO6Lex2uRiNJ-13" edge="1" parent="1" source="Zm00x3EVsO6Lex2uRiNJ-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;endFill=0;startArrow=ERone;startFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Zm00x3EVsO6Lex2uRiNJ-5">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="860" y="820" as="sourcePoint" />
-            <mxPoint x="860" y="870" as="targetPoint" />
-          </mxGeometry>
+        <mxCell id="e_log_attachment" parent="1" edge="1" source="plan_step_log_entry" target="attachment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

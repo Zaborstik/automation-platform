@@ -1,61 +1,34 @@
 package com.zaborstik.platform.core.plan;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Шаг плана выполнения.
- * Примеры:
- * - open_page: /buildings/{id}
- * - explain: "Открываю карточку здания"
- * - hover: action(order_egrn_extract)
- * - click: action(order_egrn_extract)
- * - wait: result
- * <p>
- * Plan execution step.
- * Examples:
- * - open_page: /buildings/{id}
- * - explain: "Opening building card"
- * - hover: action(order_egrn_extract)
- * - click: action(order_egrn_extract)
- * - wait: result
+ * Шаг плана (zbrtstk.plan_step).
+ * Мини-задача: имеет свой ЖЦ, тип сущности, объект действия и список действий (plan_step_action).
  */
-public record PlanStep(String type, String target, String explanation, Map<String, Object> parameters) {
-    public PlanStep(String type, String target, String explanation, Map<String, Object> parameters) {
-        this.type = Objects.requireNonNull(type, "Step type cannot be null");
-        this.target = target;
-        this.explanation = explanation;
-        this.parameters = parameters != null ? Map.copyOf(parameters) : Map.of();
-    }
-
-    public static PlanStep openPage(String url, String explanation) {
-        return new PlanStep("open_page", url, explanation, Map.of());
-    }
-
-    public static PlanStep explain(String message) {
-        return new PlanStep("explain", null, message, Map.of());
-    }
-
-    public static PlanStep hover(String actionId, String explanation) {
-        return new PlanStep("hover", "action(" + actionId + ")", explanation, Map.of());
-    }
-
-    public static PlanStep click(String actionId, String explanation) {
-        return new PlanStep("click", "action(" + actionId + ")", explanation, Map.of());
-    }
-
-    public static PlanStep wait(String condition, String explanation) {
-        return new PlanStep("wait", condition, explanation, Map.of());
-    }
-
-    public static PlanStep type(String selector, String text, String explanation) {
-        return new PlanStep("type", selector, explanation, Map.of("text", text));
-    }
-
-    @Override
-    public String toString() {
-        return "PlanStep{type='" + type + "', target='" + target +
-                "', explanation='" + explanation + "'}";
+public record PlanStep(
+    String id,
+    String planId,
+    String workflowId,
+    String workflowStepInternalName,
+    String entityTypeId,
+    String entityId,
+    int sortOrder,
+    String displayName,
+    List<PlanStepAction> actions
+) {
+    public PlanStep(String id, String planId, String workflowId, String workflowStepInternalName,
+                    String entityTypeId, String entityId, int sortOrder, String displayName,
+                    List<PlanStepAction> actions) {
+        this.id = Objects.requireNonNull(id, "id cannot be null");
+        this.planId = Objects.requireNonNull(planId, "planId cannot be null");
+        this.workflowId = Objects.requireNonNull(workflowId, "workflowId cannot be null");
+        this.workflowStepInternalName = Objects.requireNonNull(workflowStepInternalName, "workflowStepInternalName cannot be null");
+        this.entityTypeId = Objects.requireNonNull(entityTypeId, "entityTypeId cannot be null");
+        this.entityId = entityId;
+        this.sortOrder = sortOrder;
+        this.displayName = Objects.requireNonNull(displayName, "displayName cannot be null");
+        this.actions = actions != null ? List.copyOf(actions) : List.of();
     }
 }
-

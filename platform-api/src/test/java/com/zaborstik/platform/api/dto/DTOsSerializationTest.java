@@ -106,4 +106,42 @@ class DTOsSerializationTest {
         assertEquals(EntityDTO.TABLE_EXECUTION_REQUEST, objectMapper.readValue(jsonReq, EntityDTO.class).getTableName());
         assertEquals(EntityDTO.TABLE_PLANS, objectMapper.readValue(jsonPlan, EntityDTO.class).getTableName());
     }
+
+    @Test
+    void shouldSerializeAndDeserializeCreatePlanRequestAndPlanResponse() throws Exception {
+        CreatePlanRequest req = new CreatePlanRequest();
+        req.setWorkflowId("wf-plan");
+        req.setWorkflowStepInternalName("new");
+        req.setTarget("Цель");
+        req.setExplanation("Пояснение");
+        CreatePlanRequest.PlanStepRequest step = new CreatePlanRequest.PlanStepRequest();
+        step.setWorkflowId("wf-plan-step");
+        step.setWorkflowStepInternalName("new");
+        step.setEntityTypeId("ent-page");
+        step.setEntityId("e-1");
+        step.setSortOrder(0);
+        step.setDisplayName("Шаг 1");
+        CreatePlanRequest.PlanStepActionRequest act = new CreatePlanRequest.PlanStepActionRequest();
+        act.setActionId("act-open-page");
+        act.setMetaValue("https://example.com");
+        step.setActions(List.of(act));
+        req.setSteps(List.of(step));
+
+        String jsonReq = objectMapper.writeValueAsString(req);
+        CreatePlanRequest deserializedReq = objectMapper.readValue(jsonReq, CreatePlanRequest.class);
+        assertNotNull(jsonReq);
+        assertEquals("wf-plan", deserializedReq.getWorkflowId());
+        assertEquals("Цель", deserializedReq.getTarget());
+        assertEquals(1, deserializedReq.getSteps().size());
+        assertEquals("act-open-page", deserializedReq.getSteps().get(0).getActions().get(0).getActionId());
+
+        PlanResponse resp = new PlanResponse();
+        resp.setId("plan-1");
+        resp.setWorkflowId("wf-plan");
+        resp.setTarget("Target");
+        String jsonResp = objectMapper.writeValueAsString(resp);
+        PlanResponse deserializedResp = objectMapper.readValue(jsonResp, PlanResponse.class);
+        assertEquals("plan-1", deserializedResp.getId());
+        assertEquals("Target", deserializedResp.getTarget());
+    }
 }

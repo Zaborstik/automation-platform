@@ -2,16 +2,15 @@ package com.zaborstik.platform.core.planner;
 
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
-import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
+import com.zaborstik.platform.core.plan.PlanStepAction;
 import com.zaborstik.platform.core.resolver.InMemoryResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,237 +26,75 @@ class PlannerTest {
     }
 
     @Test
-    void shouldCreateLinearPlan() {
-        // Регистрируем метаданные
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
+    void shouldCreatePlanWithOneStepAndOneAction() {
+        resolver.registerEntityType(EntityType.of("ent-button", "Кнопка"));
+        resolver.registerAction(Action.of("act-click", "Клик", "click", "Нажатие.", "act-type-1"));
+        resolver.registerActionApplicableToEntityType("act-click", "ent-button");
 
-        Action action = new Action(
-            "order_egrn_extract",
-            "Заказать выписку из ЕГРН",
-            "Заказывает выписку из ЕГРН для здания",
-            Set.of("Building"),
-            Map.of()
-        );
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding(
-            "order_egrn_extract",
-            "[data-action='order_egrn_extract']",
-            UIBinding.SelectorType.CSS,
-            Map.of()
-        );
-        resolver.registerUIBinding(uiBinding);
-
-        // Создаем запрос
-        ExecutionRequest request = new ExecutionRequest(
-            "Building",
-            "93939",
-            "order_egrn_extract",
-            Map.of()
-        );
-
-        // Создаем план
+        ExecutionRequest request = new ExecutionRequest("ent-button", "btn-1", "act-click", Map.of());
         Plan plan = planner.createPlan(request);
 
-        // Проверяем результат
         assertNotNull(plan);
-        assertEquals("Building", plan.entityTypeId());
-        assertEquals("93939", plan.entityId());
-        assertEquals("order_egrn_extract", plan.actionId());
-        assertEquals(Plan.PlanStatus.CREATED, plan.status());
+        assertEquals(Planner.WORKFLOW_PLAN_ID, plan.workflowId());
+        assertEquals(Planner.WORKFLOW_STEP_NEW, plan.workflowStepInternalName());
+        assertNotNull(plan.stoppedAtPlanStepId());
 
-        // Проверяем шаги плана
         var steps = plan.steps();
-        assertFalse(steps.isEmpty());
-        assertEquals(5, steps.size());
+        assertEquals(1, steps.size());
+        PlanStep step = steps.get(0);
+        assertEquals(plan.stoppedAtPlanStepId(), step.id());
+        assertEquals("ent-button", step.entityTypeId());
+        assertEquals("btn-1", step.entityId());
+        assertEquals(1, step.sortOrder());
+        assertEquals(Planner.WORKFLOW_PLAN_STEP_ID, step.workflowId());
 
-        // Проверяем структуру шагов
-        PlanStep step1 = steps.get(0);
-        assertEquals("open_page", step1.type());
-        assertTrue(step1.target().contains("/buildings/93939"));
-
-        PlanStep step2 = steps.get(1);
-        assertEquals("explain", step2.type());
-        assertNotNull(step2.explanation());
-
-        PlanStep step3 = steps.get(2);
-        assertEquals("hover", step3.type());
-        assertTrue(step3.target().contains("order_egrn_extract"));
-
-        PlanStep step4 = steps.get(3);
-        assertEquals("click", step4.type());
-        assertTrue(step4.target().contains("order_egrn_extract"));
-
-        PlanStep step5 = steps.get(4);
-        assertEquals("wait", step5.type());
-        assertEquals("result", step5.target());
+        var actions = step.actions();
+        assertEquals(1, actions.size());
+        PlanStepAction psa = actions.get(0);
+        assertEquals("act-click", psa.actionId());
     }
 
     @Test
-    void shouldThrowExceptionWhenEntityTypeNotFound() {
-        Action action = new Action("action", "Action", "Desc", Set.of("Building"), Map.of());
-        resolver.registerAction(action);
+    void shouldPassMetaValueFromRequest() {
+        resolver.registerEntityType(EntityType.of("ent-input", "Поле ввода"));
+        resolver.registerAction(Action.of("act-input-text", "Ввести текст", "input_text", "Ввод.", "act-type-1"));
+        resolver.registerActionApplicableToEntityType("act-input-text", "ent-input");
 
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        ExecutionRequest request = new ExecutionRequest("NonExistent", "123", "action", Map.of());
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            planner.createPlan(request);
-        });
-    }
-
-    @Test
-    void shouldThrowExceptionWhenActionNotFound() {
-        EntityType entityType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(entityType);
-
-        ExecutionRequest request = new ExecutionRequest("Building", "123", "non_existent", Map.of());
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            planner.createPlan(request);
-        });
-    }
-
-    @Test
-    void shouldThrowExceptionWhenActionNotApplicableToEntityType() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
-
-        Action action = new Action(
-            "action",
-            "Action",
-            "Desc",
-            Set.of("Contract"), // Действие применимо только к Contract
-            Map.of()
+        ExecutionRequest request = new ExecutionRequest(
+            "ent-input", "input-1", "act-input-text",
+            Map.of("meta_value", "поисковый запрос")
         );
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            planner.createPlan(request);
-        });
-
-        assertTrue(exception.getMessage().contains("not applicable"));
+        Plan plan = planner.createPlan(request);
+        assertEquals("поисковый запрос", plan.steps().get(0).actions().get(0).metaValue());
     }
 
     @Test
-    void shouldThrowExceptionWhenUIBindingNotFound() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
-
-        Action action = new Action("action", "Action", "Desc", Set.of("Building"), Map.of());
-        resolver.registerAction(action);
-
-        // Не регистрируем UIBinding
-
-        ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            planner.createPlan(request);
-        });
-    }
-
-    @Test
-    void shouldUseActionDescriptionInPlan() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
-
-        Action action = new Action(
-            "action",
-            "Action",
-            "Кастомное описание действия",
-            Set.of("Building"),
-            Map.of()
+    void shouldThrowWhenEntityTypeNotFound() {
+        resolver.registerAction(Action.of("act-1", "A", "a", "D", "t1"));
+        resolver.registerActionApplicableToEntityType("act-1", "ent-x");
+        assertThrows(IllegalArgumentException.class, () ->
+            planner.createPlan(new ExecutionRequest("NonExistent", "1", "act-1", Map.of()))
         );
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
-        Plan plan = planner.createPlan(request);
-
-        var steps = plan.steps();
-        PlanStep explainStep = steps.get(1);
-        assertEquals("explain", explainStep.type());
-        assertEquals("Кастомное описание действия", explainStep.explanation());
     }
 
     @Test
-    void shouldUseActionNameWhenDescriptionIsNull() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
-
-        Action action = new Action(
-            "action",
-            "Название действия",
-            null, // Нет описания
-            Set.of("Building"),
-            Map.of()
+    void shouldThrowWhenActionNotFound() {
+        resolver.registerEntityType(EntityType.of("ent-1", "E1"));
+        assertThrows(IllegalArgumentException.class, () ->
+            planner.createPlan(new ExecutionRequest("ent-1", "1", "non_existent", Map.of()))
         );
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        ExecutionRequest request = new ExecutionRequest("Building", "123", "action", Map.of());
-        Plan plan = planner.createPlan(request);
-
-        var steps = plan.steps();
-        PlanStep explainStep = steps.get(1);
-        assertEquals("explain", explainStep.type());
-        assertTrue(explainStep.explanation().contains("Название действия"));
     }
 
     @Test
-    void shouldBuildCorrectPageUrl() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        resolver.registerEntityType(buildingType);
+    void shouldThrowWhenActionNotApplicableToEntityType() {
+        resolver.registerEntityType(EntityType.of("ent-button", "Кнопка"));
+        resolver.registerAction(Action.of("act-click", "Клик", "click", "D", "t1"));
+        resolver.registerActionApplicableToEntityType("act-click", "ent-link"); // только для ent-link
 
-        Action action = new Action("action", "Action", "Desc", Set.of("Building"), Map.of());
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        ExecutionRequest request = new ExecutionRequest("Building", "93939", "action", Map.of());
-        Plan plan = planner.createPlan(request);
-
-        var steps = plan.steps();
-        PlanStep openPageStep = steps.get(0);
-        assertEquals("open_page", openPageStep.type());
-        assertEquals("/buildings/93939", openPageStep.target());
-    }
-
-    @Test
-    void shouldHandleMultipleEntityTypes() {
-        EntityType buildingType = new EntityType("Building", "Здание", Map.of());
-        EntityType contractType = new EntityType("Contract", "Договор", Map.of());
-        resolver.registerEntityType(buildingType);
-        resolver.registerEntityType(contractType);
-
-        Action action = new Action("action", "Action", "Desc", Set.of("Building", "Contract"), Map.of());
-        resolver.registerAction(action);
-
-        UIBinding uiBinding = new UIBinding("action", "selector", UIBinding.SelectorType.CSS, Map.of());
-        resolver.registerUIBinding(uiBinding);
-
-        // План для Building
-        ExecutionRequest request1 = new ExecutionRequest("Building", "123", "action", Map.of());
-        Plan plan1 = planner.createPlan(request1);
-        assertEquals("Building", plan1.entityTypeId());
-
-        // План для Contract
-        ExecutionRequest request2 = new ExecutionRequest("Contract", "456", "action", Map.of());
-        Plan plan2 = planner.createPlan(request2);
-        assertEquals("Contract", plan2.entityTypeId());
+        ExecutionRequest request = new ExecutionRequest("ent-button", "btn-1", "act-click", Map.of());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            planner.createPlan(request)
+        );
+        assertTrue(ex.getMessage().contains("not applicable"));
     }
 }
-

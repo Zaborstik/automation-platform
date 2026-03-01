@@ -5,17 +5,33 @@ import com.zaborstik.platform.core.plan.PlanStep;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExecutionLogEntryTest {
+
+    /** Создаёт шаг плана для тестов (новый API: record PlanStep). */
+    private static PlanStep testStep(String id, String displayName) {
+        return new PlanStep(
+            id,
+            "plan-1",
+            "workflow-1",
+            "in_progress",
+            "entity-type-1",
+            "entity-1",
+            0,
+            displayName,
+            List.of()
+        );
+    }
 
     @Test
     void shouldCreateExecutionLogEntryWithAllFields() {
         // Given
         String planId = "plan-123";
         int stepIndex = 0;
-        PlanStep step = PlanStep.explain("Test step");
+        PlanStep step = testStep("step-1", "Test step");
         StepExecutionResult result = StepExecutionResult.success(
             "explain",
             null,
@@ -39,7 +55,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldUseCurrentTimeWhenLoggedAtIsNull() {
         // Given
-        PlanStep step = PlanStep.explain("Test");
+        PlanStep step = testStep("step-1", "Test");
         StepExecutionResult result = StepExecutionResult.success("explain", null, "OK", 10L, null);
         Instant before = Instant.now();
 
@@ -56,7 +72,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldThrowExceptionWhenPlanIdIsNull() {
         // Given
-        PlanStep step = PlanStep.explain("Test");
+        PlanStep step = testStep("step-1", "Test");
         StepExecutionResult result = StepExecutionResult.success("explain", null, "OK", 10L, null);
 
         // When & Then
@@ -79,7 +95,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldThrowExceptionWhenResultIsNull() {
         // Given
-        PlanStep step = PlanStep.explain("Test");
+        PlanStep step = testStep("step-1", "Test");
 
         // When & Then
         assertThrows(NullPointerException.class, () -> {
@@ -90,7 +106,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldSupportNegativeStepIndex() {
         // Given
-        PlanStep step = PlanStep.explain("Test");
+        PlanStep step = testStep("step-1", "Test");
         StepExecutionResult result = StepExecutionResult.success("explain", null, "OK", 10L, null);
 
         // When
@@ -103,7 +119,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldSupportLargeStepIndex() {
         // Given
-        PlanStep step = PlanStep.explain("Test");
+        PlanStep step = testStep("step-1", "Test");
         StepExecutionResult result = StepExecutionResult.success("explain", null, "OK", 10L, null);
 
         // When
@@ -116,7 +132,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldSupportFailureResult() {
         // Given
-        PlanStep step = PlanStep.click("button", "Click");
+        PlanStep step = testStep("step-1", "Click");
         StepExecutionResult failureResult = StepExecutionResult.failure(
             "click",
             "button",
@@ -135,7 +151,7 @@ class ExecutionLogEntryTest {
     @Test
     void shouldReturnCorrectToString() {
         // Given
-        PlanStep step = PlanStep.explain("Test step");
+        PlanStep step = testStep("step-1", "Test step");
         StepExecutionResult result = StepExecutionResult.success("explain", null, "OK", 10L, null);
         ExecutionLogEntry entry = new ExecutionLogEntry("plan-123", 5, step, result, Instant.now());
 

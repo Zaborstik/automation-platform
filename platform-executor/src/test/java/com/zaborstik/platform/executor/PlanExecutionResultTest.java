@@ -12,6 +12,20 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PlanExecutionResultTest {
 
+    private static PlanStep testStep(String id, String displayName) {
+        return new PlanStep(
+            id,
+            "plan-1",
+            "wf-1",
+            "in_progress",
+            "ent-1",
+            "e1",
+            0,
+            displayName,
+            List.of()
+        );
+    }
+
     @Test
     void shouldCreatePlanExecutionResultWithAllFields() {
         // Given
@@ -251,10 +265,10 @@ class PlanExecutionResultTest {
     }
 
     private ExecutionLogEntry createLogEntry(String planId, int stepIndex, boolean success) {
-        PlanStep step = PlanStep.explain("Step " + stepIndex);
+        PlanStep step = testStep("step-" + stepIndex, "Step " + stepIndex);
         StepExecutionResult result = success
-            ? StepExecutionResult.success("explain", null, "OK", 10L, null)
-            : StepExecutionResult.failure("explain", null, "Error", 10L);
+            ? StepExecutionResult.success("step", null, "OK", 10L, null)
+            : StepExecutionResult.failure("step", null, "Error", 10L);
         return new ExecutionLogEntry(planId, stepIndex, step, result, Instant.now());
     }
 }

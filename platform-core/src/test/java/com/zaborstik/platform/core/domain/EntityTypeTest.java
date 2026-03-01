@@ -2,101 +2,62 @@ package com.zaborstik.platform.core.domain;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class EntityTypeTest {
 
     @Test
+    void shouldCreateEntityTypeWithOf() {
+        EntityType entityType = EntityType.of("ent-button", "Кнопка");
+        assertEquals("ent-button", entityType.id());
+        assertEquals("Кнопка", entityType.displayName());
+        assertNotNull(entityType.createdAt());
+        assertNotNull(entityType.updatedAt());
+    }
+
+    @Test
     void shouldCreateEntityTypeWithAllFields() {
-        Map<String, Object> metadata = Map.of("description", "Test entity");
-        EntityType entityType = new EntityType("Building", "Здание", metadata);
-
-        assertEquals("Building", entityType.id());
-        assertEquals("Здание", entityType.name());
-        assertEquals(metadata, entityType.metadata());
-    }
-
-    @Test
-    void shouldCreateEntityTypeWithNullMetadata() {
-        EntityType entityType = new EntityType("Building", "Здание", null);
-
-        assertEquals("Building", entityType.id());
-        assertEquals("Здание", entityType.name());
-        assertTrue(entityType.metadata().isEmpty());
-    }
-
-    @Test
-    void shouldCreateEntityTypeWithEmptyMetadata() {
-        EntityType entityType = new EntityType("Building", "Здание", Map.of());
-
-        assertEquals("Building", entityType.id());
-        assertTrue(entityType.metadata().isEmpty());
+        Instant now = Instant.now();
+        EntityType entityType = new EntityType(
+            "ent-page",
+            "Страница",
+            now,
+            now,
+            "km-1",
+            "Контейнер экрана",
+            null,
+            null
+        );
+        assertEquals("ent-page", entityType.id());
+        assertEquals("Страница", entityType.displayName());
+        assertEquals(now, entityType.createdAt());
+        assertEquals("km-1", entityType.kmArticle());
+        assertEquals("Контейнер экрана", entityType.uiDescription());
     }
 
     @Test
     void shouldThrowExceptionWhenIdIsNull() {
-        assertThrows(NullPointerException.class, () -> {
-            new EntityType(null, "Здание", Map.of());
-        });
+        Instant now = Instant.now();
+        assertThrows(NullPointerException.class, () ->
+            new EntityType(null, "Здание", now, now, null, null, null, null)
+        );
     }
 
     @Test
-    void shouldThrowExceptionWhenNameIsNull() {
-        assertThrows(NullPointerException.class, () -> {
-            new EntityType("Building", null, Map.of());
-        });
+    void shouldThrowExceptionWhenDisplayNameIsNull() {
+        Instant now = Instant.now();
+        assertThrows(NullPointerException.class, () ->
+            new EntityType("ent-1", null, now, now, null, null, null, null)
+        );
     }
 
     @Test
-    void shouldReturnImmutableMetadata() {
-        Map<String, Object> originalMetadata = Map.of("key", "value");
-        EntityType entityType = new EntityType("Building", "Здание", originalMetadata);
-
-        Map<String, Object> returnedMetadata = entityType.metadata();
-        assertThrows(UnsupportedOperationException.class, () -> {
-            returnedMetadata.put("newKey", "newValue");
-        });
-    }
-
-    @Test
-    void shouldBeEqualWhenIdsAreEqual() {
-        EntityType type1 = new EntityType("Building", "Здание", Map.of());
-        EntityType type2 = new EntityType("Building", "Другое название", Map.of("key", "value"));
-
-        assertEquals(type1, type2);
-        assertEquals(type1.hashCode(), type2.hashCode());
-    }
-
-    @Test
-    void shouldNotBeEqualWhenIdsAreDifferent() {
-        EntityType type1 = new EntityType("Building", "Здание", Map.of());
-        EntityType type2 = new EntityType("Contract", "Договор", Map.of());
-
-        assertNotEquals(type1, type2);
-    }
-
-    @Test
-    void shouldNotBeEqualWithNull() {
-        EntityType type = new EntityType("Building", "Здание", Map.of());
-        assertNotEquals(type, null);
-    }
-
-    @Test
-    void shouldNotBeEqualWithDifferentClass() {
-        EntityType type = new EntityType("Building", "Здание", Map.of());
-        assertNotEquals(type, "Building");
-    }
-
-    @Test
-    void shouldReturnCorrectToString() {
-        EntityType type = new EntityType("Building", "Здание", Map.of());
-        String toString = type.toString();
-
-        assertTrue(toString.contains("Building"));
-        assertTrue(toString.contains("Здание"));
-        assertTrue(toString.contains("EntityType"));
+    void shouldSupportNullOptionalFields() {
+        EntityType entityType = new EntityType("ent-1", "Форма", null, null, null, null, null, null);
+        assertEquals("ent-1", entityType.id());
+        assertNull(entityType.createdAt());
+        assertNull(entityType.kmArticle());
     }
 }
-

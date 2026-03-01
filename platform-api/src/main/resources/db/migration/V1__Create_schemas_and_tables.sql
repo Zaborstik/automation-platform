@@ -2,18 +2,18 @@
 CREATE SCHEMA IF NOT EXISTS zbrtstk;
 CREATE SCHEMA IF NOT EXISTS system;
 
--- -- модель строит action_applicable_entity_type на основе этих данных, мб нужна будет векторка
--- -- entity_type: Типы сущностей
--- CREATE TABLE IF NOT EXISTS zbrtstk.entity_type (
---     id VARCHAR(36) NOT NULL PRIMARY KEY,
---     displayname VARCHAR(255) NOT NULL,
---     created_time TIMESTAMP NOT NULL,
---     updated_time TIMESTAMP NOT NULL,
---     km_article VARCHAR(36),
---     ui_description TEXT,
---     entityfieldlist VARCHAR(10000),
---     buttons VARCHAR(10000)
--- );
+-- entity_type: Типы сущностей (system — по JPA и ссылкам plan_step, action_applicable_entity_type)
+CREATE TABLE IF NOT EXISTS system.entity_type (
+    id VARCHAR(36) NOT NULL PRIMARY KEY,
+    displayname VARCHAR(255) NOT NULL,
+    created_time TIMESTAMP NOT NULL,
+    updated_time TIMESTAMP NOT NULL,
+    km_article VARCHAR(36),
+    ui_description TEXT,
+    entityfieldlist VARCHAR(10000),
+    buttons VARCHAR(10000)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_entity_type_id_uniq ON system.entity_type(id);
 --
 -- -- entity_type_metadata: Метаданные типа (ключ-значение)
 -- CREATE TABLE IF NOT EXISTS zbrtstk.entity_type_metadata (
@@ -100,26 +100,13 @@ CREATE TABLE IF NOT EXISTS zbrtstk.plan_step (
     updated_time TIMESTAMP NOT NULL,
     FOREIGN KEY (plan) REFERENCES zbrtstk.plan(id),
     FOREIGN KEY (workflow) REFERENCES system.workflow(id),
-    FOREIGN KEY (entitytype) REFERENCES zbrtstk.entity_type(id)
+    FOREIGN KEY (entitytype) REFERENCES system.entity_type(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_id_uniq ON zbrtstk.plan_step(id);
 CREATE INDEX IF NOT EXISTS idx_plan_step_plan ON zbrtstk.plan_step(plan);
 CREATE INDEX IF NOT EXISTS idx_plan_step_sortorder ON zbrtstk.plan_step(sortorder);
 
--- plan_step_action: связка шаг - действия
-CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_action (
-    plan_step VARCHAR(36) NOT NULL,
-    action VARCHAR(36) NOT NULL,
-    meta_value TEXT,
-    PRIMARY KEY (plan_step, action),
-    FOREIGN KEY (plan_step) REFERENCES zbrtstk.plan_step(id),
-    FOREIGN KEY (action) REFERENCES system.action(id)
-);
-CREATE INDEX IF NOT EXISTS idx_plan_step_action_plan_step ON zbrtstk.plan_step_action(plan_step);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_action_plan_step_action_uniq ON zbrtstk.plan_step_action(plan_step, action);
-
-
--- action_type: Типы действия
+-- action_type: Типы действия (создаём до plan_step_action, т.к. action ссылается на action_type)
 CREATE TABLE IF NOT EXISTS system.action_type (
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     internalname VARCHAR(255) NOT NULL, -- имя на английском, типа open clic
@@ -127,7 +114,7 @@ CREATE TABLE IF NOT EXISTS system.action_type (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_action_type_id_uniq ON system.action_type(id);
 
--- action: Действия платформы
+-- action: Действия платформы (создаём до plan_step_action)
 CREATE TABLE IF NOT EXISTS system.action (
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     displayname VARCHAR(255) NOT NULL, -- отображаемое пользователю имя
@@ -148,9 +135,22 @@ CREATE TABLE IF NOT EXISTS system.action_applicable_entity_type (
     entity_type VARCHAR(36) NOT NULL, -- тип объекта
     PRIMARY KEY (action, entity_type),
     FOREIGN KEY (action) REFERENCES system.action(id),
-    FOREIGN KEY (entity_type) REFERENCES zbrtstk.entity_type(id)
+    FOREIGN KEY (entity_type) REFERENCES system.entity_type(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_action_applicable_entity_type_uniq ON system.action_applicable_entity_type(action, entity_type);
+
+-- plan_step_action: связка шаг - действия
+CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_action (
+    plan_step VARCHAR(36) NOT NULL,
+    action VARCHAR(36) NOT NULL,
+    meta_value TEXT,
+    PRIMARY KEY (plan_step, action),
+    FOREIGN KEY (plan_step) REFERENCES zbrtstk.plan_step(id),
+    FOREIGN KEY (action) REFERENCES system.action(id)
+);
+CREATE INDEX IF NOT EXISTS idx_plan_step_action_plan_step ON zbrtstk.plan_step_action(plan_step);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_action_plan_step_action_uniq ON zbrtstk.plan_step_action(plan_step, action);
+
 
 -- execution_result: Итог выполнения плана
 CREATE TABLE IF NOT EXISTS zbrtstk.plan_result (
