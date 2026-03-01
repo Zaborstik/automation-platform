@@ -21,7 +21,7 @@ CREATE SCHEMA IF NOT EXISTS system;
 --     entity_type VARCHAR(36) NOT NULL,
 --     meta_key VARCHAR(36) NOT NULL,
 --     meta_value TEXT,
---     FOREIGN KEY (entity_type) REFERENCES zbrtstk.entity_type(id) ON DELETE CASCADE
+--     FOREIGN KEY (entity_type) REFERENCES zbrtstk.entity_type(id)
 -- );
 
 --
@@ -32,7 +32,7 @@ CREATE SCHEMA IF NOT EXISTS system;
 --     selector_type VARCHAR(36) NOT NULL,
 --     created_time TIMESTAMP NOT NULL,
 --     updated_time TIMESTAMP NOT NULL,
---     FOREIGN KEY (action) REFERENCES system.action(id) ON DELETE CASCADE
+--     FOREIGN KEY (action) REFERENCES system.action(id)
 --     );
 
 -- -- ui_binding_metadata: Метаданные привязки к UI
@@ -41,7 +41,7 @@ CREATE SCHEMA IF NOT EXISTS system;
 --     meta_key VARCHAR(36) NOT NULL,
 --     meta_value TEXT,
 --     PRIMARY KEY (ui_binding, meta_key),
---     FOREIGN KEY (ui_binding) REFERENCES system.ui_binding(action) ON DELETE CASCADE
+--     FOREIGN KEY (ui_binding) REFERENCES system.ui_binding(action)
 -- );
 
 -- workflow_step: Шаг ЖЦ
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS zbrtstk.plan_step (
     displayname VARCHAR(255) NOT NULL, -- отображаемое пользователю имя
     created_time TIMESTAMP NOT NULL,
     updated_time TIMESTAMP NOT NULL,
-    FOREIGN KEY (plan) REFERENCES zbrtstk.plan(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan) REFERENCES zbrtstk.plan(id),
     FOREIGN KEY (workflow) REFERENCES system.workflow(id),
     FOREIGN KEY (entitytype) REFERENCES zbrtstk.entity_type(id)
 );
@@ -112,8 +112,8 @@ CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_action (
     action VARCHAR(36) NOT NULL,
     meta_value TEXT,
     PRIMARY KEY (plan_step, action),
-    FOREIGN KEY (plan_step) REFERENCES zbrtstk.plan_step(id) ON DELETE CASCADE,
-    FOREIGN KEY (action) REFERENCES system.action(id) ON DELETE CASCADE
+    FOREIGN KEY (plan_step) REFERENCES zbrtstk.plan_step(id),
+    FOREIGN KEY (action) REFERENCES system.action(id)
 );
 CREATE INDEX IF NOT EXISTS idx_plan_step_action_plan_step ON zbrtstk.plan_step_action(plan_step);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_action_plan_step_action_uniq ON zbrtstk.plan_step_action(plan_step, action);
@@ -147,8 +147,8 @@ CREATE TABLE IF NOT EXISTS system.action_applicable_entity_type (
     action VARCHAR(36) NOT NULL,
     entity_type VARCHAR(36) NOT NULL, -- тип объекта
     PRIMARY KEY (action, entity_type),
-    FOREIGN KEY (action) REFERENCES system.action(id) ON DELETE CASCADE,
-    FOREIGN KEY (entity_type) REFERENCES zbrtstk.entity_type(id) ON DELETE CASCADE
+    FOREIGN KEY (action) REFERENCES system.action(id),
+    FOREIGN KEY (entity_type) REFERENCES zbrtstk.entity_type(id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_action_applicable_entity_type_uniq ON system.action_applicable_entity_type(action, entity_type);
 
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_log_entry ( -- создаётся �
     attachment VARCHAR(36), -- вложение, мб скрин, либо что-то такое, а мб в будущем сделать несколько вложений
     FOREIGN KEY (plan) REFERENCES zbrtstk.plan(id),
     FOREIGN KEY (plan_step) REFERENCES zbrtstk.plan_step(id),
-    FOREIGN KEY (plan_result) REFERENCES zbrtstk.plan_result(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_result) REFERENCES zbrtstk.plan_result(id),
     FOREIGN KEY (action) REFERENCES system.action(id),
     FOREIGN KEY (attachment) REFERENCES zbrtstk.attachment(id)
 );
