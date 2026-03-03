@@ -23,6 +23,8 @@ import java.util.UUID;
  * - создаёт простой Plan с шагами (новая модель: plan → plan_step → plan_step_action)
  * - передаёт его в PlanExecutor, который управляет UI-агентом.
  *
+ *
+ *
  * Это пример, а не продовый bootstrap.
  */
 public class Main {
