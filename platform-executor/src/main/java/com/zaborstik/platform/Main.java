@@ -22,7 +22,7 @@ import java.util.UUID;
  * - собирает in-memory Resolver (EntityType, ActionType, Action, UIBinding)
  * - создаёт простой Plan с шагами (новая модель: plan → plan_step → plan_step_action)
  * - передаёт его в PlanExecutor, который управляет UI-агентом.
- *
+ * пвапвва
  * Это пример, а не продовый bootstrap.
  */
 public class Main {
