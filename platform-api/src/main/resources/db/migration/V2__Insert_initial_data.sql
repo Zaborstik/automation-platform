@@ -145,3 +145,99 @@ VALUES
     ('act-read-text', 'ent-page'),
     ('act-take-screenshot', 'ent-page')
 ON CONFLICT DO NOTHING;
+
+-- ========== DEMO PLAN DATA (UI TEST) ==========
+-- Кейс: открыть браузер, найти "ирония судьбы" и открыть карточку фильма.
+
+INSERT INTO zbrtstk.plan (
+    id,
+    workflow,
+    workflow_step_internalname,
+    stopped_at_plan_step,
+    created_time,
+    updated_time,
+    target,
+    explanation
+)
+VALUES
+    (
+        'plan-irony-browser-001',
+        'wf-plan',
+        'new',
+        'ps-irony-001-open',
+        NOW(),
+        NOW(),
+        'Открыть фильм "Ирония судьбы"',
+        'Демо-план для проверки исполнения UI-агентом: открыть сайт, выполнить поиск и открыть карточку фильма.'
+    )
+ON CONFLICT DO NOTHING;
+
+INSERT INTO zbrtstk.plan_step (
+    id,
+    plan,
+    workflow,
+    workflow_step_internalname,
+    entitytype,
+    entity_id,
+    sortorder,
+    displayname,
+    created_time,
+    updated_time
+)
+VALUES
+    (
+        'ps-irony-001-open',
+        'plan-irony-browser-001',
+        'wf-plan-step',
+        'new',
+        'ent-page',
+        NULL,
+        10,
+        'Открыть страницу поиска',
+        NOW(),
+        NOW()
+    ),
+    (
+        'ps-irony-002-search',
+        'plan-irony-browser-001',
+        'wf-plan-step',
+        'new',
+        'ent-input',
+        NULL,
+        20,
+        'Ввести запрос "ирония судьбы" и выполнить поиск',
+        NOW(),
+        NOW()
+    ),
+    (
+        'ps-irony-003-open-film',
+        'plan-irony-browser-001',
+        'wf-plan-step',
+        'new',
+        'ent-link',
+        NULL,
+        30,
+        'Открыть карточку фильма "Ирония судьбы"',
+        NOW(),
+        NOW()
+    )
+ON CONFLICT DO NOTHING;
+
+INSERT INTO zbrtstk.plan_step_action (plan_step, action, meta_value)
+VALUES
+    (
+        'ps-irony-001-open',
+        'act-open-page',
+        '{"url":"https://www.kinopoisk.ru/","open_in_new_tab":false}'
+    ),
+    (
+        'ps-irony-002-search',
+        'act-input-text',
+        '{"selector":"input[name=q]","text":"ирония судьбы","submit":true}'
+    ),
+    (
+        'ps-irony-003-open-film',
+        'act-click',
+        '{"selector":"a[href*=\"/film/\"]","text_contains":"Ирония судьбы"}'
+    )
+ON CONFLICT DO NOTHING;
