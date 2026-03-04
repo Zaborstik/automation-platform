@@ -1,0 +1,97 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.5.2 Chrome/142.0.7444.265 Electron/39.6.1 Safari/537.36" version="29.5.2">
+  <diagram id="db-schema" name="Database Schema">
+    <mxGraphModel dx="1649" dy="885" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="entity_type" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.entity_type&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;br&gt;km_article VARCHAR(36)&lt;br&gt;ui_description TEXT&lt;br&gt;entityfieldlist VARCHAR(10000)&lt;br&gt;buttons VARCHAR(10000)" vertex="1">
+          <mxGeometry height="220" width="280" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="workflow_step" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.workflow_step&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;sortorder INT" vertex="1">
+          <mxGeometry height="150" width="260" x="380" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="workflow" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.workflow&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;firststep (FK) VARCHAR(36)" vertex="1">
+          <mxGeometry height="140" width="260" x="700" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="action_type" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action_type&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;displayname VARCHAR(255)" vertex="1">
+          <mxGeometry height="140" width="260" x="1040" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="action" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;internalname VARCHAR(255)&lt;br&gt;meta_value TEXT&lt;br&gt;description VARCHAR(255)&lt;br&gt;action_type (FK) VARCHAR(36)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP" vertex="1">
+          <mxGeometry height="220" width="300" x="1040" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="action_applicable_entity_type" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="system.action_applicable_entity_type&lt;br&gt;────────────────&lt;br&gt;action (PK, FK) VARCHAR(36)&lt;br&gt;entity_type (PK, FK) VARCHAR(36)" vertex="1">
+          <mxGeometry height="120" width="340" x="640" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="attachment" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.attachment&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;displayname VARCHAR(255)" vertex="1">
+          <mxGeometry height="110" width="260" x="40" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="plan" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;workflow (FK) VARCHAR(36)&lt;br&gt;workflow_step_internalname VARCHAR(255)&lt;br&gt;stopped_at_plan_step VARCHAR(36)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP&lt;br&gt;target VARCHAR(510)&lt;br&gt;explanation VARCHAR(1020)" vertex="1">
+          <mxGeometry height="230" width="320" x="320" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_step" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;workflow (FK) VARCHAR(36)&lt;br&gt;workflow_step_internalname VARCHAR(255)&lt;br&gt;entitytype (FK) VARCHAR(36)&lt;br&gt;entity_id VARCHAR(36)&lt;br&gt;sortorder INT&lt;br&gt;displayname VARCHAR(255)&lt;br&gt;created_time TIMESTAMP&lt;br&gt;updated_time TIMESTAMP" vertex="1">
+          <mxGeometry height="260" width="340" x="740" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_step_action" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_action&lt;br&gt;────────────────&lt;br&gt;plan_step (PK, FK) VARCHAR(36)&lt;br&gt;action (PK, FK) VARCHAR(36)&lt;br&gt;meta_value TEXT" vertex="1">
+          <mxGeometry height="130" width="300" x="1140" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_result&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;success BOOLEAN&lt;br&gt;started_time TIMESTAMP&lt;br&gt;finished_time TIMESTAMP" vertex="1">
+          <mxGeometry height="160" width="300" x="360" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="plan_step_log_entry" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log_entry&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)" vertex="1">
+          <mxGeometry height="270" width="360" x="740" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=left;spacingLeft=8;verticalAlign=top;" value="Automation Platform — актуальная схема по V1__Create_schemas_and_tables.sql&#xa;PK = первичный ключ, FK = внешний ключ.&#xa;Связи на диаграмме показывают все реальные FOREIGN KEY из V1." vertex="1">
+          <mxGeometry height="80" width="1060" x="40" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="e_workflow_firststep" edge="1" parent="1" source="workflow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="workflow_step">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_workflow" edge="1" parent="1" source="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="workflow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_step_plan" edge="1" parent="1" source="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_step_workflow" edge="1" parent="1" source="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="workflow">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_step_entitytype" edge="1" parent="1" source="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="entity_type">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_action_action_type" edge="1" parent="1" source="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action_type">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aaet_action" edge="1" parent="1" source="action_applicable_entity_type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aaet_entity_type" edge="1" parent="1" source="action_applicable_entity_type" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="entity_type">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_step_action_plan_step" edge="1" parent="1" source="plan_step_action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_step">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_step_action_action" edge="1" parent="1" source="plan_step_action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_plan_result_plan" edge="1" parent="1" source="plan_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_log_plan" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_log_plan_step" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_step">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_log_plan_result" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_log_action" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_log_attachment" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="attachment">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
