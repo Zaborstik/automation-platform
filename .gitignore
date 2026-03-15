@@ -1,21 +1,8 @@
 ### Maven ###
 target/
-!.mvn/wrapper/maven-wrapper.jar
 
 ### IntelliJ IDEA ###
 .idea/
-*.iml
-*.iws
-*.ipr
-
-### Eclipse ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
 
 ### NetBeans ###
 /nbproject/private/
@@ -26,8 +13,6 @@ target/
 
 ### VS Code ###
 .vscode/
-
-### Mac OS ###
 .DS_Store
 GIT_WORKFLOW.md
 SECURITY_SCAN_SETUP.md
@@ -37,11 +22,5 @@ local-demo/
 
 ### H2 file database ###
 data/
-docs/01-ЧТО-ДОЛЖНО-БЫТЬ.md
-docs/02-ЧЕГО-НЕТ.md
-docs/03-ПЛАН-РАБОТ.md
-docs/bots/BOT-1-PLATFORM-CORE.md
-docs/bots/BOT-2-PLATFORM-API.md
-docs/bots/BOT-3-PLATFORM-AGENT-EXECUTOR.md
-docs/bots/BOT-4-PLATFORM-KNOWLEDGE.md
-.cursor/debug-4cb75d.log
+docs/
+.cursor/
