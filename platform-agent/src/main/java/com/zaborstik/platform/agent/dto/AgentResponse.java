@@ -1,5 +1,8 @@
 package com.zaborstik.platform.agent.dto;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Map;
 
 /**
@@ -12,8 +15,12 @@ public class AgentResponse {
     private final Map<String, Object> data;
     private final long executionTimeMs;
 
-    public AgentResponse(boolean success, String message, String error, 
-                         Map<String, Object> data, long executionTimeMs) {
+    @JsonCreator
+    public AgentResponse(@JsonProperty("success") boolean success,
+                         @JsonProperty("message") String message,
+                         @JsonProperty("error") String error,
+                         @JsonProperty("data") Map<String, Object> data,
+                         @JsonProperty("executionTimeMs") long executionTimeMs) {
         this.success = success;
         this.message = message;
         this.error = error;

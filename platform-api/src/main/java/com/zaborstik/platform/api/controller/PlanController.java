@@ -3,6 +3,7 @@ package com.zaborstik.platform.api.controller;
 import com.zaborstik.platform.api.dto.*;
 import com.zaborstik.platform.api.entity.PlanResultEntity;
 import com.zaborstik.platform.api.entity.PlanStepLogEntryEntity;
+import com.zaborstik.platform.api.service.PlanExecutionService;
 import com.zaborstik.platform.api.service.PlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.*;
 public class PlanController {
 
     private final PlanService planService;
+    private final PlanExecutionService planExecutionService;
 
-    public PlanController(PlanService planService) {
+    public PlanController(PlanService planService, PlanExecutionService planExecutionService) {
         this.planService = planService;
+        this.planExecutionService = planExecutionService;
     }
 
     @PostMapping
@@ -72,5 +75,20 @@ public class PlanController {
                 request.getAttachmentId()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(entry);
+    }
+
+    @PostMapping("/{planId}/execute")
+    public ResponseEntity<?> executePlan(@PathVariable("planId") String planId) {
+        return planExecutionService.executePlan(planId)
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .orElseGet(() -> {
+                ErrorResponseDTO error = new ErrorResponseDTO(
+                    HttpStatus.NOT_FOUND.value(),
+                    "Not Found",
+                    "Plan with id '" + planId + "' not found",
+                    "/api/plans/" + planId + "/execute"
+                );
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            });
     }
 }

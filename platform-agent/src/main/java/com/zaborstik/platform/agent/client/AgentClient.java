@@ -73,10 +73,22 @@ public class AgentClient {
             long executionTime = System.currentTimeMillis() - startTime;
 
             if (response.statusCode() != 200) {
-                String error = String.format("Agent returned status %d: %s", 
-                    response.statusCode(), response.body());
-                log.error(error);
-                return AgentResponse.failure(error, executionTime);
+                try {
+                    AgentResponse errorResponse = objectMapper.readValue(response.body(), AgentResponse.class);
+                    log.error("Agent returned status {}: {}", response.statusCode(), errorResponse.getError());
+                    return new AgentResponse(
+                        false,
+                        errorResponse.getMessage(),
+                        errorResponse.getError(),
+                        errorResponse.getData(),
+                        executionTime
+                    );
+                } catch (Exception parseException) {
+                    String error = String.format("Agent returned status %d: %s",
+                        response.statusCode(), response.body());
+                    log.error(error);
+                    return AgentResponse.failure(error, executionTime);
+                }
             }
 
             AgentResponse agentResponse = objectMapper.readValue(response.body(), AgentResponse.class);
@@ -152,7 +164,7 @@ public class AgentClient {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                String error = String.format("Failed to initialize agent: status %d", response.statusCode());
+                String error = String.format("Failed to initialize agent: status %d, body: %s", response.statusCode(), response.body());
                 log.error(error);
                 return AgentResponse.failure(error, 0);
             }

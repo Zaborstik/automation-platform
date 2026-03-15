@@ -1,6 +1,7 @@
 package com.zaborstik.platform.agent.dto;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -15,10 +16,12 @@ public class StepExecutionResult {
     private final Instant executedAt;
     private final long executionTimeMs;
     private final String screenshotPath;
+    private final Map<String, Object> metadata;
 
     public StepExecutionResult(String stepType, String stepTarget, boolean success, 
                                String message, String error, Instant executedAt, 
-                               long executionTimeMs, String screenshotPath) {
+                               long executionTimeMs, String screenshotPath,
+                               Map<String, Object> metadata) {
         this.stepType = Objects.requireNonNull(stepType, "Step type cannot be null");
         this.stepTarget = stepTarget;
         this.success = success;
@@ -27,6 +30,13 @@ public class StepExecutionResult {
         this.executedAt = executedAt != null ? executedAt : Instant.now();
         this.executionTimeMs = executionTimeMs;
         this.screenshotPath = screenshotPath;
+        this.metadata = metadata != null ? Map.copyOf(metadata) : Map.of();
+    }
+
+    public StepExecutionResult(String stepType, String stepTarget, boolean success,
+                               String message, String error, Instant executedAt,
+                               long executionTimeMs, String screenshotPath) {
+        this(stepType, stepTarget, success, message, error, executedAt, executionTimeMs, screenshotPath, Map.of());
     }
 
     public String getStepType() {
@@ -61,17 +71,35 @@ public class StepExecutionResult {
         return screenshotPath;
     }
 
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
     public static StepExecutionResult success(String stepType, String stepTarget, 
                                               String message, long executionTimeMs, 
                                               String screenshotPath) {
         return new StepExecutionResult(stepType, stepTarget, true, message, null, 
-                                      Instant.now(), executionTimeMs, screenshotPath);
+                                      Instant.now(), executionTimeMs, screenshotPath, Map.of());
+    }
+
+    public static StepExecutionResult success(String stepType, String stepTarget,
+                                              String message, long executionTimeMs,
+                                              String screenshotPath, Map<String, Object> metadata) {
+        return new StepExecutionResult(stepType, stepTarget, true, message, null,
+            Instant.now(), executionTimeMs, screenshotPath, metadata);
     }
 
     public static StepExecutionResult failure(String stepType, String stepTarget, 
                                               String error, long executionTimeMs) {
         return new StepExecutionResult(stepType, stepTarget, false, null, error, 
-                                      Instant.now(), executionTimeMs, null);
+                                      Instant.now(), executionTimeMs, null, Map.of());
+    }
+
+    public static StepExecutionResult failure(String stepType, String stepTarget,
+                                              String error, long executionTimeMs,
+                                              Map<String, Object> metadata) {
+        return new StepExecutionResult(stepType, stepTarget, false, null, error,
+            Instant.now(), executionTimeMs, null, metadata);
     }
 
     @Override
