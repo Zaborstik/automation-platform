@@ -26,22 +26,75 @@ let browser = null;
 let context = null;
 let page = null;
 let baseUrl = null;
+let cursorState = { x: 0, y: 0, initialized: false };
 
-// Утилита для плавного движения мыши
-async function smoothMove(page, fromX, fromY, toX, toY, steps = 20) {
-    for (let i = 0; i <= steps; i++) {
-        const progress = i / steps;
-        const easeProgress = easeInOutCubic(progress);
-        const x = fromX + (toX - fromX) * easeProgress;
-        const y = fromY + (toY - fromY) * easeProgress;
-        await page.mouse.move(x, y);
-        await page.waitForTimeout(10);
-    }
+function randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function randomInt(min, max) {
+    return Math.floor(randomBetween(min, max + 1));
 }
 
 // Easing функция для плавного движения
 function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function buildHumanPath(fromX, fromY, toX, toY, steps) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const distance = Math.hypot(dx, dy);
+    const controlOffset = Math.min(60, Math.max(10, distance * 0.15));
+    const cp1x = fromX + dx * 0.35 + randomBetween(-controlOffset, controlOffset);
+    const cp1y = fromY + dy * 0.25 + randomBetween(-controlOffset, controlOffset);
+    const cp2x = fromX + dx * 0.75 + randomBetween(-controlOffset, controlOffset);
+    const cp2y = fromY + dy * 0.65 + randomBetween(-controlOffset, controlOffset);
+    const points = [];
+
+    for (let i = 0; i <= steps; i++) {
+        const t = easeInOutCubic(i / steps);
+        const inv = 1 - t;
+        const x = inv ** 3 * fromX
+            + 3 * inv ** 2 * t * cp1x
+            + 3 * inv * t ** 2 * cp2x
+            + t ** 3 * toX;
+        const y = inv ** 3 * fromY
+            + 3 * inv ** 2 * t * cp1y
+            + 3 * inv * t ** 2 * cp2y
+            + t ** 3 * toY;
+        points.push({ x, y });
+    }
+
+    return points;
+}
+
+async function ensureCursorInitialized(page) {
+    if (cursorState.initialized) {
+        return;
+    }
+    const viewport = page.viewportSize() || { width: 1920, height: 1080 };
+    const startX = randomBetween(viewport.width * 0.3, viewport.width * 0.7);
+    const startY = randomBetween(viewport.height * 0.2, viewport.height * 0.8);
+    await page.mouse.move(startX, startY);
+    cursorState = { x: startX, y: startY, initialized: true };
+}
+
+// Плавное движение курсора с легкой рандомизацией траектории и скорости.
+async function smoothMove(page, toX, toY, options = {}) {
+    await ensureCursorInitialized(page);
+    const fromX = cursorState.x;
+    const fromY = cursorState.y;
+    const distance = Math.hypot(toX - fromX, toY - fromY);
+    const steps = options.steps || Math.max(12, Math.min(60, Math.round(distance / randomBetween(7, 11))));
+    const points = buildHumanPath(fromX, fromY, toX, toY, steps);
+
+    for (const point of points) {
+        await page.mouse.move(point.x, point.y);
+        await page.waitForTimeout(randomInt(6, 16));
+    }
+
+    cursorState = { x: toX, y: toY, initialized: true };
 }
 
 // Подсветка элемента
@@ -60,14 +113,40 @@ async function highlightElement(page, selector) {
 
 // Получение координат элемента
 async function getElementCoordinates(page, selector) {
-    const box = await page.locator(selector).boundingBox();
+    const locator = page.locator(selector).first();
+    await locator.scrollIntoViewIfNeeded();
+    const box = await locator.boundingBox();
     if (!box) {
         throw new Error(`Element not found: ${selector}`);
     }
     return {
         x: box.x + box.width / 2,
-        y: box.y + box.height / 2
+        y: box.y + box.height / 2,
+        width: box.width,
+        height: box.height,
+        left: box.x,
+        top: box.y,
+        right: box.x + box.width,
+        bottom: box.y + box.height
     };
+}
+
+function mergeCoordinates(target, coords) {
+    if (!coords) {
+        return target;
+    }
+    target.coordinates = coords;
+    target.x = coords.x;
+    target.y = coords.y;
+    target.width = coords.width;
+    target.height = coords.height;
+    return target;
+}
+
+async function captureStepScreenshot(page, prefix = 'step') {
+    const screenshotPath = path.join(SCREENSHOTS_DIR, `${prefix}-${Date.now()}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+    return screenshotPath;
 }
 
 // Health check
@@ -87,19 +166,40 @@ app.post('/initialize', async (req, res) => {
 
         browser = await chromium.launch({
             headless: headless,
-            slowMo: 100, // Замедление для визуализации
         });
 
         context = await browser.newContext({
             viewport: { width: 1920, height: 1080 },
-            recordVideo: {
-                dir: path.join(SCREENSHOTS_DIR, 'videos'),
-                size: { width: 1920, height: 1080 }
-            }
         });
 
         page = await context.newPage();
-        await page.goto(baseUrl);
+        cursorState = { x: 0, y: 0, initialized: false };
+
+        await page.addInitScript(() => {
+            const cursor = document.createElement('div');
+            cursor.id = '__pw_cursor';
+            Object.assign(cursor.style, {
+                position: 'fixed', zIndex: '2147483647', pointerEvents: 'none',
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: 'rgba(255, 50, 50, 0.7)', border: '2px solid #fff',
+                boxShadow: '0 0 8px rgba(255,50,50,0.5)',
+                transform: 'translate(-50%, -50%)', transition: 'left 0.03s, top 0.03s',
+                left: '-100px', top: '-100px',
+            });
+            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(cursor));
+            document.addEventListener('mousemove', e => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top  = e.clientY + 'px';
+            });
+            document.addEventListener('mousedown', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(0.7)';
+                cursor.style.background = 'rgba(255, 0, 0, 0.9)';
+            });
+            document.addEventListener('mouseup', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursor.style.background = 'rgba(255, 50, 50, 0.7)';
+            });
+        });
 
         res.json({
             success: true,
@@ -108,6 +208,7 @@ app.post('/initialize', async (req, res) => {
             executionTimeMs: 0
         });
     } catch (error) {
+        console.error('[INIT ERROR]', error.message, error.stack);
         res.status(500).json({
             success: false,
             error: error.message,
@@ -144,35 +245,48 @@ app.post('/execute', async (req, res) => {
                 await page.waitForSelector(target, { timeout: 10000 });
                 await highlightElement(page, target);
                 const coords = await getElementCoordinates(page, target);
-                await smoothMove(page, 0, 0, coords.x, coords.y);
-                await page.waitForTimeout(200);
-                await page.click(target);
-                result = { selector: target };
+                await smoothMove(page, coords.x, coords.y);
+                await page.waitForTimeout(randomInt(80, 180));
+                await page.mouse.down();
+                await page.waitForTimeout(randomInt(35, 90));
+                await page.mouse.up();
+                result = mergeCoordinates({ selector: target, selectorUsed: target }, coords);
                 break;
 
             case 'HOVER':
                 await page.waitForSelector(target, { timeout: 10000 });
                 await highlightElement(page, target);
                 const hoverCoords = await getElementCoordinates(page, target);
-                await smoothMove(page, 0, 0, hoverCoords.x, hoverCoords.y);
-                await page.hover(target);
-                result = { selector: target };
+                await smoothMove(page, hoverCoords.x, hoverCoords.y);
+                result = mergeCoordinates({ selector: target, selectorUsed: target }, hoverCoords);
                 break;
 
             case 'TYPE':
                 await page.waitForSelector(target, { timeout: 10000 });
                 await highlightElement(page, target);
-                await page.fill(target, parameters.text || '');
-                result = { selector: target, text: parameters.text };
+                const typeCoords = await getElementCoordinates(page, target);
+                await smoothMove(page, typeCoords.x, typeCoords.y);
+                await page.waitForTimeout(randomInt(70, 170));
+                await page.mouse.click(typeCoords.x, typeCoords.y, { delay: randomInt(30, 80) });
+                await page.keyboard.press('ControlOrMeta+A');
+                await page.keyboard.press('Backspace');
+                await page.keyboard.type(parameters.text || '', { delay: randomInt(40, 120) });
+                if (parameters.pressEnter) {
+                    await page.waitForTimeout(randomInt(200, 400));
+                    await page.keyboard.press('Enter');
+                }
+                result = mergeCoordinates({ selector: target, selectorUsed: target, text: parameters.text }, typeCoords);
                 break;
 
             case 'WAIT':
-                const timeout = parameters.timeout || 5000;
-                const condition = target || 'networkidle';
-                if (condition === 'result' || condition === 'networkidle') {
-                    await page.waitForLoadState('networkidle', { timeout });
+                const timeout = parameters.timeout || 10000;
+                const condition = target || 'domcontentloaded';
+                if (condition === 'networkidle' || condition === 'domcontentloaded' || condition === 'load') {
+                    await page.waitForLoadState(condition, { timeout });
+                } else if (condition === 'result') {
+                    await page.waitForLoadState('domcontentloaded', { timeout });
                 } else {
-                    await page.waitForSelector(condition, { timeout });
+                    await page.waitForSelector(condition, { timeout, state: 'visible' });
                 }
                 result = { condition, timeout };
                 break;
@@ -191,19 +305,35 @@ app.post('/execute', async (req, res) => {
 
             case 'SCREENSHOT':
                 const screenshotPath = path.join(SCREENSHOTS_DIR, `screenshot-${Date.now()}.png`);
-                await page.screenshot({ path: screenshotPath, fullPage: true });
+                await page.screenshot({ path: screenshotPath, fullPage: false });
                 result = { screenshot: screenshotPath };
+                break;
+
+            case 'RESOLVE_COORDS':
+                await page.waitForSelector(target, { timeout: 10000 });
+                const resolvedCoords = await getElementCoordinates(page, target);
+                result = mergeCoordinates({ selector: target, selectorUsed: target }, resolvedCoords);
+                break;
+
+            case 'CLICK_AT':
+                if (parameters.x === undefined || parameters.y === undefined) {
+                    throw new Error('CLICK_AT requires numeric x and y parameters');
+                }
+                await smoothMove(page, Number(parameters.x), Number(parameters.y));
+                await page.waitForTimeout(randomInt(80, 180));
+                await page.mouse.down();
+                await page.waitForTimeout(randomInt(35, 90));
+                await page.mouse.up();
+                result = {
+                    x: Number(parameters.x),
+                    y: Number(parameters.y),
+                    button: parameters.button || 'left',
+                    selectorUsed: parameters.selectorUsed || target || null
+                };
                 break;
 
             default:
                 throw new Error(`Unknown command type: ${type}`);
-        }
-
-        // Делаем скриншот после каждого действия (опционально)
-        if (type !== 'SCREENSHOT' && type !== 'EXPLAIN') {
-            const screenshotPath = path.join(SCREENSHOTS_DIR, `step-${Date.now()}.png`);
-            await page.screenshot({ path: screenshotPath, fullPage: false });
-            result.screenshot = screenshotPath;
         }
 
         const executionTime = Date.now() - startTime;
@@ -218,10 +348,16 @@ app.post('/execute', async (req, res) => {
     } catch (error) {
         const executionTime = Date.now() - startTime;
         console.error(`[ERROR] Command ${type} failed:`, error);
+        let errorScreenshot = null;
+        try {
+            await page.waitForTimeout(300);
+            errorScreenshot = await captureStepScreenshot(page, 'error');
+        } catch (ignored) {}
         
         res.status(500).json({
             success: false,
             error: error.message,
+            data: errorScreenshot ? { screenshot: errorScreenshot } : {},
             executionTimeMs: executionTime
         });
     }
@@ -239,6 +375,7 @@ app.post('/close', async (req, res) => {
             browser = null;
         }
         page = null;
+        cursorState = { x: 0, y: 0, initialized: false };
 
         res.json({
             success: true,

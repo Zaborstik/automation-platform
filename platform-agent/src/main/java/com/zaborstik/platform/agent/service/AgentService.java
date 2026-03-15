@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -98,6 +100,10 @@ public class AgentService {
         log.debug("Executing step: {}", step);
 
         try {
+            if (isCoordinateStep(step.workflowStepInternalName())) {
+                return executeCoordinateStep(step, startTime);
+            }
+
             AgentCommand command = convertToCommand(step);
             if (command == null) {
                 String error = "Unknown step type: " + step.workflowStepInternalName();
@@ -111,17 +117,116 @@ public class AgentService {
             if (response.isSuccess()) {
                 String screenshotPath = (String) response.getData().get("screenshot");
                 return StepExecutionResult.success(step.id(), step.displayName(),
-                    response.getMessage(), executionTime, screenshotPath);
+                    response.getMessage(), executionTime, screenshotPath, response.getData());
             } else {
                 return StepExecutionResult.failure(step.id(), step.displayName(),
-                    response.getError(), executionTime);
+                    response.getError(), executionTime, response.getData());
             }
 
         } catch (AgentException e) {
             long executionTime = System.currentTimeMillis() - startTime;
             return StepExecutionResult.failure(step.id(), step.displayName(),
                 e.getMessage(), executionTime);
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            return StepExecutionResult.failure(step.id(), step.displayName(),
+                "Step execution failed: " + e.getMessage(), executionTime);
         }
+    }
+
+    private boolean isCoordinateStep(String stepType) {
+        return "click".equals(stepType) || "hover".equals(stepType) || "type".equals(stepType);
+    }
+
+    private StepExecutionResult executeCoordinateStep(PlanStep step, long startTime) throws AgentException {
+        String selector = resolveSelector(step.entityId());
+        if (selector == null || selector.isBlank()) {
+            return StepExecutionResult.failure(step.id(), step.displayName(),
+                "Target selector is empty for coordinate step", System.currentTimeMillis() - startTime);
+        }
+
+        String explanation = step.displayName();
+        AgentResponse coordsResponse = agentClient.execute(AgentCommand.resolveCoords(selector, explanation));
+        long executionTime = System.currentTimeMillis() - startTime;
+        if (!coordsResponse.isSuccess()) {
+            return StepExecutionResult.failure(step.id(), step.displayName(),
+                coordsResponse.getError(), executionTime, mergeMetadata(selector, coordsResponse.getData(), null));
+        }
+
+        AgentCommand command;
+        switch (step.workflowStepInternalName()) {
+            case "click":
+                double x = extractRequiredNumber(coordsResponse.getData(), "x");
+                double y = extractRequiredNumber(coordsResponse.getData(), "y");
+                command = AgentCommand.clickAt(x, y, explanation, selector);
+                break;
+            case "hover":
+                command = AgentCommand.hover(selector, explanation);
+                break;
+            case "type":
+                String rawMeta = step.actions().isEmpty() ? ""
+                    : step.actions().get(0).metaValue() != null ? step.actions().get(0).metaValue() : "";
+                boolean pressEnter = rawMeta.endsWith("\\n");
+                String typeText = pressEnter ? rawMeta.substring(0, rawMeta.length() - 2) : rawMeta;
+                command = pressEnter
+                    ? AgentCommand.typeAndSubmit(selector, typeText, explanation)
+                    : AgentCommand.type(selector, typeText, explanation);
+                break;
+            default:
+                return StepExecutionResult.failure(step.id(), step.displayName(),
+                    "Unknown coordinate step type: " + step.workflowStepInternalName(),
+                    System.currentTimeMillis() - startTime);
+        }
+
+        AgentResponse executeResponse = agentClient.execute(command);
+        executionTime = System.currentTimeMillis() - startTime;
+        Map<String, Object> mergedMetadata = mergeMetadata(selector, coordsResponse.getData(), executeResponse.getData());
+        String screenshotPath = extractScreenshotPath(executeResponse.getData());
+        if (executeResponse.isSuccess()) {
+            return StepExecutionResult.success(step.id(), step.displayName(),
+                executeResponse.getMessage(), executionTime, screenshotPath, mergedMetadata);
+        }
+        return StepExecutionResult.failure(step.id(), step.displayName(),
+            executeResponse.getError(), executionTime, mergedMetadata);
+    }
+
+    private String extractScreenshotPath(Map<String, Object> data) {
+        if (data == null) {
+            return null;
+        }
+        Object screenshot = data.get("screenshot");
+        return screenshot instanceof String screenshotPath ? screenshotPath : null;
+    }
+
+    private double extractRequiredNumber(Map<String, Object> data, String key) {
+        if (data == null || !data.containsKey(key) || !(data.get(key) instanceof Number number)) {
+            throw new IllegalStateException("Missing numeric field '" + key + "' in coordinates response");
+        }
+        return number.doubleValue();
+    }
+
+    private Map<String, Object> mergeMetadata(String selector, Map<String, Object> coordsData, Map<String, Object> commandData) {
+        Map<String, Object> merged = new HashMap<>();
+        merged.put("selectorUsed", selector);
+        if (coordsData != null) {
+            merged.putAll(coordsData);
+        }
+        if (commandData != null) {
+            merged.putAll(commandData);
+        }
+        return merged;
+    }
+
+    private String resolveSelector(String target) {
+        if (target != null && target.startsWith("action(") && target.endsWith(")")) {
+            String actionId = target.substring(7, target.length() - 1);
+            Optional<UIBinding> binding = resolver.findUIBinding(actionId);
+            if (binding.isPresent()) {
+                return binding.get().selector();
+            }
+            log.warn("UIBinding not found for action: {}, using target as selector", actionId);
+        }
+        return target != null ? target : "";
     }
 
     /**
@@ -136,34 +241,27 @@ public class AgentService {
 
         switch (type) {
             case "open_page":
-                return AgentCommand.openPage(target != null ? target : "", explanation);
+                String url = target;
+                if (!step.actions().isEmpty() && step.actions().get(0).metaValue() != null
+                        && !step.actions().get(0).metaValue().isBlank()) {
+                    url = step.actions().get(0).metaValue();
+                }
+                return AgentCommand.openPage(url != null ? url : "", explanation);
 
             case "click":
-                if (target != null && target.startsWith("action(") && target.endsWith(")")) {
-                    String actionId = target.substring(7, target.length() - 1);
-                    Optional<UIBinding> binding = resolver.findUIBinding(actionId);
-                    if (binding.isPresent()) {
-                        return AgentCommand.click(binding.get().selector(), explanation);
-                    }
-                    log.warn("UIBinding not found for action: {}, using target as selector", actionId);
-                }
-                return AgentCommand.click(target != null ? target : "", explanation);
+                return AgentCommand.click(resolveSelector(target), explanation);
 
             case "hover":
-                if (target != null && target.startsWith("action(") && target.endsWith(")")) {
-                    String actionId = target.substring(7, target.length() - 1);
-                    Optional<UIBinding> binding = resolver.findUIBinding(actionId);
-                    if (binding.isPresent()) {
-                        return AgentCommand.hover(binding.get().selector(), explanation);
-                    }
-                    log.warn("UIBinding not found for action: {}, using target as selector", actionId);
-                }
-                return AgentCommand.hover(target != null ? target : "", explanation);
+                return AgentCommand.hover(resolveSelector(target), explanation);
 
             case "type":
-                String text = step.actions().isEmpty() ? ""
+                String rawText = step.actions().isEmpty() ? ""
                     : step.actions().get(0).metaValue() != null ? step.actions().get(0).metaValue() : "";
-                return AgentCommand.type(target != null ? target : "", text, explanation);
+                boolean submitAfterType = rawText.endsWith("\\n");
+                String cleanText = submitAfterType ? rawText.substring(0, rawText.length() - 2) : rawText;
+                return submitAfterType
+                    ? AgentCommand.typeAndSubmit(resolveSelector(target), cleanText, explanation)
+                    : AgentCommand.type(resolveSelector(target), cleanText, explanation);
 
             case "wait":
                 long timeout = 5000L;
