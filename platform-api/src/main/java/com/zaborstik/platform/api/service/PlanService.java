@@ -80,14 +80,22 @@ public class PlanService {
 
     @Transactional(readOnly = true)
     public Optional<PlanResponse> getPlan(String planId) {
+        Objects.requireNonNull(planId, "planId");
         return planRepository.findById(planId)
                 .map(planMapper::toDomain)
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Plan> getPlanDomain(String planId) {
+        Objects.requireNonNull(planId, "planId");
+        return planRepository.findById(planId).map(planMapper::toDomain);
+    }
+
     /** Регистрация итога выполнения плана (после выполнения или прерывания). */
     @Transactional
     public PlanResultEntity createPlanResult(String planId, boolean success, Instant startedTime, Instant finishedTime) {
+        Objects.requireNonNull(planId, "planId");
         PlanEntity plan = planRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
         PlanResultEntity result = new PlanResultEntity();
@@ -104,6 +112,10 @@ public class PlanService {
     public PlanStepLogEntryEntity createPlanStepLogEntry(String planId, String planStepId, String planResultId,
                                                          String actionId, String message, String error,
                                                          Instant executedTime, Long executionTimeMs, String attachmentId) {
+        Objects.requireNonNull(planId, "planId");
+        Objects.requireNonNull(planStepId, "planStepId");
+        Objects.requireNonNull(planResultId, "planResultId");
+        Objects.requireNonNull(actionId, "actionId");
         PlanEntity plan = planRepository.findById(planId).orElseThrow(() -> new IllegalArgumentException("Plan not found: " + planId));
         PlanStepEntity planStep = plan.getSteps().stream().filter(s -> s.getId().equals(planStepId)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Plan step not found: " + planStepId));
@@ -124,6 +136,14 @@ public class PlanService {
             attachmentRepository.findById(attachmentId).ifPresent(entry::setAttachment);
         }
         return planStepLogEntryRepository.save(entry);
+    }
+
+    @Transactional
+    public AttachmentEntity createAttachment(String displayName) {
+        AttachmentEntity attachment = new AttachmentEntity();
+        attachment.setId(UUID.randomUUID().toString());
+        attachment.setDisplayname(displayName);
+        return attachmentRepository.save(attachment);
     }
 
     private PlanResponse toResponse(Plan plan) {

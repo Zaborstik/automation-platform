@@ -16,8 +16,10 @@ public class AgentCommand {
     public enum CommandType {
         OPEN_PAGE,
         CLICK,
+        CLICK_AT,
         TYPE,
         HOVER,
+        RESOLVE_COORDS,
         WAIT,
         EXPLAIN,
         HIGHLIGHT,
@@ -55,12 +57,30 @@ public class AgentCommand {
         return new AgentCommand(CommandType.CLICK, selector, explanation, Map.of());
     }
 
+    public static AgentCommand clickAt(double x, double y, String explanation, String selectorUsed) {
+        String normalizedSelector = selectorUsed != null ? selectorUsed : "";
+        return new AgentCommand(
+            CommandType.CLICK_AT,
+            normalizedSelector,
+            explanation,
+            Map.of("x", x, "y", y, "selectorUsed", normalizedSelector)
+        );
+    }
+
     public static AgentCommand type(String selector, String text, String explanation) {
         return new AgentCommand(CommandType.TYPE, selector, explanation, Map.of("text", text));
     }
 
+    public static AgentCommand typeAndSubmit(String selector, String text, String explanation) {
+        return new AgentCommand(CommandType.TYPE, selector, explanation, Map.of("text", text, "pressEnter", true));
+    }
+
     public static AgentCommand hover(String selector, String explanation) {
         return new AgentCommand(CommandType.HOVER, selector, explanation, Map.of());
+    }
+
+    public static AgentCommand resolveCoords(String selector, String explanation) {
+        return new AgentCommand(CommandType.RESOLVE_COORDS, selector, explanation, Map.of());
     }
 
     public static AgentCommand wait(String condition, String explanation, long timeoutMs) {

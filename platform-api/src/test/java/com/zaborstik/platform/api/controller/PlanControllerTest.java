@@ -2,8 +2,10 @@ package com.zaborstik.platform.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaborstik.platform.api.dto.CreatePlanRequest;
+import com.zaborstik.platform.api.dto.ExecutePlanResponse;
 import com.zaborstik.platform.api.dto.PlanResponse;
 import com.zaborstik.platform.api.exception.GlobalExceptionHandler;
+import com.zaborstik.platform.api.service.PlanExecutionService;
 import com.zaborstik.platform.api.service.PlanService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,9 @@ class PlanControllerTest {
 
     @MockBean
     private PlanService planService;
+
+    @MockBean
+    private PlanExecutionService planExecutionService;
 
     @Test
     void shouldCreatePlanSuccessfully() throws Exception {
@@ -85,6 +90,23 @@ class PlanControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Not Found"))
                 .andExpect(jsonPath("$.message").value("Plan with id 'non-existent-id' not found"));
+    }
+
+    @Test
+    void shouldExecutePlanSuccessfully() throws Exception {
+        ExecutePlanResponse response = new ExecutePlanResponse();
+        response.setPlanId("plan-1");
+        response.setPlanResultId("result-1");
+        response.setSuccess(true);
+        response.setTotalSteps(2);
+        response.setFailedSteps(0);
+        when(planExecutionService.executePlan("plan-1")).thenReturn(java.util.Optional.of(response));
+
+        mockMvc.perform(post("/api/plans/plan-1/execute"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.planId").value("plan-1"))
+            .andExpect(jsonPath("$.planResultId").value("result-1"))
+            .andExpect(jsonPath("$.success").value(true));
     }
 
     private static CreatePlanRequest.PlanStepRequest stepRequest(String entityTypeId, String entityId, int sortOrder,
