@@ -43,12 +43,6 @@ class PlanServiceTest {
     @Mock
     private AttachmentRepository attachmentRepository;
 
-    @Mock
-    private PlanStepRepository planStepRepository;
-
-    @Mock
-    private WorkflowTransitionRepository workflowTransitionRepository;
-
     @InjectMocks
     private PlanService planService;
 

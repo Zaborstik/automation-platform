@@ -8,7 +8,6 @@ import com.zaborstik.platform.api.repository.ActionTypeRepository;
 import com.zaborstik.platform.api.repository.EntityTypeRepository;
 import com.zaborstik.platform.api.repository.WorkflowRepository;
 import com.zaborstik.platform.api.repository.WorkflowStepRepository;
-import com.zaborstik.platform.api.repository.WorkflowTransitionRepository;
 import com.zaborstik.platform.api.resolver.DatabaseResolver;
 import com.zaborstik.platform.core.ExecutionEngine;
 import com.zaborstik.platform.core.execution.ExecutionRequest;
@@ -51,9 +50,6 @@ class PlatformConfigurationTest {
     private WorkflowStepRepository workflowStepRepository;
 
     @Autowired
-    private WorkflowTransitionRepository workflowTransitionRepository;
-
-    @Autowired
     private Resolver resolver;
 
     @Autowired
@@ -64,9 +60,8 @@ class PlatformConfigurationTest {
         actionRepository.deleteAll();
         entityTypeRepository.deleteAll();
         actionTypeRepository.deleteAll();
-        workflowTransitionRepository.deleteAll();
-        workflowRepository.deleteAll();
         workflowStepRepository.deleteAll();
+        workflowRepository.deleteAll();
 
         EntityTypeEntity building = new EntityTypeEntity();
         building.setId("Building");

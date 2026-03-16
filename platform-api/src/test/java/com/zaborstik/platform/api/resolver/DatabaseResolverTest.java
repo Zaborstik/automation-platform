@@ -3,15 +3,9 @@ package com.zaborstik.platform.api.resolver;
 import com.zaborstik.platform.api.entity.ActionEntity;
 import com.zaborstik.platform.api.entity.ActionTypeEntity;
 import com.zaborstik.platform.api.entity.EntityTypeEntity;
-import com.zaborstik.platform.api.entity.WorkflowEntity;
-import com.zaborstik.platform.api.entity.WorkflowStepEntity;
-import com.zaborstik.platform.api.entity.WorkflowTransitionEntity;
 import com.zaborstik.platform.api.repository.ActionRepository;
 import com.zaborstik.platform.api.repository.ActionTypeRepository;
 import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.WorkflowRepository;
-import com.zaborstik.platform.api.repository.WorkflowStepRepository;
-import com.zaborstik.platform.api.repository.WorkflowTransitionRepository;
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,15 +37,6 @@ class DatabaseResolverTest {
     private ActionRepository actionRepository;
 
     @Autowired
-    private WorkflowRepository workflowRepository;
-
-    @Autowired
-    private WorkflowStepRepository workflowStepRepository;
-
-    @Autowired
-    private WorkflowTransitionRepository workflowTransitionRepository;
-
-    @Autowired
     private DatabaseResolver databaseResolver;
 
     @BeforeEach
@@ -59,9 +44,6 @@ class DatabaseResolverTest {
         actionRepository.deleteAll();
         entityTypeRepository.deleteAll();
         actionTypeRepository.deleteAll();
-        workflowTransitionRepository.deleteAll();
-        workflowRepository.deleteAll();
-        workflowStepRepository.deleteAll();
 
         EntityTypeEntity et = new EntityTypeEntity();
         et.setId("Building");
@@ -82,26 +64,6 @@ class DatabaseResolverTest {
         action.setActionType(actionType);
         action.setApplicableEntityTypes(Set.of(et));
         actionRepository.save(action);
-
-        WorkflowStepEntity newStep = new WorkflowStepEntity();
-        newStep.setId("wfs-new");
-        newStep.setInternalname("new");
-        newStep.setDisplayname("New");
-        newStep.setSortorder(10);
-        workflowStepRepository.save(newStep);
-
-        WorkflowEntity workflow = new WorkflowEntity();
-        workflow.setId("wf-plan");
-        workflow.setDisplayname("Plan workflow");
-        workflow.setFirststep(newStep);
-        workflowRepository.save(workflow);
-
-        WorkflowTransitionEntity transition = new WorkflowTransitionEntity();
-        transition.setId("wft-1");
-        transition.setWorkflow(workflow);
-        transition.setFromStep("new");
-        transition.setToStep("in_progress");
-        workflowTransitionRepository.save(transition);
     }
 
     @Test
@@ -140,16 +102,5 @@ class DatabaseResolverTest {
     void shouldCheckActionApplicability() {
         assertTrue(databaseResolver.isActionApplicable("order_egrn_extract", "Building"));
         assertFalse(databaseResolver.isActionApplicable("order_egrn_extract", "Contract"));
-    }
-
-    @Test
-    void shouldFindTransitions() {
-        assertEquals(1, databaseResolver.findTransitions("wf-plan").size());
-    }
-
-    @Test
-    void shouldFindTransitionByFromAndToSteps() {
-        assertTrue(databaseResolver.findTransition("wf-plan", "new", "in_progress").isPresent());
-        assertTrue(databaseResolver.findTransition("wf-plan", "completed", "new").isEmpty());
     }
 }

@@ -43,7 +43,6 @@ public class PlanExecutionService {
         }
 
         Plan plan = maybePlan.get();
-        safelyTransitionPlan(plan.id(), "in_progress");
         PlanExecutionResult executionResult = planExecutor.execute(plan);
 
         PlanResultEntity planResult = planService.createPlanResult(
@@ -55,15 +54,10 @@ public class PlanExecutionService {
 
         int failedSteps = 0;
         for (ExecutionLogEntry logEntry : executionResult.getLogEntries()) {
-            safelyUpdateStoppedAt(executionResult.getPlanId(), logEntry.getStep().id());
-            safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "in_progress");
-
             StepExecutionResult stepResult = logEntry.getResult();
             if (stepResult.isSuccess()) {
-                safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "completed");
                 continue;
             }
-            safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "failed");
             failedSteps++;
             String actionId = resolveActionId(logEntry);
             if (actionId == null) {
@@ -92,8 +86,6 @@ public class PlanExecutionService {
             );
         }
 
-        safelyTransitionPlan(executionResult.getPlanId(), executionResult.isSuccess() ? "completed" : "failed");
-
         ExecutePlanResponse response = new ExecutePlanResponse();
         response.setPlanId(executionResult.getPlanId());
         response.setPlanResultId(planResult.getId());
@@ -103,30 +95,6 @@ public class PlanExecutionService {
         response.setStartedTime(executionResult.getStartedAt());
         response.setFinishedTime(executionResult.getFinishedAt());
         return Optional.of(response);
-    }
-
-    private void safelyTransitionPlan(String planId, String targetStep) {
-        try {
-            planService.transitionPlan(planId, targetStep);
-        } catch (Exception ex) {
-            log.warn("Failed to transition plan {} to {}", planId, targetStep, ex);
-        }
-    }
-
-    private void safelyTransitionPlanStep(String planId, String stepId, String targetStep) {
-        try {
-            planService.transitionPlanStep(planId, stepId, targetStep);
-        } catch (Exception ex) {
-            log.warn("Failed to transition plan step {}:{} to {}", planId, stepId, targetStep, ex);
-        }
-    }
-
-    private void safelyUpdateStoppedAt(String planId, String stepId) {
-        try {
-            planService.updateStoppedAtPlanStep(planId, stepId);
-        } catch (Exception ex) {
-            log.warn("Failed to update stoppedAtPlanStep for plan {} and step {}", planId, stepId, ex);
-        }
     }
 
     private String resolveActionId(ExecutionLogEntry logEntry) {

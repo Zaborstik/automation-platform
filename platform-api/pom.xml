@@ -65,12 +65,6 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-
         <!-- Platform Core -->
         <dependency>
             <groupId>com.zaborstik.platform</groupId>

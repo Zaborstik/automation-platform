@@ -8,8 +8,6 @@ import com.zaborstik.platform.api.repository.*;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import com.zaborstik.platform.core.plan.PlanStepAction;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,25 +27,19 @@ public class PlanService {
     private final PlanStepLogEntryRepository planStepLogEntryRepository;
     private final ActionRepository actionRepository;
     private final AttachmentRepository attachmentRepository;
-    private final PlanStepRepository planStepRepository;
-    private final WorkflowTransitionRepository workflowTransitionRepository;
 
     public PlanService(PlanRepository planRepository,
                        PlanMapper planMapper,
                        PlanResultRepository planResultRepository,
                        PlanStepLogEntryRepository planStepLogEntryRepository,
                        ActionRepository actionRepository,
-                       AttachmentRepository attachmentRepository,
-                       PlanStepRepository planStepRepository,
-                       WorkflowTransitionRepository workflowTransitionRepository) {
+                       AttachmentRepository attachmentRepository) {
         this.planRepository = planRepository;
         this.planMapper = planMapper;
         this.planResultRepository = planResultRepository;
         this.planStepLogEntryRepository = planStepLogEntryRepository;
         this.actionRepository = actionRepository;
         this.attachmentRepository = attachmentRepository;
-        this.planStepRepository = planStepRepository;
-        this.workflowTransitionRepository = workflowTransitionRepository;
     }
 
     @Transactional
@@ -95,69 +87,9 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PlanResponse> listPlans(String status, Pageable pageable) {
-        Page<PlanEntity> page = (status == null || status.isBlank())
-            ? planRepository.findAll(pageable)
-            : planRepository.findByWorkflowStepInternalname(status, pageable);
-        return page
-            .map(planMapper::toDomain)
-            .map(this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
     public Optional<Plan> getPlanDomain(String planId) {
         Objects.requireNonNull(planId, "planId");
         return planRepository.findById(planId).map(planMapper::toDomain);
-    }
-
-    @Transactional
-    public PlanResponse transitionPlan(String planId, String targetStep) {
-        Objects.requireNonNull(planId, "planId");
-        Objects.requireNonNull(targetStep, "targetStep");
-
-        PlanEntity plan = planRepository.findById(planId)
-            .orElseThrow(() -> new NoSuchElementException("Plan not found: " + planId));
-
-        String workflowId = plan.getWorkflow().getId();
-        String currentStep = plan.getWorkflowStepInternalname();
-        boolean allowed = workflowTransitionRepository
-            .findByWorkflow_IdAndFromStepAndToStep(workflowId, currentStep, targetStep)
-            .isPresent();
-        if (!allowed) {
-            throw new IllegalStateException(
-                "Transition is not allowed for workflow '" + workflowId + "': " + currentStep + " -> " + targetStep
-            );
-        }
-
-        plan.setWorkflowStepInternalname(targetStep);
-        PlanEntity saved = planRepository.save(plan);
-        return toResponse(planMapper.toDomain(saved));
-    }
-
-    @Transactional
-    public void updateStoppedAtPlanStep(String planId, String planStepId) {
-        PlanEntity plan = planRepository.findById(planId)
-            .orElseThrow(() -> new NoSuchElementException("Plan not found: " + planId));
-        plan.setStoppedAtPlanStep(planStepId);
-        planRepository.save(plan);
-    }
-
-    @Transactional
-    public void transitionPlanStep(String planId, String planStepId, String targetStep) {
-        PlanStepEntity step = planStepRepository.findByIdAndPlan_Id(planStepId, planId)
-            .orElseThrow(() -> new NoSuchElementException("Plan step not found: " + planStepId));
-        String workflowId = step.getWorkflow().getId();
-        String currentStep = step.getWorkflowStepInternalname();
-        boolean allowed = workflowTransitionRepository
-            .findByWorkflow_IdAndFromStepAndToStep(workflowId, currentStep, targetStep)
-            .isPresent();
-        if (!allowed) {
-            throw new IllegalStateException(
-                "Transition is not allowed for workflow '" + workflowId + "': " + currentStep + " -> " + targetStep
-            );
-        }
-        step.setWorkflowStepInternalname(targetStep);
-        planStepRepository.save(step);
     }
 
     /** Регистрация итога выполнения плана (после выполнения или прерывания). */
