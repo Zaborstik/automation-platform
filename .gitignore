@@ -31,3 +31,8 @@ docs/bots/BOT-1-PLATFORM-CORE.md
 docs/bots/BOT-2-PLATFORM-API.md
 docs/bots/BOT-3-PLATFORM-AGENT-EXECUTOR.md
 docs/bots/BOT-4-PLATFORM-KNOWLEDGE.md
+local-demo/api.log
+local-demo/playwright.log
+local-demo/screenshots/
+local-demo/playwright.log
+local-demo/api.log
