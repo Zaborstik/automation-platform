@@ -27,17 +27,20 @@ public class DatabaseResolver implements Resolver {
     private final ActionRepository actionRepository;
     private final WorkflowRepository workflowRepository;
     private final WorkflowStepRepository workflowStepRepository;
+    private final WorkflowTransitionRepository workflowTransitionRepository;
 
     public DatabaseResolver(EntityTypeRepository entityTypeRepository,
                             ActionTypeRepository actionTypeRepository,
                             ActionRepository actionRepository,
                             WorkflowRepository workflowRepository,
-                            WorkflowStepRepository workflowStepRepository) {
+                            WorkflowStepRepository workflowStepRepository,
+                            WorkflowTransitionRepository workflowTransitionRepository) {
         this.entityTypeRepository = entityTypeRepository;
         this.actionTypeRepository = actionTypeRepository;
         this.actionRepository = actionRepository;
         this.workflowRepository = workflowRepository;
         this.workflowStepRepository = workflowStepRepository;
+        this.workflowTransitionRepository = workflowTransitionRepository;
     }
 
     @Override
@@ -86,6 +89,14 @@ public class DatabaseResolver implements Resolver {
     @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
         return Optional.empty();
+    }
+
+    public List<WorkflowTransitionEntity> findTransitions(String workflowId) {
+        return workflowTransitionRepository.findByWorkflow_Id(workflowId);
+    }
+
+    public Optional<WorkflowTransitionEntity> findTransition(String workflowId, String fromStep, String toStep) {
+        return workflowTransitionRepository.findByWorkflow_IdAndFromStepAndToStep(workflowId, fromStep, toStep);
     }
 
     private EntityType toEntityType(EntityTypeEntity e) {
