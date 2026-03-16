@@ -17,11 +17,10 @@ target/
 GIT_WORKFLOW.md
 SECURITY_SCAN_SETUP.md
 
-### Local demo (never commit — personal only) ###
-local-demo/
-
 ### H2 file database ###
 data/
+
+### Auto-coding-agents ###
 .cursor/
 docs/bots/СТАТУС-БОТ-1-PLATFORM-CORE.md
 docs/bots/СТАТУС-БОТ-2-PLATFORM-API.md
