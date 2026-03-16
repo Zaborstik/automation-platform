@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PlanService {
-
     private final PlanRepository planRepository;
     private final PlanMapper planMapper;
     private final PlanResultRepository planResultRepository;

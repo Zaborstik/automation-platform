@@ -32,7 +32,7 @@ public class PlanStepEntity {
     @JoinColumn(name = "entitytype", nullable = false)
     private EntityTypeEntity entitytype;
 
-    @Column(name = "entity_id", length = 36)
+    @Column(name = "entity_id", length = 510)
     private String entityId;
 
     @Column(name = "sortorder", nullable = false)
