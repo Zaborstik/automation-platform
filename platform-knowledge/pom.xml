@@ -22,7 +22,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.zaborstik.corporation</groupId>
+            <groupId>com.zaborstik.platform</groupId>
             <artifactId>platform-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

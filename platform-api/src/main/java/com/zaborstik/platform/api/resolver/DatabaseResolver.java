@@ -8,6 +8,7 @@ import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.domain.Workflow;
 import com.zaborstik.platform.core.domain.WorkflowStep;
+import com.zaborstik.platform.core.domain.WorkflowTransition;
 import com.zaborstik.platform.core.resolver.Resolver;
 import org.springframework.stereotype.Component;
 
@@ -91,12 +92,17 @@ public class DatabaseResolver implements Resolver {
         return Optional.empty();
     }
 
-    public List<WorkflowTransitionEntity> findTransitions(String workflowId) {
-        return workflowTransitionRepository.findByWorkflow_Id(workflowId);
+    @Override
+    public List<WorkflowTransition> findTransitions(String workflowId) {
+        return workflowTransitionRepository.findByWorkflow_Id(workflowId).stream()
+                .map(this::toWorkflowTransition)
+                .collect(Collectors.toList());
     }
 
-    public Optional<WorkflowTransitionEntity> findTransition(String workflowId, String fromStep, String toStep) {
-        return workflowTransitionRepository.findByWorkflow_IdAndFromStepAndToStep(workflowId, fromStep, toStep);
+    @Override
+    public Optional<WorkflowTransition> findTransition(String workflowId, String fromStep, String toStep) {
+        return workflowTransitionRepository.findByWorkflow_IdAndFromStepAndToStep(workflowId, fromStep, toStep)
+                .map(this::toWorkflowTransition);
     }
 
     private EntityType toEntityType(EntityTypeEntity e) {
@@ -136,5 +142,10 @@ public class DatabaseResolver implements Resolver {
 
     private WorkflowStep toWorkflowStep(WorkflowStepEntity e) {
         return new WorkflowStep(e.getId(), e.getInternalname(), e.getDisplayname(), e.getSortorder());
+    }
+
+    private WorkflowTransition toWorkflowTransition(WorkflowTransitionEntity e) {
+        String wfId = e.getWorkflow() != null ? e.getWorkflow().getId() : null;
+        return new WorkflowTransition(wfId, e.getFromStep(), e.getToStep());
     }
 }
