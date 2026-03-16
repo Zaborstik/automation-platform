@@ -20,10 +20,10 @@ public class WorkflowTransitionEntity {
     @JoinColumn(name = "workflow", nullable = false)
     private WorkflowEntity workflow;
 
-    @Column(name = "from_step", nullable = false, length = 255)
+    @Column(name = "from_step", nullable = false)
     private String fromStep;
 
-    @Column(name = "to_step", nullable = false, length = 255)
+    @Column(name = "to_step", nullable = false)
     private String toStep;
 
     public String getId() { return id; }

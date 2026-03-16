@@ -35,16 +35,12 @@ public class ExecutionEngine {
 
     /**
      * Создает план выполнения для запроса.
-     * 
-     * @param request запрос на выполнение действия
-     * @return план выполнения
-     * @throws IllegalArgumentException если не найдены необходимые компоненты
-     * 
+     *
      * Creates execution plan for request.
-     * 
-     * @param request action execution request
-     * @return execution plan
-     * @throws IllegalArgumentException if required components not found
+     *
+     * @param request запрос на выполнение действия / action execution request
+     * @return план выполнения / execution plan
+     * @throws IllegalArgumentException если не найдены необходимые компоненты / if required components not found
      */
     public Plan createPlan(ExecutionRequest request) {
         return planner.createPlan(request);

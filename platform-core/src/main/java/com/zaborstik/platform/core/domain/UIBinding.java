@@ -26,8 +26,7 @@ public record UIBinding(String actionId, String selector, SelectorType selectorT
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UIBinding uiBinding = (UIBinding) o;
+        if (!(o instanceof UIBinding uiBinding)) return false;
         return Objects.equals(actionId, uiBinding.actionId);
     }
 

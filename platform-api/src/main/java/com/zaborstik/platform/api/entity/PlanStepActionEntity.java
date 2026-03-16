@@ -2,6 +2,8 @@ package com.zaborstik.platform.api.entity;
 
 import jakarta.persistence.*;
 
+import java.io.Serial;
+
 /**
  * Связка шаг плана — действие (zbrtstk.plan_step_action). У одного plan_step может быть несколько action; meta_value — доп. инфо (например текст для поиска).
  */
@@ -24,6 +26,9 @@ public class PlanStepActionEntity {
     private String metaValue;
 
     public static class PlanStepActionId implements java.io.Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         private String planStep;
         private String action;
         public PlanStepActionId() {}

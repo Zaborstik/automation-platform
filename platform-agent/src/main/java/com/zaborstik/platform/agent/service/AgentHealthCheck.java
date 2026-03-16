@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 public class AgentHealthCheck {
     private static final Logger log = LoggerFactory.getLogger(AgentHealthCheck.class);
@@ -37,10 +39,8 @@ public class AgentHealthCheck {
             }
 
             attempt++;
-            try {
-                Thread.sleep(pollIntervalMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(pollIntervalMs));
+            if (Thread.currentThread().isInterrupted()) {
                 log.warn("Interrupted while waiting for healthy agent");
                 return false;
             }

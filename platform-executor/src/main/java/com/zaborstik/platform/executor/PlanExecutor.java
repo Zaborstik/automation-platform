@@ -36,13 +36,10 @@ public class PlanExecutor {
     /**
      * Синхронно выполняет план.
      *
-     * @param plan план для исполнения
-     * @return результат исполнения с execution_log
-     * 
      * Synchronously executes plan.
-     * 
-     * @param plan plan to execute
-     * @return execution result with execution_log
+     *
+     * @param plan план для исполнения / plan to execute
+     * @return результат исполнения с execution_log / execution result with execution_log
      */
     public PlanExecutionResult execute(Plan plan) {
         return execute(plan, false, StepExecutionCallback.noOp());

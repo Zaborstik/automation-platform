@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Сервис для выполнения планов через UI-агента.
@@ -51,14 +53,11 @@ public class AgentService {
 
     /**
      * Выполняет план через UI-агента.
-     * 
-     * @param plan план для выполнения
-     * @return список результатов выполнения шагов
-     * 
+     *
      * Executes plan through UI agent.
-     * 
-     * @param plan plan to execute
-     * @return list of step execution results
+     *
+     * @param plan план для выполнения / plan to execute
+     * @return список результатов выполнения шагов / list of step execution results
      */
     public List<StepExecutionResult> executePlan(Plan plan) {
         return executePlan(plan, false, StepExecutionCallback.noOp());
@@ -468,10 +467,8 @@ public class AgentService {
         if (retryPolicy.delayMs() <= 0) {
             return;
         }
-        try {
-            Thread.sleep(retryPolicy.delayMs());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(retryPolicy.delayMs()));
+        if (Thread.currentThread().isInterrupted()) {
             log.warn("Retry delay interrupted");
         }
     }

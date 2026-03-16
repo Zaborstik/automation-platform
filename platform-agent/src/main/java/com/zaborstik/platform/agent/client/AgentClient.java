@@ -44,16 +44,12 @@ public class AgentClient {
 
     /**
      * Выполняет команду через агента.
-     * 
-     * @param command команда для выполнения
-     * @return ответ от агента
-     * @throws AgentException если произошла ошибка при выполнении
-     * 
+     *
      * Executes command through agent.
-     * 
-     * @param command command to execute
-     * @return response from agent
-     * @throws AgentException if error occurred during execution
+     *
+     * @param command команда для выполнения / command to execute
+     * @return ответ агента / response from agent
+     * @throws AgentException если произошла ошибка при выполнении / if error occurred during execution
      */
     public AgentResponse execute(AgentCommand command) throws AgentException {
         long startTime = System.currentTimeMillis();
@@ -111,12 +107,10 @@ public class AgentClient {
 
     /**
      * Проверяет доступность агента.
-     * 
-     * @return true если агент доступен
-     * 
+     *
      * Checks agent availability.
-     * 
-     * @return true if agent is available
+     *
+     * @return true если агент доступен / if agent is available
      */
     public boolean isAvailable() {
         try {
@@ -136,16 +130,12 @@ public class AgentClient {
 
     /**
      * Инициализирует браузер (открывает новый контекст).
-     * 
-     * @param baseUrl базовый URL приложения
-     * @param headless запускать ли в headless режиме
-     * @return ответ от агента
-     * 
+     *
      * Initializes browser (opens new context).
-     * 
-     * @param baseUrl application base URL
-     * @param headless whether to run in headless mode
-     * @return response from agent
+     *
+     * @param baseUrl базовый URL приложения / application base URL
+     * @param headless запускать ли в headless режиме / whether to run in headless mode
+     * @return ответ от агента / response from agent
      */
     public AgentResponse initialize(String baseUrl, boolean headless) throws AgentException {
         try {

@@ -20,8 +20,7 @@ public record State(String id, String name, Map<String, Object> properties) {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        State state = (State) o;
+        if (!(o instanceof State state)) return false;
         return Objects.equals(id, state.id);
     }
 

@@ -13,7 +13,7 @@ public class WorkflowEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "displayname", nullable = false, length = 255)
+    @Column(name = "displayname", nullable = false)
     private String displayname;
 
     @ManyToOne(fetch = FetchType.LAZY)

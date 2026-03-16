@@ -21,7 +21,7 @@ public class PlanEntity {
     @JoinColumn(name = "workflow", nullable = false)
     private WorkflowEntity workflow;
 
-    @Column(name = "workflow_step_internalname", nullable = false, length = 255)
+    @Column(name = "workflow_step_internalname", nullable = false)
     private String workflowStepInternalname;
 
     @Column(name = "stopped_at_plan_step", nullable = false, length = 36)

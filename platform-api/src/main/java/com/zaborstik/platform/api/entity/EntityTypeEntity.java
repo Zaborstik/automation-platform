@@ -15,7 +15,7 @@ public class EntityTypeEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "displayname", nullable = false, length = 255)
+    @Column(name = "displayname", nullable = false)
     private String displayname;
 
     @Column(name = "created_time", nullable = false)

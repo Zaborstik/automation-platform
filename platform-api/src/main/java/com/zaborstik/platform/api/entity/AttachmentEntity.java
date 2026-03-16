@@ -13,7 +13,7 @@ public class AttachmentEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "displayname", length = 255)
+    @Column(name = "displayname")
     private String displayname;
 
     public AttachmentEntity() {}

@@ -61,6 +61,6 @@ public class EntityDTO {
         if (data == null) data = new java.util.HashMap<>();
         if (!(data instanceof java.util.HashMap))
             data = new java.util.HashMap<>(data);
-        ((java.util.Map<String, Object>) data).put(key, value);
+        data.put(key, value);
     }
 }

@@ -25,7 +25,7 @@ public class PlanStepEntity {
     @JoinColumn(name = "workflow", nullable = false)
     private WorkflowEntity workflow;
 
-    @Column(name = "workflow_step_internalname", nullable = false, length = 255)
+    @Column(name = "workflow_step_internalname", nullable = false)
     private String workflowStepInternalname;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,7 +38,7 @@ public class PlanStepEntity {
     @Column(name = "sortorder", nullable = false)
     private int sortorder;
 
-    @Column(name = "displayname", nullable = false, length = 255)
+    @Column(name = "displayname", nullable = false)
     private String displayname;
 
     @Column(name = "created_time", nullable = false)

@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +43,7 @@ class AsyncPlanExecutorTest {
     @Test
     void multiplePlansShouldRunInParallel() throws Exception {
         when(planExecutor.execute(any(Plan.class), anyBoolean())).thenAnswer(invocation -> {
-            Thread.sleep(200);
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(200));
             Plan p = invocation.getArgument(0);
             return new PlanExecutionResult(p.id(), true, Instant.now(), Instant.now(), List.of());
         });

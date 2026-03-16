@@ -17,16 +17,16 @@ public class ActionEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "displayname", nullable = false, length = 255)
+    @Column(name = "displayname", nullable = false)
     private String displayname;
 
-    @Column(name = "internalname", nullable = false, length = 255)
+    @Column(name = "internalname", nullable = false)
     private String internalname;
 
     @Column(name = "meta_value", columnDefinition = "TEXT")
     private String metaValue;
 
-    @Column(name = "description", length = 255)
+    @Column(name = "description")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)

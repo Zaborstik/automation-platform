@@ -31,7 +31,7 @@ public class BasicAppScanner implements AppScanner {
         collectElements(document.select("textarea"), "input", elements);
 
         String pageTitle = document.title();
-        if (pageTitle != null && pageTitle.isBlank()) {
+        if (pageTitle.isBlank()) {
             pageTitle = null;
         }
 
@@ -78,7 +78,7 @@ public class BasicAppScanner implements AppScanner {
 
     private String extractLabel(Element element) {
         String text = element.text();
-        if (text != null && !text.isBlank()) {
+        if (!text.isBlank()) {
             return text.trim();
         }
         String placeholder = element.attr("placeholder");

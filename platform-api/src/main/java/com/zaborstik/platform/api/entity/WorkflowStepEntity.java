@@ -13,10 +13,10 @@ public class WorkflowStepEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "internalname", nullable = false, length = 255)
+    @Column(name = "internalname", nullable = false)
     private String internalname;
 
-    @Column(name = "displayname", nullable = false, length = 255)
+    @Column(name = "displayname", nullable = false)
     private String displayname;
 
     @Column(name = "sortorder")
