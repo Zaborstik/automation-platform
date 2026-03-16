@@ -22,5 +22,4 @@ local-demo/
 
 ### H2 file database ###
 data/
-docs/
 .cursor/
