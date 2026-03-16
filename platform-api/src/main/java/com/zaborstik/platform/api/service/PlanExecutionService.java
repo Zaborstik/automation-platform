@@ -79,13 +79,14 @@ public class PlanExecutionService {
             }
 
             String message = stepResult.getMessage() != null ? stepResult.getMessage() : logEntry.getStep().displayName();
+            String error = truncateForDb(stepResult.getError(), 2000);
             planService.createPlanStepLogEntry(
                 executionResult.getPlanId(),
                 logEntry.getStep().id(),
                 planResult.getId(),
                 actionId,
                 message,
-                stepResult.getError(),
+                error,
                 stepResult.getExecutedAt(),
                 stepResult.getExecutionTimeMs(),
                 attachmentId
@@ -144,5 +145,11 @@ public class PlanExecutionService {
         Map<String, Object> metadata = stepResult.getMetadata();
         Object screenshot = metadata.get("screenshot");
         return screenshot instanceof String screenshotPath ? screenshotPath : null;
+    }
+
+    private static String truncateForDb(String value, int maxLen) {
+        if (value == null) return null;
+        if (value.length() <= maxLen) return value;
+        return value.substring(0, maxLen);
     }
 }

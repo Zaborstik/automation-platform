@@ -97,6 +97,20 @@ field() { _body "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed "s/\"$2\":\"/
 field_bool() { _body "$1" | grep -o "\"$2\":[a-z]*" | head -1 | sed "s/\"$2\"://"; }
 
 # --------------------------------------------------------------------------- #
+#  Закрытие сессии исполнителя (скрипт вызывает endpoint исполнителя напрямую;
+#  для демо используется Playwright-сервер; в будущем — другой URL/протокол)
+# --------------------------------------------------------------------------- #
+EXECUTOR_URL="${EXECUTOR_URL:-$NODE_BASE}"
+CLOSE_DELAY_SEC="${CLOSE_DELAY_SEC:-2}"
+close_executor_session() {
+    if curl -s -X POST -H "Content-Type: application/json" "$EXECUTOR_URL/close" -d '{}' >/dev/null 2>&1; then
+        log "Сессия исполнителя закрыта"
+    else
+        warn "Не удалось закрыть сессию (исполнитель может быть недоступен)"
+    fi
+}
+
+# --------------------------------------------------------------------------- #
 #  Хелпер: создать план, выполнить, показать результат
 # --------------------------------------------------------------------------- #
 run_scenario() {
@@ -141,9 +155,15 @@ run_scenario() {
     if [ "$success" = "true" ]; then
         ok "Сценарий «${title}» — УСПЕХ (шагов: $total, ошибок: $failed_steps)"
         scenario_ok=$((scenario_ok + 1))
+        step "${SCENARIO_NUM}.5  Закрытие сессии исполнителя"
+        log "Пауза ${CLOSE_DELAY_SEC} сек перед закрытием сессии..."
+        sleep "$CLOSE_DELAY_SEC"
+        close_executor_session
     else
         warn "Сценарий «${title}» — ОШИБКИ (шагов: $total, ошибок: $failed_steps)"
         scenario_fail=$((scenario_fail + 1))
+        log "Сессия остаётся открытой ~2 сек для инспекции (логи: $API_LOG, $NODE_LOG)"
+        sleep 2
     fi
 }
 
@@ -184,6 +204,9 @@ ok "Готово"
 
 step "Запуск Playwright Server (:$NODE_PORT)"
 lsof -ti tcp:$NODE_PORT | xargs kill -9 2>/dev/null || true
+ACTION_DELAY_MULTIPLIER="${ACTION_DELAY_MULTIPLIER:-1}" \
+OPEN_PAGE_DELAY_MS="${OPEN_PAGE_DELAY_MS:-0}" \
+PAUSE_BEFORE_CLICK_MS="${PAUSE_BEFORE_CLICK_MS:-1000}" \
 SCREENSHOTS_DIR="$SCREENSHOTS_DIR" HEADLESS="false" PORT=$NODE_PORT \
     node "$AGENT_RESOURCES/playwright-server.js" > "$NODE_LOG" 2>&1 &
 NODE_PID=$!
@@ -433,8 +456,8 @@ pause
 # =========================================================================== #
 #  ЧАСТЬ 5: Сценарий B — DuckDuckGo
 # =========================================================================== #
-header "ЧАСТЬ 5: Сценарий B — DuckDuckGo: длинный поисковый флоу"
-log "Поиск → выдача → переход в результат → дополнительная навигация"
+header "ЧАСТЬ 5: Сценарий B — DuckDuckGo: поиск и переход в результат"
+log "Поиск → выдача → переход в первый результат"
 
 run_scenario "DuckDuckGo" '{
   "workflowId": "wf-plan",
@@ -491,28 +514,10 @@ run_scenario "DuckDuckGo" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "main, article, #repository-container-header",
+      "entityId": "main",
       "sortOrder": 6,
       "displayName": "Дождаться загрузки целевой страницы",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "20000" }]
-    },
-    {
-      "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
-      "entityTypeId": "ent-page",
-      "entityId": "https://duckduckgo.com/?q=playwright+trace+viewer",
-      "sortOrder": 7,
-      "displayName": "Открыть второй поисковый запрос",
-      "actions": [{ "actionId": "act-open-page", "metaValue": "https://duckduckgo.com/?q=playwright+trace+viewer" }]
-    },
-    {
-      "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
-      "entityTypeId": "ent-page",
-      "entityId": "article[data-testid=result]",
-      "sortOrder": 8,
-      "displayName": "Дождаться выдачи второго запроса",
-      "actions": [{ "actionId": "act-wait-element", "metaValue": "15000" }]
     }
   ]
 }'
@@ -543,7 +548,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "#repository-container-header",
+      "entityId": "main",
       "sortOrder": 2,
       "displayName": "Дождаться загрузки репозитория",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "15000" }]
@@ -552,7 +557,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
-      "entityId": "#issues-tab",
+      "entityId": "a[href$=\"/microsoft/playwright/issues\"]",
       "sortOrder": 3,
       "displayName": "Перейти в Issues",
       "actions": [{ "actionId": "act-click" }]
@@ -561,7 +566,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "a[href*=/issues], [data-testid=issue-row]",
+      "entityId": "a[href*=\"/microsoft/playwright/issues/\"]",
       "sortOrder": 4,
       "displayName": "Дождаться списка Issues",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "15000" }]
@@ -570,7 +575,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
-      "entityId": "#pull-requests-tab",
+      "entityId": "a[href$=\"/microsoft/playwright/pulls\"]",
       "sortOrder": 5,
       "displayName": "Перейти в Pull Requests",
       "actions": [{ "actionId": "act-click" }]
@@ -579,16 +584,16 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "a[href*=/pulls], [data-testid=pull-request-list]",
+      "entityId": "main",
       "sortOrder": 6,
-      "displayName": "Дождаться списка Pull Requests",
+      "displayName": "Дождаться загрузки вкладки Pull Requests",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "15000" }]
     },
     {
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
-      "entityId": "#code-tab",
+      "entityId": "a[href=\"/microsoft/playwright\"]",
       "sortOrder": 7,
       "displayName": "Вернуться на вкладку Code",
       "actions": [{ "actionId": "act-click" }]
@@ -597,7 +602,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "#readme, article.markdown-body",
+      "entityId": "#readme",
       "sortOrder": 8,
       "displayName": "Дождаться README на вкладке Code",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "15000" }]
@@ -606,7 +611,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
-      "entityId": "#actions-tab",
+      "entityId": "a[href$=\"/microsoft/playwright/actions\"]",
       "sortOrder": 9,
       "displayName": "Перейти на вкладку Actions",
       "actions": [{ "actionId": "act-click" }]
@@ -615,7 +620,7 @@ run_scenario "GitHub" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
-      "entityId": "main, [data-testid=workflow-runs]",
+      "entityId": "main",
       "sortOrder": 10,
       "displayName": "Дождаться загрузки вкладки Actions",
       "actions": [{ "actionId": "act-wait-element", "metaValue": "20000" }]
@@ -703,7 +708,7 @@ run_scenario "HTTPBin" '{
       "workflowId": "wf-plan-step",
       "workflowStepInternalName": "click",
       "entityTypeId": "ent-button",
-      "entityId": "button[type=submit]",
+      "entityId": "form button",
       "sortOrder": 8,
       "displayName": "Отправить форму",
       "actions": [{ "actionId": "act-click" }]

@@ -34,7 +34,7 @@ public class PlanStepLogEntryEntity {
     @Column(name = "message", nullable = false, length = 510)
     private String message;
 
-    @Column(name = "error", length = 510)
+    @Column(name = "error", length = 2000)
     private String error;
 
     @Column(name = "executed_time", nullable = false)

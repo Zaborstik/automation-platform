@@ -16,6 +16,11 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const HEADLESS = process.env.HEADLESS === 'true' || process.argv.includes('--headless');
 const SCREENSHOTS_DIR = process.env.SCREENSHOTS_DIR || path.join(__dirname, 'screenshots');
+const ACTION_DELAY_MULTIPLIER = Math.max(1, parseInt(process.env.ACTION_DELAY_MULTIPLIER || '1', 10));
+/** Задержка (мс) после открытия страницы (только OPEN_PAGE); 0 = без задержки */
+const OPEN_PAGE_DELAY_MS = Math.max(0, parseInt(process.env.OPEN_PAGE_DELAY_MS || '0', 10));
+/** Пауза (мс) после наведения перед кликом: навёлся → подождал → нажал. По умолчанию 1000. */
+const PAUSE_BEFORE_CLICK_MS = Math.max(0, parseInt(process.env.PAUSE_BEFORE_CLICK_MS || '1000', 10));
 
 // Создаем директорию для скриншотов
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
@@ -34,6 +39,11 @@ function randomBetween(min, max) {
 
 function randomInt(min, max) {
     return Math.floor(randomBetween(min, max + 1));
+}
+
+/** Задержка между действиями (мс), масштабируется ACTION_DELAY_MULTIPLIER */
+function delayMs(min, max) {
+    return Math.round(randomBetween(min, max + 1) * ACTION_DELAY_MULTIPLIER);
 }
 
 // Easing функция для плавного движения
@@ -91,7 +101,7 @@ async function smoothMove(page, toX, toY, options = {}) {
 
     for (const point of points) {
         await page.mouse.move(point.x, point.y);
-        await page.waitForTimeout(randomInt(6, 16));
+        await page.waitForTimeout(delayMs(6, 16));
     }
 
     cursorState = { x: toX, y: toY, initialized: true };
@@ -235,20 +245,28 @@ app.post('/execute', async (req, res) => {
         let result = {};
 
         switch (type) {
-            case 'OPEN_PAGE':
+            case 'OPEN_PAGE': {
                 const url = target.startsWith('http') ? target : `${baseUrl}${target}`;
-                await page.goto(url, { waitUntil: 'networkidle' });
+                await page.goto(url, { waitUntil: 'domcontentloaded' });
+                if (OPEN_PAGE_DELAY_MS > 0) {
+                    await page.waitForTimeout(OPEN_PAGE_DELAY_MS);
+                }
                 result = { url };
                 break;
+            }
 
             case 'CLICK':
                 await page.waitForSelector(target, { timeout: 10000 });
                 await highlightElement(page, target);
                 const coords = await getElementCoordinates(page, target);
                 await smoothMove(page, coords.x, coords.y);
-                await page.waitForTimeout(randomInt(80, 180));
+                if (PAUSE_BEFORE_CLICK_MS > 0) {
+                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                } else {
+                    await page.waitForTimeout(delayMs(80, 180));
+                }
                 await page.mouse.down();
-                await page.waitForTimeout(randomInt(35, 90));
+                await page.waitForTimeout(delayMs(35, 90));
                 await page.mouse.up();
                 result = mergeCoordinates({ selector: target, selectorUsed: target }, coords);
                 break;
@@ -266,13 +284,17 @@ app.post('/execute', async (req, res) => {
                 await highlightElement(page, target);
                 const typeCoords = await getElementCoordinates(page, target);
                 await smoothMove(page, typeCoords.x, typeCoords.y);
-                await page.waitForTimeout(randomInt(70, 170));
-                await page.mouse.click(typeCoords.x, typeCoords.y, { delay: randomInt(30, 80) });
+                if (PAUSE_BEFORE_CLICK_MS > 0) {
+                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                } else {
+                    await page.waitForTimeout(delayMs(70, 170));
+                }
+                await page.mouse.click(typeCoords.x, typeCoords.y, { delay: delayMs(30, 80) });
                 await page.keyboard.press('ControlOrMeta+A');
                 await page.keyboard.press('Backspace');
-                await page.keyboard.type(parameters.text || '', { delay: randomInt(40, 120) });
+                await page.keyboard.type(parameters.text || '', { delay: delayMs(40, 120) });
                 if (parameters.pressEnter) {
-                    await page.waitForTimeout(randomInt(200, 400));
+                    await page.waitForTimeout(delayMs(200, 400));
                     await page.keyboard.press('Enter');
                 }
                 result = mergeCoordinates({ selector: target, selectorUsed: target, text: parameters.text }, typeCoords);
@@ -320,9 +342,13 @@ app.post('/execute', async (req, res) => {
                     throw new Error('CLICK_AT requires numeric x and y parameters');
                 }
                 await smoothMove(page, Number(parameters.x), Number(parameters.y));
-                await page.waitForTimeout(randomInt(80, 180));
+                if (PAUSE_BEFORE_CLICK_MS > 0) {
+                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                } else {
+                    await page.waitForTimeout(delayMs(80, 180));
+                }
                 await page.mouse.down();
-                await page.waitForTimeout(randomInt(35, 90));
+                await page.waitForTimeout(delayMs(35, 90));
                 await page.mouse.up();
                 result = {
                     x: Number(parameters.x),
@@ -350,7 +376,7 @@ app.post('/execute', async (req, res) => {
         console.error(`[ERROR] Command ${type} failed:`, error);
         let errorScreenshot = null;
         try {
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(delayMs(200, 400));
             errorScreenshot = await captureStepScreenshot(page, 'error');
         } catch (ignored) {}
         
@@ -403,6 +429,13 @@ process.on('SIGINT', async () => {
 app.listen(PORT, () => {
     console.log(`Playwright Server running on http://localhost:${PORT}`);
     console.log(`Headless mode: ${HEADLESS}`);
+    console.log(`ACTION_DELAY_MULTIPLIER: ${ACTION_DELAY_MULTIPLIER}`);
+    if (OPEN_PAGE_DELAY_MS > 0) {
+        console.log(`OPEN_PAGE_DELAY_MS: ${OPEN_PAGE_DELAY_MS}`);
+    }
+    if (PAUSE_BEFORE_CLICK_MS > 0) {
+        console.log(`PAUSE_BEFORE_CLICK_MS: ${PAUSE_BEFORE_CLICK_MS}`);
+    }
     console.log(`Screenshots directory: ${SCREENSHOTS_DIR}`);
 });
 
