@@ -182,6 +182,8 @@ class ExecutionIntegrationTest {
             .andReturn();
         PlanResponse created = objectMapper.readValue(createResult.getResponse().getContentAsString(), PlanResponse.class);
 
+        long attachmentCountBefore = attachmentRepository.count();
+
         when(planExecutor.execute(any(Plan.class))).thenAnswer(invocation -> {
             Plan plan = invocation.getArgument(0);
             StepExecutionResult success = StepExecutionResult.success(
@@ -226,6 +228,6 @@ class ExecutionIntegrationTest {
         assertNotNull(executeResponse.getPlanResultId());
         assertTrue(planResultRepository.findByPlan_Id(created.getId()).isPresent());
         assertEquals(1, planStepLogEntryRepository.findByPlan_Id(created.getId()).size());
-        assertEquals(1, attachmentRepository.count());
+        assertEquals(attachmentCountBefore + 1, attachmentRepository.count());
     }
 }

@@ -60,18 +60,19 @@ class GlobalExceptionHandlerTest {
         assertTrue(response.getBody().getMessage().contains("Entity ID is required"));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void shouldHandleConstraintViolationException() {
         // Given
         ConstraintViolationException ex = mock(ConstraintViolationException.class);
         Set<ConstraintViolation<?>> violations = new HashSet<>();
         
-        ConstraintViolation<?> violation1 = mock(ConstraintViolation.class);
+        ConstraintViolation<Object> violation1 = mock(ConstraintViolation.class);
         when(violation1.getPropertyPath()).thenReturn(mock(jakarta.validation.Path.class));
         when(violation1.getPropertyPath().toString()).thenReturn("entityType");
         when(violation1.getMessage()).thenReturn("must not be blank");
         
-        ConstraintViolation<?> violation2 = mock(ConstraintViolation.class);
+        ConstraintViolation<Object> violation2 = mock(ConstraintViolation.class);
         when(violation2.getPropertyPath()).thenReturn(mock(jakarta.validation.Path.class));
         when(violation2.getPropertyPath().toString()).thenReturn("action");
         when(violation2.getMessage()).thenReturn("must not be null");

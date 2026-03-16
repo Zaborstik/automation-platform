@@ -37,7 +37,8 @@ class DTOsSerializationTest {
         assertEquals("Building", deserialized.get("entity"));
         assertEquals("93939", deserialized.get("entityId"));
         assertEquals("order_egrn_extract", deserialized.get("action"));
-        assertEquals("value1", ((Map<?, ?>) deserialized.get("parameters")).get("param1"));
+        Map<?, ?> parameters = deserialized.get("parameters");
+        assertEquals("value1", parameters.get("param1"));
     }
 
     @Test

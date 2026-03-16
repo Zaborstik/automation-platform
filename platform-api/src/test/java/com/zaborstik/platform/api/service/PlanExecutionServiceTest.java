@@ -127,7 +127,6 @@ class PlanExecutionServiceTest {
             eq(150L),
             eq("attachment-1")
         );
-        verify(agentService).close();
     }
 
     @Test

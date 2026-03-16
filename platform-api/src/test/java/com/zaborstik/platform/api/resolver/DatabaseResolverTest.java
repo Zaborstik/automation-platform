@@ -6,8 +6,6 @@ import com.zaborstik.platform.api.entity.EntityTypeEntity;
 import com.zaborstik.platform.api.repository.ActionRepository;
 import com.zaborstik.platform.api.repository.ActionTypeRepository;
 import com.zaborstik.platform.api.repository.EntityTypeRepository;
-import com.zaborstik.platform.api.repository.WorkflowRepository;
-import com.zaborstik.platform.api.repository.WorkflowStepRepository;
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,12 +35,6 @@ class DatabaseResolverTest {
 
     @Autowired
     private ActionRepository actionRepository;
-
-    @Autowired
-    private WorkflowRepository workflowRepository;
-
-    @Autowired
-    private WorkflowStepRepository workflowStepRepository;
 
     @Autowired
     private DatabaseResolver databaseResolver;
