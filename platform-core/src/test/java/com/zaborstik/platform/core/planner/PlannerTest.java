@@ -10,6 +10,7 @@ import com.zaborstik.platform.core.resolver.InMemoryResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -94,6 +95,69 @@ class PlannerTest {
         ExecutionRequest request = new ExecutionRequest("ent-button", "btn-1", "act-click", Map.of());
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
             planner.createPlan(request)
+        );
+        assertTrue(ex.getMessage().contains("not applicable"));
+    }
+
+    @Test
+    void shouldCreateMultiStepPlanWithOrderedSteps() {
+        resolver.registerEntityType(EntityType.of("ent-page", "Страница"));
+        resolver.registerEntityType(EntityType.of("ent-button", "Кнопка"));
+        resolver.registerEntityType(EntityType.of("ent-input", "Поле ввода"));
+        resolver.registerAction(Action.of("open_page", "Открыть страницу", "open_page", "D", "t-nav"));
+        resolver.registerAction(Action.of("act-click", "Клик", "click", "D", "t-int"));
+        resolver.registerAction(Action.of("input_text", "Ввести текст", "input_text", "D", "t-input"));
+        resolver.registerActionApplicableToEntityType("open_page", "ent-page");
+        resolver.registerActionApplicableToEntityType("act-click", "ent-button");
+        resolver.registerActionApplicableToEntityType("input_text", "ent-input");
+
+        List<ExecutionRequest> requests = List.of(
+            new ExecutionRequest("ent-page", "page-1", "open_page", Map.of()),
+            new ExecutionRequest("ent-button", "btn-1", "act-click", Map.of()),
+            new ExecutionRequest("ent-input", "input-1", "input_text", Map.of("meta_value", "hello"))
+        );
+
+        Plan plan = planner.createMultiStepPlan("Target", "Explanation", requests);
+
+        assertEquals(3, plan.steps().size());
+        assertEquals(1, plan.steps().get(0).sortOrder());
+        assertEquals(2, plan.steps().get(1).sortOrder());
+        assertEquals(3, plan.steps().get(2).sortOrder());
+
+        assertEquals("ent-page", plan.steps().get(0).entityTypeId());
+        assertEquals("open_page", plan.steps().get(0).actions().get(0).actionId());
+        assertEquals("ent-button", plan.steps().get(1).entityTypeId());
+        assertEquals("act-click", plan.steps().get(1).actions().get(0).actionId());
+        assertEquals("ent-input", plan.steps().get(2).entityTypeId());
+        assertEquals("input_text", plan.steps().get(2).actions().get(0).actionId());
+
+        assertEquals(plan.steps().get(0).id(), plan.stoppedAtPlanStepId());
+    }
+
+    @Test
+    void shouldThrowWhenCreateMultiStepPlanWithEmptyRequests() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            planner.createMultiStepPlan("Target", "Explanation", List.of())
+        );
+        assertTrue(ex.getMessage().contains("empty"));
+    }
+
+    @Test
+    void shouldThrowWhenOneOfMultiStepRequestsHasNonApplicableAction() {
+        resolver.registerEntityType(EntityType.of("ent-page", "Страница"));
+        resolver.registerEntityType(EntityType.of("ent-button", "Кнопка"));
+        resolver.registerAction(Action.of("open_page", "Открыть страницу", "open_page", "D", "t-nav"));
+        resolver.registerAction(Action.of("act-click", "Клик", "click", "D", "t-int"));
+        resolver.registerActionApplicableToEntityType("open_page", "ent-page");
+        resolver.registerActionApplicableToEntityType("act-click", "ent-link");
+
+        List<ExecutionRequest> requests = List.of(
+            new ExecutionRequest("ent-page", "page-1", "open_page", Map.of()),
+            new ExecutionRequest("ent-button", "btn-1", "act-click", Map.of())
+        );
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            planner.createMultiStepPlan("Target", "Explanation", requests)
         );
         assertTrue(ex.getMessage().contains("not applicable"));
     }

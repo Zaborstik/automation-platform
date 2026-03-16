@@ -6,12 +6,15 @@ import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.domain.Workflow;
 import com.zaborstik.platform.core.domain.WorkflowStep;
+import com.zaborstik.platform.core.domain.WorkflowTransition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * In-memory реализация Resolver.
@@ -24,6 +27,7 @@ public class InMemoryResolver implements Resolver {
     private final ConcurrentHashMap<String, ActionType> actionTypes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Workflow> workflows = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, WorkflowStep> workflowSteps = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<WorkflowTransition>> transitions = new ConcurrentHashMap<>();
     /** (actionId, entityTypeId) */
     private final Set<ActionEntityTypeKey> applicable = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, UIBinding> uiBindings = new ConcurrentHashMap<>();
@@ -46,6 +50,12 @@ public class InMemoryResolver implements Resolver {
 
     public void registerWorkflowStep(WorkflowStep step) {
         workflowSteps.put(step.id(), step);
+    }
+
+    public void registerTransition(WorkflowTransition transition) {
+        Objects.requireNonNull(transition, "transition cannot be null");
+        transitions.computeIfAbsent(transition.workflowId(), key -> new CopyOnWriteArrayList<>())
+            .add(transition);
     }
 
     /** Регистрация применимости действия к типу сущности (action_applicable_entity_type). */
@@ -86,6 +96,23 @@ public class InMemoryResolver implements Resolver {
     public Optional<WorkflowStep> findWorkflowStepByInternalName(String internalName) {
         return workflowSteps.values().stream()
             .filter(s -> s.internalName().equals(internalName))
+            .findFirst();
+    }
+
+    @Override
+    public List<WorkflowTransition> findTransitions(String workflowId) {
+        Objects.requireNonNull(workflowId, "workflowId cannot be null");
+        return List.copyOf(transitions.getOrDefault(workflowId, List.of()));
+    }
+
+    @Override
+    public Optional<WorkflowTransition> findTransition(String workflowId, String fromStep, String toStep) {
+        Objects.requireNonNull(workflowId, "workflowId cannot be null");
+        Objects.requireNonNull(fromStep, "fromStep cannot be null");
+        Objects.requireNonNull(toStep, "toStep cannot be null");
+        return findTransitions(workflowId).stream()
+            .filter(transition -> transition.fromStepInternalName().equals(fromStep))
+            .filter(transition -> transition.toStepInternalName().equals(toStep))
             .findFirst();
     }
 

@@ -3,6 +3,7 @@ package com.zaborstik.platform.core.resolver;
 import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
+import com.zaborstik.platform.core.domain.WorkflowTransition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,5 +79,24 @@ class InMemoryResolverTest {
         assertTrue(resolver.findWorkflowStep("wfs-new").isPresent());
         assertTrue(resolver.findWorkflow("wf-plan").isPresent());
         assertTrue(resolver.findWorkflowStepByInternalName("new").isPresent());
+    }
+
+    @Test
+    void shouldRegisterAndFindTransitions() {
+        resolver.registerTransition(new WorkflowTransition("wf-plan", "new", "in_progress"));
+        resolver.registerTransition(new WorkflowTransition("wf-plan", "in_progress", "completed"));
+        resolver.registerTransition(new WorkflowTransition("wf-plan", "in_progress", "failed"));
+
+        List<WorkflowTransition> transitions = resolver.findTransitions("wf-plan");
+        assertEquals(3, transitions.size());
+
+        assertTrue(resolver.findTransition("wf-plan", "new", "in_progress").isPresent());
+        assertTrue(resolver.findTransition("wf-plan", "in_progress", "completed").isPresent());
+        assertFalse(resolver.findTransition("wf-plan", "completed", "new").isPresent());
+    }
+
+    @Test
+    void shouldReturnEmptyTransitionsForUnknownWorkflow() {
+        assertEquals(List.of(), resolver.findTransitions("nonexistent"));
     }
 }
