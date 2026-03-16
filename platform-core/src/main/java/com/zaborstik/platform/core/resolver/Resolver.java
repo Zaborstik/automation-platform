@@ -6,6 +6,7 @@ import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.domain.Workflow;
 import com.zaborstik.platform.core.domain.WorkflowStep;
+import com.zaborstik.platform.core.domain.WorkflowTransition;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +28,10 @@ public interface Resolver {
     Optional<WorkflowStep> findWorkflowStep(String workflowStepId);
 
     Optional<WorkflowStep> findWorkflowStepByInternalName(String internalName);
+
+    List<WorkflowTransition> findTransitions(String workflowId);
+
+    Optional<WorkflowTransition> findTransition(String workflowId, String fromStep, String toStep);
 
     /**
      * Действия, применимые к данному типу сущности (action_applicable_entity_type).

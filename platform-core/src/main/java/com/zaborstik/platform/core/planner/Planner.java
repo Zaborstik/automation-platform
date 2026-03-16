@@ -9,6 +9,7 @@ import com.zaborstik.platform.core.plan.PlanStepAction;
 import com.zaborstik.platform.core.resolver.Resolver;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -35,35 +36,15 @@ public class Planner {
      * Применимость действия к типу сущности проверяется по action_applicable_entity_type.
      */
     public Plan createPlan(ExecutionRequest request) {
-        EntityType entityType = resolver.findEntityType(request.entityType())
-            .orElseThrow(() -> new IllegalArgumentException("EntityType not found: " + request.entityType()));
-
-        Action action = resolver.findAction(request.action())
-            .orElseThrow(() -> new IllegalArgumentException("Action not found: " + request.action()));
-
-        if (!resolver.isActionApplicable(action.id(), entityType.id())) {
-            throw new IllegalArgumentException(
-                "Action '" + action.id() + "' is not applicable to entity type '" + entityType.id() + "'");
-        }
+        Objects.requireNonNull(request, "request cannot be null");
+        EntityType entityType = resolveEntityType(request.entityType());
+        Action action = resolveAction(request.action());
+        validateApplicable(action.id(), entityType.id());
 
         String planId = UUID.randomUUID().toString();
         String stepId = UUID.randomUUID().toString();
 
-        String metaValue = request.parameters().get("meta_value") != null
-            ? String.valueOf(request.parameters().get("meta_value"))
-            : null;
-
-        PlanStep step = new PlanStep(
-            stepId,
-            planId,
-            WORKFLOW_PLAN_STEP_ID,
-            WORKFLOW_STEP_NEW,
-            entityType.id(),
-            request.entityId(),
-            1,
-            buildStepDisplayName(entityType, action, request),
-            List.of(new PlanStepAction(action.id(), metaValue))
-        );
+        PlanStep step = buildStep(planId, stepId, request, entityType, action, 1);
 
         String target = request.parameters().get("target") != null
             ? String.valueOf(request.parameters().get("target"))
@@ -78,6 +59,81 @@ public class Planner {
             target,
             explanation,
             List.of(step)
+        );
+    }
+
+    /**
+     * Создаёт многошаговый план из последовательности запросов.
+     */
+    public Plan createMultiStepPlan(String target, String explanation, List<ExecutionRequest> requests) {
+        Objects.requireNonNull(requests, "requests cannot be null");
+        if (requests.isEmpty()) {
+            throw new IllegalArgumentException("requests cannot be empty");
+        }
+
+        String planId = UUID.randomUUID().toString();
+        List<PlanStep> steps = new java.util.ArrayList<>(requests.size());
+        for (int i = 0; i < requests.size(); i++) {
+            ExecutionRequest request = Objects.requireNonNull(requests.get(i), "request cannot be null");
+            EntityType entityType = resolveEntityType(request.entityType());
+            Action action = resolveAction(request.action());
+            validateApplicable(action.id(), entityType.id());
+
+            String stepId = UUID.randomUUID().toString();
+            steps.add(buildStep(planId, stepId, request, entityType, action, i + 1));
+        }
+
+        return new Plan(
+            planId,
+            WORKFLOW_PLAN_ID,
+            WORKFLOW_STEP_NEW,
+            steps.get(0).id(),
+            target,
+            explanation,
+            steps
+        );
+    }
+
+    private EntityType resolveEntityType(String entityTypeId) {
+        return resolver.findEntityType(entityTypeId)
+            .orElseThrow(() -> new IllegalArgumentException("EntityType not found: " + entityTypeId));
+    }
+
+    private Action resolveAction(String actionId) {
+        return resolver.findAction(actionId)
+            .orElseThrow(() -> new IllegalArgumentException("Action not found: " + actionId));
+    }
+
+    private void validateApplicable(String actionId, String entityTypeId) {
+        if (!resolver.isActionApplicable(actionId, entityTypeId)) {
+            throw new IllegalArgumentException(
+                "Action '" + actionId + "' is not applicable to entity type '" + entityTypeId + "'"
+            );
+        }
+    }
+
+    private PlanStep buildStep(
+        String planId,
+        String stepId,
+        ExecutionRequest request,
+        EntityType entityType,
+        Action action,
+        int sortOrder
+    ) {
+        String metaValue = request.parameters().get("meta_value") != null
+            ? String.valueOf(request.parameters().get("meta_value"))
+            : null;
+
+        return new PlanStep(
+            stepId,
+            planId,
+            WORKFLOW_PLAN_STEP_ID,
+            WORKFLOW_STEP_NEW,
+            entityType.id(),
+            request.entityId(),
+            sortOrder,
+            buildStepDisplayName(entityType, action, request),
+            List.of(new PlanStepAction(action.id(), metaValue))
         );
     }
 
