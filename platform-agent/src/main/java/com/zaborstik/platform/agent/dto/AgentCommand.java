@@ -23,7 +23,9 @@ public class AgentCommand {
         WAIT,
         EXPLAIN,
         HIGHLIGHT,
-        SCREENSHOT
+        SCREENSHOT,
+        SELECT_OPTION,
+        READ_TEXT
     }
 
     public AgentCommand(CommandType type, String target, String explanation, Map<String, Object> parameters) {
@@ -96,7 +98,20 @@ public class AgentCommand {
     }
 
     public static AgentCommand screenshot(String explanation) {
-        return new AgentCommand(CommandType.SCREENSHOT, null, explanation, Map.of());
+        return screenshot("fullpage", explanation);
+    }
+
+    public static AgentCommand screenshot(String target, String explanation) {
+        return new AgentCommand(CommandType.SCREENSHOT, target, explanation, Map.of());
+    }
+
+    public static AgentCommand selectOption(String selector, String value, String explanation) {
+        String normalizedValue = value != null ? value : "";
+        return new AgentCommand(CommandType.SELECT_OPTION, selector, explanation, Map.of("value", normalizedValue));
+    }
+
+    public static AgentCommand readText(String selector, String explanation) {
+        return new AgentCommand(CommandType.READ_TEXT, selector, explanation, Map.of());
     }
 
     @Override
