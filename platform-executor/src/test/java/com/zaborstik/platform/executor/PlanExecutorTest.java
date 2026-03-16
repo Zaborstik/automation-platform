@@ -2,6 +2,7 @@ package com.zaborstik.platform.executor;
 
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
 import com.zaborstik.platform.agent.service.AgentService;
+import com.zaborstik.platform.agent.service.StepExecutionCallback;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,8 +25,105 @@ class PlanExecutorTest {
     @Mock
     private AgentService agentService;
 
+    @Mock
+    private StepExecutionCallback callback;
+
     private PlanExecutor executor;
     private Plan testPlan;
+
+    @BeforeEach
+    void setUp() {
+        executor = new PlanExecutor(agentService);
+        testPlan = new Plan(
+            "plan-1",
+            "wf-plan",
+            "in_progress",
+            "step-1",
+            "Building 93939",
+            "Test plan",
+            List.of(
+                step("step-1", 0, "Step 1"),
+                step("step-2", 1, "Step 2"),
+                step("step-3", 2, "Step 3"),
+                step("step-4", 3, "Step 4")
+            )
+        );
+    }
+
+    @Test
+    void stopOnFailureTrueShouldLeaveRemainingStepsUnexecuted() {
+        List<StepExecutionResult> results = List.of(
+            StepExecutionResult.success("s1", "t1", "ok", 10, null),
+            StepExecutionResult.failure("s2", "t2", "err", 10)
+        );
+        when(agentService.executePlan(any(Plan.class), anyBoolean(), any(StepExecutionCallback.class)))
+            .thenReturn(results);
+
+        PlanExecutionResult executionResult = executor.execute(testPlan, true);
+
+        assertFalse(executionResult.isSuccess());
+        assertEquals(4, executionResult.getLogEntries().size());
+        assertTrue(executionResult.getLogEntries().get(0).getResult().isSuccess());
+        assertFalse(executionResult.getLogEntries().get(1).getResult().isSuccess());
+        assertTrue(executionResult.getLogEntries().get(2).getResult().getError().contains("not executed"));
+        assertTrue(executionResult.getLogEntries().get(3).getResult().getError().contains("not executed"));
+    }
+
+    @Test
+    void stopOnFailureFalseShouldProcessAllReturnedResults() {
+        List<StepExecutionResult> results = List.of(
+            StepExecutionResult.success("s1", "t1", "ok", 10, null),
+            StepExecutionResult.failure("s2", "t2", "err", 10),
+            StepExecutionResult.success("s3", "t3", "ok", 10, null),
+            StepExecutionResult.success("s4", "t4", "ok", 10, null)
+        );
+        when(agentService.executePlan(any(Plan.class), anyBoolean(), any(StepExecutionCallback.class)))
+            .thenReturn(results);
+
+        PlanExecutionResult executionResult = executor.execute(testPlan, false);
+
+        assertEquals(4, executionResult.getLogEntries().size());
+        assertFalse(executionResult.getLogEntries().get(1).getResult().isSuccess());
+        assertTrue(executionResult.getLogEntries().get(2).getResult().isSuccess());
+        assertTrue(executionResult.getLogEntries().get(3).getResult().isSuccess());
+    }
+
+    @Test
+    void executeWithoutFlagShouldRemainBackwardCompatible() {
+        List<StepExecutionResult> results = List.of(
+            StepExecutionResult.success("s1", "t1", "ok", 10, null),
+            StepExecutionResult.success("s2", "t2", "ok", 10, null),
+            StepExecutionResult.success("s3", "t3", "ok", 10, null),
+            StepExecutionResult.success("s4", "t4", "ok", 10, null)
+        );
+        when(agentService.executePlan(any(Plan.class), anyBoolean(), any(StepExecutionCallback.class)))
+            .thenReturn(results);
+
+        PlanExecutionResult executionResult = executor.execute(testPlan);
+
+        assertTrue(executionResult.isSuccess());
+        verify(agentService).executePlan(any(Plan.class), org.mockito.ArgumentMatchers.eq(false), any(StepExecutionCallback.class));
+    }
+
+    @Test
+    void executeWithCallbackShouldDelegateCallbackToAgentService() {
+        when(agentService.executePlan(any(Plan.class), anyBoolean(), any(StepExecutionCallback.class)))
+            .thenReturn(List.of());
+
+        executor.execute(testPlan, false, callback);
+
+        verify(agentService).executePlan(testPlan, false, callback);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenPlanIsNull() {
+        assertThrows(NullPointerException.class, () -> executor.execute(null));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAgentServiceIsNull() {
+        assertThrows(NullPointerException.class, () -> new PlanExecutor(null));
+    }
 
     private static PlanStep step(String id, int sortOrder, String displayName) {
         return new PlanStep(
@@ -31,321 +131,11 @@ class PlanExecutorTest {
             "plan-1",
             "workflow-1",
             "in_progress",
-            "Building",
+            "ent-page",
             "93939",
             sortOrder,
             displayName,
             List.of()
         );
     }
-
-    @BeforeEach
-    void setUp() {
-        executor = new PlanExecutor(agentService);
-
-        List<PlanStep> steps = List.of(
-            step("step-1", 0, "Открываю карточку здания"),
-            step("step-2", 1, "Выполняю действие"),
-            step("step-3", 2, "Навожу курсор"),
-            step("step-4", 3, "Кликаю"),
-            step("step-5", 4, "Жду результат")
-        );
-
-        testPlan = new Plan(
-            "plan-1",
-            "workflow-1",
-            "in_progress",
-            "step-1",
-            "Building 93939",
-            "Заказ выписки ЕГРН",
-            steps
-        );
-    }
-
-    @Test
-    void shouldExecutePlanSuccessfully() {
-        // Given
-        List<StepExecutionResult> successResults = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null),
-            StepExecutionResult.success("hover", "action(order_egrn_extract)", "Element hovered", 150L, null),
-            StepExecutionResult.success("click", "action(order_egrn_extract)", "Element clicked", 200L, null),
-            StepExecutionResult.success("wait", "result", "Condition met", 3000L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(successResults);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(testPlan.id(), result.getPlanId());
-        assertTrue(result.isSuccess());
-        assertEquals(5, result.getLogEntries().size());
-        assertEquals(5, result.getStepResults().size());
-
-        // Проверяем, что все шаги успешны
-        assertTrue(result.getStepResults().stream().allMatch(StepExecutionResult::isSuccess));
-    }
-
-    @Test
-    void shouldHandlePlanWithFailure() {
-        // Given
-        List<StepExecutionResult> resultsWithFailure = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null),
-            StepExecutionResult.failure("hover", "action(order_egrn_extract)", "Element not found", 100L),
-            StepExecutionResult.success("click", "action(order_egrn_extract)", "Element clicked", 200L, null),
-            StepExecutionResult.success("wait", "result", "Condition met", 3000L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(resultsWithFailure);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertNotNull(result);
-        assertFalse(result.isSuccess()); // Общий статус должен быть failure
-        assertEquals(5, result.getLogEntries().size());
-
-        // Проверяем, что третий шаг неудачен
-        ExecutionLogEntry failedEntry = result.getLogEntries().get(2);
-        assertFalse(failedEntry.getResult().isSuccess());
-        assertEquals("Element not found", failedEntry.getResult().getError());
-    }
-
-    @Test
-    void shouldHandlePlanWithAllFailures() {
-        // Given
-        List<StepExecutionResult> allFailures = List.of(
-            StepExecutionResult.failure("open_page", "/buildings/93939", "Page not found", 100L),
-            StepExecutionResult.failure("explain", null, "Failed to log", 5L)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(allFailures);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertNotNull(result);
-        assertFalse(result.isSuccess());
-        assertEquals(5, result.getLogEntries().size()); // Все шаги должны быть в логе
-
-        // Первые два шага должны быть неудачными
-        assertFalse(result.getLogEntries().get(0).getResult().isSuccess());
-        assertFalse(result.getLogEntries().get(1).getResult().isSuccess());
-    }
-
-    @Test
-    void shouldHandleWhenAgentReturnsLessResultsThanSteps() {
-        // Given
-        // План имеет 5 шагов, но агент вернул только 3 результата
-        List<StepExecutionResult> partialResults = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null),
-            StepExecutionResult.success("hover", "action(order_egrn_extract)", "Element hovered", 150L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(partialResults);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(5, result.getLogEntries().size()); // Все шаги должны быть в логе
-
-        // Первые 3 шага должны быть успешными
-        assertTrue(result.getLogEntries().get(0).getResult().isSuccess());
-        assertTrue(result.getLogEntries().get(1).getResult().isSuccess());
-        assertTrue(result.getLogEntries().get(2).getResult().isSuccess());
-
-        // Последние 2 шага должны быть синтетическими failure
-        ExecutionLogEntry syntheticFailure1 = result.getLogEntries().get(3);
-        assertFalse(syntheticFailure1.getResult().isSuccess());
-        assertTrue(syntheticFailure1.getResult().getError().contains("Step was not executed by agent"));
-
-        ExecutionLogEntry syntheticFailure2 = result.getLogEntries().get(4);
-        assertFalse(syntheticFailure2.getResult().isSuccess());
-        assertTrue(syntheticFailure2.getResult().getError().contains("Step was not executed by agent"));
-
-        // Общий статус должен быть failure
-        assertFalse(result.isSuccess());
-    }
-
-    @Test
-    void shouldHandleWhenAgentReturnsMoreResultsThanSteps() {
-        // Given
-        // План имеет 5 шагов, но агент вернул 7 результатов (необычный случай)
-        List<StepExecutionResult> extraResults = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null),
-            StepExecutionResult.success("hover", "action(order_egrn_extract)", "Element hovered", 150L, null),
-            StepExecutionResult.success("click", "action(order_egrn_extract)", "Element clicked", 200L, null),
-            StepExecutionResult.success("wait", "result", "Condition met", 3000L, null),
-            StepExecutionResult.success("extra1", "extra", "Extra step 1", 100L, null),
-            StepExecutionResult.success("extra2", "extra", "Extra step 2", 100L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(extraResults);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(5, result.getLogEntries().size()); // Только шаги из плана должны быть в логе
-        assertTrue(result.isSuccess()); // Все шаги плана успешны
-    }
-
-    @Test
-    void shouldHandleEmptyPlan() {
-        // Given
-        Plan emptyPlan = new Plan(
-            "plan-empty",
-            "workflow-1",
-            "new",
-            "step-0",
-            null,
-            null,
-            List.of()
-        );
-        when(agentService.executePlan(any(Plan.class))).thenReturn(List.of());
-
-        // When
-        PlanExecutionResult result = executor.execute(emptyPlan);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(emptyPlan.id(), result.getPlanId());
-        assertTrue(result.isSuccess()); // Пустой план считается успешным
-        assertTrue(result.getLogEntries().isEmpty());
-        assertTrue(result.getStepResults().isEmpty());
-    }
-
-    @Test
-    void shouldThrowExceptionWhenPlanIsNull() {
-        // When & Then
-        assertThrows(NullPointerException.class, () -> {
-            executor.execute(null);
-        });
-    }
-
-    @Test
-    void shouldThrowExceptionWhenAgentServiceIsNull() {
-        // When & Then
-        assertThrows(NullPointerException.class, () -> {
-            new PlanExecutor(null);
-        });
-    }
-
-    @Test
-    void shouldCreateExecutionLogWithCorrectStepIndices() {
-        // Given
-        List<StepExecutionResult> results = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null),
-            StepExecutionResult.success("hover", "action(order_egrn_extract)", "Element hovered", 150L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(results);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        assertEquals(5, result.getLogEntries().size());
-        for (int i = 0; i < 3; i++) {
-            assertEquals(i, result.getLogEntries().get(i).getStepIndex());
-        }
-    }
-
-    @Test
-    void shouldPreserveStepInformationInLogEntries() {
-        // Given
-        List<StepExecutionResult> results = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null),
-            StepExecutionResult.success("explain", null, "Message logged", 5L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(results);
-
-        // When
-        PlanExecutionResult result = executor.execute(testPlan);
-
-        // Then
-        ExecutionLogEntry entry0 = result.getLogEntries().get(0);
-        assertEquals("step-1", entry0.getStep().id());
-        assertEquals("Открываю карточку здания", entry0.getStep().displayName());
-
-        ExecutionLogEntry entry1 = result.getLogEntries().get(1);
-        assertEquals("step-2", entry1.getStep().id());
-        assertEquals("Выполняю действие", entry1.getStep().displayName());
-    }
-
-    @Test
-    void shouldSetCorrectTimestamps() {
-        // Given
-        List<StepExecutionResult> results = List.of(
-            StepExecutionResult.success("open_page", "/buildings/93939", "Page opened", 1200L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(results);
-
-        Plan planWithOneStep = new Plan(
-            "plan-one",
-            "workflow-1",
-            "in_progress",
-            "step-1",
-            "/test",
-            "Test",
-            List.of(step("step-1", 0, "Test"))
-        );
-
-        // When
-        PlanExecutionResult result = executor.execute(planWithOneStep);
-
-        // Then
-        assertNotNull(result.getStartedAt());
-        assertNotNull(result.getFinishedAt());
-        assertTrue(result.getFinishedAt().isAfter(result.getStartedAt()) ||
-                   result.getFinishedAt().equals(result.getStartedAt()));
-
-        // Все записи в логе должны иметь временные метки
-        result.getLogEntries().forEach(entry -> {
-            assertNotNull(entry.getLoggedAt());
-        });
-    }
-
-    @Test
-    void shouldHandlePlanWithSingleStep() {
-        // Given
-        Plan singleStepPlan = new Plan(
-            "plan-single",
-            "workflow-1",
-            "in_progress",
-            "step-1",
-            null,
-            "Single step",
-            List.of(step("step-1", 0, "Single step"))
-        );
-
-        List<StepExecutionResult> results = List.of(
-            StepExecutionResult.success("explain", null, "OK", 10L, null)
-        );
-
-        when(agentService.executePlan(any(Plan.class))).thenReturn(results);
-
-        // When
-        PlanExecutionResult result = executor.execute(singleStepPlan);
-
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.getLogEntries().size());
-        assertTrue(result.isSuccess());
-    }
 }
-

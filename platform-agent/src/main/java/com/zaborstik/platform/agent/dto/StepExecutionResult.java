@@ -17,11 +17,23 @@ public class StepExecutionResult {
     private final long executionTimeMs;
     private final String screenshotPath;
     private final Map<String, Object> metadata;
+    private final int retryCount;
+    private final int stepIndex;
+    private final String commandType;
 
     public StepExecutionResult(String stepType, String stepTarget, boolean success, 
                                String message, String error, Instant executedAt, 
                                long executionTimeMs, String screenshotPath,
                                Map<String, Object> metadata) {
+        this(stepType, stepTarget, success, message, error, executedAt, executionTimeMs, screenshotPath,
+            metadata, 0, -1, null);
+    }
+
+    public StepExecutionResult(String stepType, String stepTarget, boolean success,
+                               String message, String error, Instant executedAt,
+                               long executionTimeMs, String screenshotPath,
+                               Map<String, Object> metadata,
+                               int retryCount, int stepIndex, String commandType) {
         this.stepType = Objects.requireNonNull(stepType, "Step type cannot be null");
         this.stepTarget = stepTarget;
         this.success = success;
@@ -31,6 +43,9 @@ public class StepExecutionResult {
         this.executionTimeMs = executionTimeMs;
         this.screenshotPath = screenshotPath;
         this.metadata = metadata != null ? Map.copyOf(metadata) : Map.of();
+        this.retryCount = retryCount;
+        this.stepIndex = stepIndex;
+        this.commandType = commandType;
     }
 
     public StepExecutionResult(String stepType, String stepTarget, boolean success,
@@ -75,6 +90,18 @@ public class StepExecutionResult {
         return metadata;
     }
 
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public int getStepIndex() {
+        return stepIndex;
+    }
+
+    public String getCommandType() {
+        return commandType;
+    }
+
     public static StepExecutionResult success(String stepType, String stepTarget, 
                                               String message, long executionTimeMs, 
                                               String screenshotPath) {
@@ -85,8 +112,15 @@ public class StepExecutionResult {
     public static StepExecutionResult success(String stepType, String stepTarget,
                                               String message, long executionTimeMs,
                                               String screenshotPath, Map<String, Object> metadata) {
+        return success(stepType, stepTarget, message, executionTimeMs, screenshotPath, metadata, 0, -1, null);
+    }
+
+    public static StepExecutionResult success(String stepType, String stepTarget,
+                                              String message, long executionTimeMs,
+                                              String screenshotPath, Map<String, Object> metadata,
+                                              int retryCount, int stepIndex, String commandType) {
         return new StepExecutionResult(stepType, stepTarget, true, message, null,
-            Instant.now(), executionTimeMs, screenshotPath, metadata);
+            Instant.now(), executionTimeMs, screenshotPath, metadata, retryCount, stepIndex, commandType);
     }
 
     public static StepExecutionResult failure(String stepType, String stepTarget, 
@@ -98,15 +132,24 @@ public class StepExecutionResult {
     public static StepExecutionResult failure(String stepType, String stepTarget,
                                               String error, long executionTimeMs,
                                               Map<String, Object> metadata) {
+        return failure(stepType, stepTarget, error, executionTimeMs, metadata, 0, -1, null);
+    }
+
+    public static StepExecutionResult failure(String stepType, String stepTarget,
+                                              String error, long executionTimeMs,
+                                              Map<String, Object> metadata,
+                                              int retryCount, int stepIndex, String commandType) {
         return new StepExecutionResult(stepType, stepTarget, false, null, error,
-            Instant.now(), executionTimeMs, null, metadata);
+            Instant.now(), executionTimeMs, null, metadata, retryCount, stepIndex, commandType);
     }
 
     @Override
     public String toString() {
         return "StepExecutionResult{type='" + stepType + "', target='" + stepTarget + 
                "', success=" + success + ", message='" + message + 
-               "', error='" + error + "', time=" + executionTimeMs + "ms}";
+               "', error='" + error + "', time=" + executionTimeMs +
+               "ms, retryCount=" + retryCount + ", stepIndex=" + stepIndex +
+               ", commandType='" + commandType + "'}";
     }
 }
 

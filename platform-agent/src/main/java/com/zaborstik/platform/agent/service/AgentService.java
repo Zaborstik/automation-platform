@@ -4,6 +4,7 @@ import com.zaborstik.platform.agent.client.AgentClient;
 import com.zaborstik.platform.agent.client.AgentException;
 import com.zaborstik.platform.agent.dto.AgentCommand;
 import com.zaborstik.platform.agent.dto.AgentResponse;
+import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.plan.Plan;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -32,12 +34,19 @@ public class AgentService {
     private final Resolver resolver;
     private final String baseUrl;
     private final boolean headless;
+    private final RetryPolicy retryPolicy;
 
     public AgentService(AgentClient agentClient, Resolver resolver, String baseUrl, boolean headless) {
+        this(agentClient, resolver, baseUrl, headless, RetryPolicy.defaultPolicy());
+    }
+
+    public AgentService(AgentClient agentClient, Resolver resolver, String baseUrl, boolean headless,
+                        RetryPolicy retryPolicy) {
         this.agentClient = agentClient;
         this.resolver = resolver;
         this.baseUrl = baseUrl;
         this.headless = headless;
+        this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
     }
 
     /**
@@ -52,41 +61,77 @@ public class AgentService {
      * @return list of step execution results
      */
     public List<StepExecutionResult> executePlan(Plan plan) {
+        return executePlan(plan, false, StepExecutionCallback.noOp());
+    }
+
+    public List<StepExecutionResult> executePlan(Plan plan, StepExecutionCallback callback) {
+        return executePlan(plan, false, callback);
+    }
+
+    public List<StepExecutionResult> executePlan(Plan plan, boolean stopOnFailure, StepExecutionCallback callback) {
+        Objects.requireNonNull(plan, "plan cannot be null");
+        StepExecutionCallback effectiveCallback = callback != null ? callback : StepExecutionCallback.noOp();
+
         log.info("Starting plan execution: {}", plan.id());
         List<StepExecutionResult> results = new ArrayList<>();
+        boolean success = true;
 
+        safeOnPlanStarted(effectiveCallback, plan);
         try {
-            // Инициализируем браузер
-            // Initialize browser
             AgentResponse initResponse = agentClient.initialize(baseUrl, headless);
             if (!initResponse.isSuccess()) {
                 log.error("Failed to initialize agent: {}", initResponse.getError());
-                results.add(StepExecutionResult.failure("initialize", "browser", 
-                    initResponse.getError(), 0));
+                results.add(StepExecutionResult.failure(
+                    "initialize",
+                    "browser",
+                    initResponse.getError(),
+                    0,
+                    Map.of(),
+                    0,
+                    -1,
+                    null
+                ));
+                success = false;
                 return results;
             }
 
-            // Выполняем каждый шаг плана
-            // Execute each plan step
-            for (PlanStep step : plan.steps()) {
-                StepExecutionResult result = executeStep(step);
+            List<PlanStep> steps = plan.steps();
+            for (int stepIndex = 0; stepIndex < steps.size(); stepIndex++) {
+                PlanStep step = steps.get(stepIndex);
+                safeOnStepStarted(effectiveCallback, step, stepIndex, steps.size());
+
+                StepExecutionResult result = executeStep(step, stepIndex);
                 results.add(result);
+                safeOnStepCompleted(effectiveCallback, step, result, stepIndex);
 
                 if (!result.isSuccess()) {
+                    success = false;
                     log.error("Step execution failed: {}", result.getError());
-                    // Можно добавить логику для обработки ошибок (retry, fallback и т.д.)
-                    // Can add error handling logic (retry, fallback, etc.)
+                    if (stopOnFailure) {
+                        break;
+                    }
                 }
             }
 
             log.info("Plan execution completed: {} steps executed", results.size());
             return results;
-
         } catch (Exception e) {
             log.error("Plan execution failed", e);
-            results.add(StepExecutionResult.failure("plan", plan.id(),
-                "Plan execution failed: " + e.getMessage(), 0));
+            results.add(StepExecutionResult.failure(
+                "plan",
+                plan.id(),
+                "Plan execution failed: " + e.getMessage(),
+                0,
+                Map.of(),
+                0,
+                -1,
+                null
+            ));
+            success = false;
             return results;
+        } finally {
+            boolean finalSuccess = success && results.stream().allMatch(StepExecutionResult::isSuccess);
+            safeOnPlanCompleted(effectiveCallback, plan, List.copyOf(results), finalSuccess);
         }
     }
 
@@ -95,62 +140,153 @@ public class AgentService {
      * 
      * Executes one plan step.
      */
-    private StepExecutionResult executeStep(PlanStep step) {
-        long startTime = System.currentTimeMillis();
-        log.debug("Executing step: {}", step);
+    private StepExecutionResult executeStep(PlanStep step, int stepIndex) {
+        int maxAttempts = retryPolicy.maxRetries() + 1;
+        StepExecutionResult lastFailure = null;
 
-        try {
-            if (isCoordinateStep(step.workflowStepInternalName())) {
-                return executeCoordinateStep(step, startTime);
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            int retryCount = attempt - 1;
+            log.info("Executing step {} attempt {}/{}", step.id(), attempt, maxAttempts);
+
+            StepExecutionResult result = executeStepOnce(step, stepIndex, retryCount);
+            if (result.isSuccess()) {
+                return result;
             }
 
-            AgentCommand command = convertToCommand(step);
-            if (command == null) {
-                String error = "Unknown step type: " + step.workflowStepInternalName();
-                return StepExecutionResult.failure(step.id(), step.displayName(),
-                    error, System.currentTimeMillis() - startTime);
+            lastFailure = result;
+            if (!shouldRetry(result, attempt, maxAttempts)) {
+                return result;
             }
 
-            AgentResponse response = agentClient.execute(command);
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            if (response.isSuccess()) {
-                String screenshotPath = (String) response.getData().get("screenshot");
-                return StepExecutionResult.success(step.id(), step.displayName(),
-                    response.getMessage(), executionTime, screenshotPath, response.getData());
-            } else {
-                return StepExecutionResult.failure(step.id(), step.displayName(),
-                    response.getError(), executionTime, response.getData());
-            }
-
-        } catch (AgentException e) {
-            long executionTime = System.currentTimeMillis() - startTime;
-            return StepExecutionResult.failure(step.id(), step.displayName(),
-                e.getMessage(), executionTime);
-        } catch (Exception e) {
-            long executionTime = System.currentTimeMillis() - startTime;
-            return StepExecutionResult.failure(step.id(), step.displayName(),
-                "Step execution failed: " + e.getMessage(), executionTime);
+            sleepBeforeRetry();
         }
+
+        return lastFailure != null
+            ? lastFailure
+            : StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                "Step execution failed without details",
+                0,
+                Map.of(),
+                retryPolicy.maxRetries(),
+                stepIndex,
+                null
+            );
     }
 
     private boolean isCoordinateStep(String stepType) {
         return "click".equals(stepType) || "hover".equals(stepType) || "type".equals(stepType);
     }
 
-    private StepExecutionResult executeCoordinateStep(PlanStep step, long startTime) throws AgentException {
+    private StepExecutionResult executeStepOnce(PlanStep step, int stepIndex, int retryCount) {
+        long startTime = System.currentTimeMillis();
+        log.debug("Executing step: {}", step);
+
+        try {
+            if (isCoordinateStep(step.workflowStepInternalName())) {
+                return executeCoordinateStep(step, startTime, stepIndex, retryCount);
+            }
+
+            AgentCommand command = convertToCommand(step);
+            if (command == null) {
+                String error = "Unknown step type: " + step.workflowStepInternalName();
+                return StepExecutionResult.failure(
+                    step.id(),
+                    step.displayName(),
+                    error,
+                    System.currentTimeMillis() - startTime,
+                    Map.of(),
+                    retryCount,
+                    stepIndex,
+                    null
+                );
+            }
+
+            AgentResponse response = agentClient.execute(command);
+            long executionTime = System.currentTimeMillis() - startTime;
+
+            if (response.isSuccess()) {
+                String screenshotPath = extractScreenshotPath(response.getData());
+                return StepExecutionResult.success(
+                    step.id(),
+                    step.displayName(),
+                    response.getMessage(),
+                    executionTime,
+                    screenshotPath,
+                    response.getData(),
+                    retryCount,
+                    stepIndex,
+                    command.getType().name()
+                );
+            }
+            return StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                response.getError(),
+                executionTime,
+                response.getData(),
+                retryCount,
+                stepIndex,
+                command.getType().name()
+            );
+        } catch (AgentException e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            return StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                e.getMessage(),
+                executionTime,
+                Map.of(),
+                retryCount,
+                stepIndex,
+                null
+            );
+        } catch (Exception e) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            return StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                "Step execution failed: " + e.getMessage(),
+                executionTime,
+                Map.of(),
+                retryCount,
+                stepIndex,
+                null
+            );
+        }
+    }
+
+    private StepExecutionResult executeCoordinateStep(PlanStep step, long startTime,
+                                                      int stepIndex, int retryCount) throws AgentException {
         String selector = resolveSelector(step.entityId());
         if (selector == null || selector.isBlank()) {
-            return StepExecutionResult.failure(step.id(), step.displayName(),
-                "Target selector is empty for coordinate step", System.currentTimeMillis() - startTime);
+            return StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                "Target selector is empty for coordinate step",
+                System.currentTimeMillis() - startTime,
+                Map.of(),
+                retryCount,
+                stepIndex,
+                null
+            );
         }
 
         String explanation = step.displayName();
         AgentResponse coordsResponse = agentClient.execute(AgentCommand.resolveCoords(selector, explanation));
         long executionTime = System.currentTimeMillis() - startTime;
         if (!coordsResponse.isSuccess()) {
-            return StepExecutionResult.failure(step.id(), step.displayName(),
-                coordsResponse.getError(), executionTime, mergeMetadata(selector, coordsResponse.getData(), null));
+            return StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                coordsResponse.getError(),
+                executionTime,
+                mergeMetadata(selector, coordsResponse.getData(), null),
+                retryCount,
+                stepIndex,
+                AgentCommand.CommandType.RESOLVE_COORDS.name()
+            );
         }
 
         AgentCommand command;
@@ -173,9 +309,16 @@ public class AgentService {
                     : AgentCommand.type(selector, typeText, explanation);
                 break;
             default:
-                return StepExecutionResult.failure(step.id(), step.displayName(),
+                return StepExecutionResult.failure(
+                    step.id(),
+                    step.displayName(),
                     "Unknown coordinate step type: " + step.workflowStepInternalName(),
-                    System.currentTimeMillis() - startTime);
+                    System.currentTimeMillis() - startTime,
+                    Map.of(),
+                    retryCount,
+                    stepIndex,
+                    null
+                );
         }
 
         AgentResponse executeResponse = agentClient.execute(command);
@@ -183,11 +326,28 @@ public class AgentService {
         Map<String, Object> mergedMetadata = mergeMetadata(selector, coordsResponse.getData(), executeResponse.getData());
         String screenshotPath = extractScreenshotPath(executeResponse.getData());
         if (executeResponse.isSuccess()) {
-            return StepExecutionResult.success(step.id(), step.displayName(),
-                executeResponse.getMessage(), executionTime, screenshotPath, mergedMetadata);
+            return StepExecutionResult.success(
+                step.id(),
+                step.displayName(),
+                executeResponse.getMessage(),
+                executionTime,
+                screenshotPath,
+                mergedMetadata,
+                retryCount,
+                stepIndex,
+                command.getType().name()
+            );
         }
-        return StepExecutionResult.failure(step.id(), step.displayName(),
-            executeResponse.getError(), executionTime, mergedMetadata);
+        return StepExecutionResult.failure(
+            step.id(),
+            step.displayName(),
+            executeResponse.getError(),
+            executionTime,
+            mergedMetadata,
+            retryCount,
+            stepIndex,
+            command.getType().name()
+        );
     }
 
     private String extractScreenshotPath(Map<String, Object> data) {
@@ -275,9 +435,78 @@ public class AgentService {
             case "explain":
                 return AgentCommand.explain(explanation);
 
+            case "select_option":
+                String selectValue = step.actions().isEmpty() ? ""
+                    : step.actions().get(0).metaValue() != null ? step.actions().get(0).metaValue() : "";
+                return AgentCommand.selectOption(resolveSelector(target), selectValue, explanation);
+
+            case "read_text":
+                return AgentCommand.readText(resolveSelector(target), explanation);
+
+            case "take_screenshot":
+                return AgentCommand.screenshot(target != null ? target : "fullpage", explanation);
+
             default:
                 log.warn("Unknown step type: {}", type);
                 return null;
+        }
+    }
+
+    private boolean shouldRetry(StepExecutionResult result, int attempt, int maxAttempts) {
+        if (attempt >= maxAttempts) {
+            return false;
+        }
+        String error = result.getError();
+        boolean retryable = retryPolicy.isRetryable(error);
+        if (retryable) {
+            log.warn("Retrying step due to retryable error: {}", error);
+        }
+        return retryable;
+    }
+
+    private void sleepBeforeRetry() {
+        if (retryPolicy.delayMs() <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(retryPolicy.delayMs());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Retry delay interrupted");
+        }
+    }
+
+    private void safeOnPlanStarted(StepExecutionCallback callback, Plan plan) {
+        try {
+            callback.onPlanStarted(plan);
+        } catch (Exception e) {
+            log.warn("StepExecutionCallback.onPlanStarted failed: {}", e.getMessage());
+        }
+    }
+
+    private void safeOnStepStarted(StepExecutionCallback callback, PlanStep step, int stepIndex, int totalSteps) {
+        try {
+            callback.onStepStarted(step, stepIndex, totalSteps);
+        } catch (Exception e) {
+            log.warn("StepExecutionCallback.onStepStarted failed: {}", e.getMessage());
+        }
+    }
+
+    private void safeOnStepCompleted(StepExecutionCallback callback, PlanStep step,
+                                     StepExecutionResult result, int stepIndex) {
+        try {
+            callback.onStepCompleted(step, result, stepIndex);
+        } catch (Exception e) {
+            log.warn("StepExecutionCallback.onStepCompleted failed: {}", e.getMessage());
+        }
+    }
+
+    private void safeOnPlanCompleted(StepExecutionCallback callback, Plan plan,
+                                     List<StepExecutionResult> results, boolean success) {
+        try {
+            callback.onPlanCompleted(plan, results, success);
+        } catch (Exception e) {
+            log.warn("StepExecutionCallback.onPlanCompleted failed: {}", e.getMessage());
         }
     }
 
