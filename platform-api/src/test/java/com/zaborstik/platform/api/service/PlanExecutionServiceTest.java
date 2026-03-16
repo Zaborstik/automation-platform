@@ -115,6 +115,14 @@ class PlanExecutionServiceTest {
         assertEquals(1, response.get().getFailedSteps());
 
         verify(planService).createPlanResult(eq("plan-1"), eq(false), any(Instant.class), any(Instant.class));
+        verify(planService).transitionPlan("plan-1", "in_progress");
+        verify(planService).updateStoppedAtPlanStep("plan-1", "step-1");
+        verify(planService).updateStoppedAtPlanStep("plan-1", "step-2");
+        verify(planService).transitionPlanStep("plan-1", "step-1", "in_progress");
+        verify(planService).transitionPlanStep("plan-1", "step-1", "completed");
+        verify(planService).transitionPlanStep("plan-1", "step-2", "in_progress");
+        verify(planService).transitionPlanStep("plan-1", "step-2", "failed");
+        verify(planService).transitionPlan("plan-1", "failed");
         verify(planService).createAttachment("/tmp/error.png");
         verify(planService).createPlanStepLogEntry(
             eq("plan-1"),
