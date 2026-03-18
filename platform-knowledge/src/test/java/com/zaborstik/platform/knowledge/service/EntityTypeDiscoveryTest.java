@@ -37,8 +37,8 @@ class EntityTypeDiscoveryTest {
             "/p",
             "title",
             List.of(
-                new UIElement("input#q", "CSS", "input", "q", Map.of()),
-                new UIElement("button#b", "CSS", "button", "b", Map.of())
+                new UIElement("q", "input#q", "CSS", "input", "q", Map.of()),
+                new UIElement("b", "button#b", "CSS", "button", "b", Map.of())
             ),
             Instant.now()
         );
@@ -63,7 +63,7 @@ class EntityTypeDiscoveryTest {
         PageKnowledge page = new PageKnowledge(
             "/p",
             "title",
-            List.of(new UIElement("x", "CSS", "unknown", null, Map.of())),
+            List.of(new UIElement("x", "x", "CSS", "unknown", null, Map.of())),
             Instant.now()
         );
 

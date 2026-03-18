@@ -7,6 +7,7 @@
 Построй последовательность шагов (plan_steps) для выполнения задачи.
 Каждый шаг:
 - entity_type_id
+- entity_id (имя элемента, например search_input — НЕ селектор CSS/XPATH)
 - action_id
 - meta_value (если нужен)
 - display_name (описание шага)

@@ -152,4 +152,10 @@ class DatabaseResolverTest {
         assertTrue(databaseResolver.findTransition("wf-plan", "new", "in_progress").isPresent());
         assertTrue(databaseResolver.findTransition("wf-plan", "completed", "new").isEmpty());
     }
+
+    @Test
+    void shouldPassthroughTargetWhenNoUIBinding() {
+        assertEquals("input#search", databaseResolver.resolveTargetToSelector("input#search", null));
+        assertEquals("https://example.com", databaseResolver.resolveTargetToSelector("https://example.com", null));
+    }
 }

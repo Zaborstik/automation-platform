@@ -64,6 +64,16 @@ class BasicAppScannerTest {
         assertTrue(page.elements().stream().anyMatch(e -> "table#results-table".equals(e.selector())));
     }
 
+    @Test
+    void shouldDeriveElementNamesFromIdAndAttributes() {
+        String html = load("/sample-pages/search-page.html");
+        PageKnowledge page = scanner.scanPage(html, "/search");
+        assertTrue(page.elements().stream().anyMatch(e -> "search_input".equals(e.elementName())));
+        assertTrue(page.elements().stream().anyMatch(e -> "search_btn".equals(e.elementName())));
+        assertTrue(page.elements().stream().anyMatch(e -> "search_form".equals(e.elementName())));
+        assertTrue(page.elements().stream().anyMatch(e -> "results_table".equals(e.elementName())));
+    }
+
     private static String load(String path) {
         try (InputStream stream = BasicAppScannerTest.class.getResourceAsStream(path)) {
             if (stream == null) {

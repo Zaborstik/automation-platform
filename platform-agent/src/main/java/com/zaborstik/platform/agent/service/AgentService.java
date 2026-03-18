@@ -6,7 +6,6 @@ import com.zaborstik.platform.agent.dto.AgentCommand;
 import com.zaborstik.platform.agent.dto.AgentResponse;
 import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
-import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import com.zaborstik.platform.core.resolver.Resolver;
@@ -18,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -377,15 +375,7 @@ public class AgentService {
     }
 
     private String resolveSelector(String target) {
-        if (target != null && target.startsWith("action(") && target.endsWith(")")) {
-            String actionId = target.substring(7, target.length() - 1);
-            Optional<UIBinding> binding = resolver.findUIBinding(actionId);
-            if (binding.isPresent()) {
-                return binding.get().selector();
-            }
-            log.warn("UIBinding not found for action: {}, using target as selector", actionId);
-        }
-        return target != null ? target : "";
+        return resolver.resolveTargetToSelector(target, baseUrl);
     }
 
     /**

@@ -8,7 +8,7 @@
 Определи:
 1. Тип сущности (entity_type_id) из списка
 2. Нужные действия (action_id) из списка
-3. Параметры (meta_value, target)
+3. Параметры: meta_value (текст для ввода, timeout и т.д.), target (URL страницы), entity_id (имя элемента, например search_input, submit_btn — НЕ селектор)
 4. Нужно ли уточнение
 
 Ответь в JSON формате:

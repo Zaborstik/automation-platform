@@ -13,7 +13,7 @@ class UIElementTest {
 
     @Test
     void shouldCreateWithValidData() {
-        UIElement element = new UIElement("#search", "CSS", "input", "Search", Map.of("name", "q"));
+        UIElement element = new UIElement("search", "#search", "CSS", "input", "Search", Map.of("name", "q"));
         assertEquals("#search", element.selector());
         assertEquals("input", element.elementType());
         assertEquals("q", element.attributes().get("name"));
@@ -21,19 +21,19 @@ class UIElementTest {
 
     @Test
     void shouldThrowWhenRequiredFieldIsNull() {
-        assertThrows(NullPointerException.class, () -> new UIElement(null, "CSS", "input", null, Map.of()));
-        assertThrows(NullPointerException.class, () -> new UIElement("#x", "CSS", null, null, Map.of()));
+        assertThrows(NullPointerException.class, () -> new UIElement(null, "#x", "CSS", "input", null, Map.of()));
+        assertThrows(NullPointerException.class, () -> new UIElement("x", "#x", "CSS", null, null, Map.of()));
     }
 
     @Test
     void shouldExposeImmutableAttributes() {
-        UIElement element = new UIElement("#x", "CSS", "button", "Run", new HashMap<>());
+        UIElement element = new UIElement("x", "#x", "CSS", "button", "Run", new HashMap<>());
         assertThrows(UnsupportedOperationException.class, () -> element.attributes().put("type", "submit"));
     }
 
     @Test
     void toStringShouldContainKeyFields() {
-        UIElement element = new UIElement("#search", "CSS", "input", "Search", Map.of());
+        UIElement element = new UIElement("search", "#search", "CSS", "input", "Search", Map.of());
         String value = element.toString();
         assertTrue(value.contains("#search"));
         assertTrue(value.contains("input"));

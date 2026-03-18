@@ -6,6 +6,7 @@ import com.zaborstik.platform.knowledge.llm.LLMClient;
 import com.zaborstik.platform.knowledge.llm.StubLLMClient;
 import com.zaborstik.platform.knowledge.scanner.AppScanner;
 import com.zaborstik.platform.knowledge.scanner.BasicAppScanner;
+import com.zaborstik.platform.core.resolver.ElementResolver;
 import com.zaborstik.platform.knowledge.service.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,11 @@ public class KnowledgeConfiguration {
     @Bean
     public KnowledgeRepository knowledgeRepository() {
         return new InMemoryKnowledgeRepository();
+    }
+
+    @Bean
+    public ElementResolver elementResolver(KnowledgeRepository knowledgeRepository) {
+        return new KnowledgeElementResolver(knowledgeRepository);
     }
 
     @Bean

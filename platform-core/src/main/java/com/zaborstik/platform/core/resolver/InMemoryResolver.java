@@ -31,6 +31,15 @@ public class InMemoryResolver implements Resolver {
     /** (actionId, entityTypeId) */
     private final Set<ActionEntityTypeKey> applicable = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, UIBinding> uiBindings = new ConcurrentHashMap<>();
+    private final ElementResolver elementResolver;
+
+    public InMemoryResolver() {
+        this.elementResolver = null;
+    }
+
+    public InMemoryResolver(ElementResolver elementResolver) {
+        this.elementResolver = elementResolver;
+    }
 
     public void registerEntityType(EntityType entityType) {
         entityTypes.put(entityType.id(), entityType);
@@ -135,6 +144,11 @@ public class InMemoryResolver implements Resolver {
     @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
         return Optional.ofNullable(uiBindings.get(actionId));
+    }
+
+    @Override
+    public String resolveTargetToSelector(String target, String pageUrl) {
+        return TargetResolution.resolve(this, elementResolver, target, pageUrl);
     }
 
     private record ActionEntityTypeKey(String actionId, String entityTypeId) {}

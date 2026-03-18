@@ -39,16 +39,66 @@ public class BasicAppScanner implements AppScanner {
     }
 
     private void collectElements(Elements domElements, String elementType, List<UIElement> out) {
+        int index = 0;
         for (Element element : domElements) {
             Map<String, String> attributes = extractAttributes(element, elementType);
+            String elementName = deriveElementName(element, elementType, index);
             out.add(new UIElement(
+                elementName,
                 buildCssSelector(element),
                 "CSS",
                 elementType,
                 extractLabel(element),
                 attributes
             ));
+            index++;
         }
+    }
+
+    /**
+     * Derives a stable semantic element name from DOM attributes.
+     * Priority: id → name → data-testid → data-action → aria-label → fallback elementType_index.
+     * Normalization: lowercase, replace -/spaces with _.
+     */
+    private String deriveElementName(Element element, String elementType, int index) {
+        String raw = null;
+        String attr = element.id();
+        if (attr != null && !attr.isBlank()) {
+            raw = attr;
+        } else {
+            attr = element.attr("name");
+            if (attr != null && !attr.isBlank()) {
+                raw = attr;
+            } else {
+                attr = element.attr("data-testid");
+                if (attr != null && !attr.isBlank()) {
+                    raw = attr;
+                } else {
+                    attr = element.attr("data-action");
+                    if (attr != null && !attr.isBlank()) {
+                        raw = attr;
+                    } else {
+                        attr = element.attr("aria-label");
+                        if (attr != null && !attr.isBlank()) {
+                            raw = attr;
+                        }
+                    }
+                }
+            }
+        }
+        if (raw == null || raw.isBlank()) {
+            raw = elementType + "_" + index;
+        }
+        String normalized = normalizeElementName(raw);
+        return normalized.isBlank() ? elementType + "_" + index : normalized;
+    }
+
+    private static String normalizeElementName(String raw) {
+        return raw.toLowerCase()
+            .replaceAll("[-\\s]+", "_")
+            .replaceAll("[^a-z0-9_]", "")
+            .replaceAll("_+", "_")
+            .replaceAll("^_|_$", "");
     }
 
     private Map<String, String> extractAttributes(Element element, String elementType) {

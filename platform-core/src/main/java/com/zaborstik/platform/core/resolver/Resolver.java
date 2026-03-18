@@ -44,4 +44,15 @@ public interface Resolver {
      * Привязка действия к UI (опционально, для executor).
      */
     Optional<UIBinding> findUIBinding(String actionId);
+
+    /**
+     * Resolves target (entity_id) to a selector string for execution.
+     * Handles: action(actionId), element(elementName), raw selectors, URLs.
+     * Returns target as-is if resolution not applicable (backward compatibility).
+     *
+     * @param target   entity_id from plan step (selector, URL, action(id), or elementName)
+     * @param pageUrl  optional page URL for element name resolution; can be null
+     * @return resolved selector/URL, or target if passthrough
+     */
+    String resolveTargetToSelector(String target, String pageUrl);
 }

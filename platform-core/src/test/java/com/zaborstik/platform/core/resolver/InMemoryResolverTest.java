@@ -72,6 +72,18 @@ class InMemoryResolverTest {
     }
 
     @Test
+    void shouldResolveActionTargetToSelector() {
+        resolver.registerUIBinding(new UIBinding("act-click", "[data-action='submit']", UIBinding.SelectorType.CSS, java.util.Map.of()));
+        assertEquals("[data-action='submit']", resolver.resolveTargetToSelector("action(act-click)", null));
+    }
+
+    @Test
+    void shouldPassthroughSelectorAndUrl() {
+        assertEquals("input#search", resolver.resolveTargetToSelector("input#search", null));
+        assertEquals("https://example.com", resolver.resolveTargetToSelector("https://example.com", null));
+    }
+
+    @Test
     void shouldFindWorkflowAndWorkflowStep() {
         resolver.registerWorkflowStep(new com.zaborstik.platform.core.domain.WorkflowStep("wfs-new", "new", "Новая", 10));
         resolver.registerWorkflow(new com.zaborstik.platform.core.domain.Workflow("wf-plan", "ЖЦ плана", "wfs-new"));

@@ -14,7 +14,7 @@ class PageKnowledgeTest {
 
     @Test
     void shouldCreateWithValidData() {
-        UIElement element = new UIElement("#q", "CSS", "input", "Search", java.util.Map.of());
+        UIElement element = new UIElement("q", "#q", "CSS", "input", "Search", java.util.Map.of());
         PageKnowledge page = new PageKnowledge("/search", "Search", List.of(element), Instant.now());
 
         assertEquals("/search", page.pageUrl());
@@ -31,7 +31,7 @@ class PageKnowledgeTest {
     void shouldExposeImmutableElements() {
         PageKnowledge page = new PageKnowledge("/x", "t", new ArrayList<>(), Instant.now());
         assertThrows(UnsupportedOperationException.class,
-            () -> page.elements().add(new UIElement("#id", "CSS", "input", null, java.util.Map.of())));
+            () -> page.elements().add(new UIElement("id", "#id", "CSS", "input", null, java.util.Map.of())));
     }
 
     @Test

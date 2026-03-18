@@ -3,6 +3,8 @@ package com.zaborstik.platform.api.resolver;
 import com.zaborstik.platform.api.entity.*;
 import com.zaborstik.platform.api.repository.*;
 import com.zaborstik.platform.core.domain.Action;
+import com.zaborstik.platform.core.resolver.ElementResolver;
+import com.zaborstik.platform.core.resolver.TargetResolution;
 import com.zaborstik.platform.core.domain.ActionType;
 import com.zaborstik.platform.core.domain.EntityType;
 import com.zaborstik.platform.core.domain.UIBinding;
@@ -10,6 +12,7 @@ import com.zaborstik.platform.core.domain.Workflow;
 import com.zaborstik.platform.core.domain.WorkflowStep;
 import com.zaborstik.platform.core.domain.WorkflowTransition;
 import com.zaborstik.platform.core.resolver.Resolver;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,19 +32,34 @@ public class DatabaseResolver implements Resolver {
     private final WorkflowRepository workflowRepository;
     private final WorkflowStepRepository workflowStepRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final ElementResolver elementResolver;
 
+    @Autowired
     public DatabaseResolver(EntityTypeRepository entityTypeRepository,
                             ActionTypeRepository actionTypeRepository,
                             ActionRepository actionRepository,
                             WorkflowRepository workflowRepository,
                             WorkflowStepRepository workflowStepRepository,
-                            WorkflowTransitionRepository workflowTransitionRepository) {
+                            WorkflowTransitionRepository workflowTransitionRepository,
+                            @Autowired(required = false) ElementResolver elementResolver) {
         this.entityTypeRepository = entityTypeRepository;
         this.actionTypeRepository = actionTypeRepository;
         this.actionRepository = actionRepository;
         this.workflowRepository = workflowRepository;
         this.workflowStepRepository = workflowStepRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
+        this.elementResolver = elementResolver;
+    }
+
+    /** For tests that inject resolver without ElementResolver. */
+    DatabaseResolver(EntityTypeRepository entityTypeRepository,
+                     ActionTypeRepository actionTypeRepository,
+                     ActionRepository actionRepository,
+                     WorkflowRepository workflowRepository,
+                     WorkflowStepRepository workflowStepRepository,
+                     WorkflowTransitionRepository workflowTransitionRepository) {
+        this(entityTypeRepository, actionTypeRepository, actionRepository, workflowRepository,
+            workflowStepRepository, workflowTransitionRepository, null);
     }
 
     @Override
@@ -90,6 +108,11 @@ public class DatabaseResolver implements Resolver {
     @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
         return Optional.empty();
+    }
+
+    @Override
+    public String resolveTargetToSelector(String target, String pageUrl) {
+        return TargetResolution.resolve(this, elementResolver, target, pageUrl);
     }
 
     @Override
