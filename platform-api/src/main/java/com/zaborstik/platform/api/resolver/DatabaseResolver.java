@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +30,9 @@ public class DatabaseResolver implements Resolver {
     private final WorkflowRepository workflowRepository;
     private final WorkflowStepRepository workflowStepRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+
+    /** Lazy cache: все {@code workflow_step.internalname} из БД. */
+    private volatile Set<String> workflowStepInternalNamesCache;
 
     public DatabaseResolver(EntityTypeRepository entityTypeRepository,
                             ActionTypeRepository actionTypeRepository,
@@ -90,6 +94,25 @@ public class DatabaseResolver implements Resolver {
     @Override
     public Optional<UIBinding> findUIBinding(String actionId) {
         return Optional.empty();
+    }
+
+    @Override
+    public boolean isWorkflowStepInternalName(String internalName) {
+        if (internalName == null || internalName.isBlank()) {
+            return false;
+        }
+        Set<String> cache = workflowStepInternalNamesCache;
+        if (cache == null) {
+            synchronized (this) {
+                if (workflowStepInternalNamesCache == null) {
+                    workflowStepInternalNamesCache = workflowStepRepository.findAll().stream()
+                        .map(WorkflowStepEntity::getInternalname)
+                        .collect(Collectors.toUnmodifiableSet());
+                }
+                cache = workflowStepInternalNamesCache;
+            }
+        }
+        return cache.contains(internalName);
     }
 
     @Override

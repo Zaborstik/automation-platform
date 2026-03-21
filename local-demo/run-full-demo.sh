@@ -12,6 +12,10 @@
 #    7. Сценарий D: HTTPBin — многошаговое заполнение формы
 #    8. OpenAPI / Swagger UI
 #
+#  POST /api/plans: workflowStepInternalName в теле запроса не задаёт ЖЦ — API
+#  подставляет system.workflow.firststep для workflowId плана и шагов.
+#  Операция в браузере только через actions[].actionId → system.action.internalname.
+#
 #  Запуск: ./local-demo/run-full-demo.sh
 # =============================================================================
 
@@ -127,11 +131,11 @@ run_scenario() {
     [ -z "$plan_id" ] && { fail "Не удалось создать план"; scenario_fail=$((scenario_fail+1)); return; }
     ok "План: $plan_id"
 
-    step "${SCENARIO_NUM}.2  Проверка: статус = new"
+    step "${SCENARIO_NUM}.2  Проверка: начальный ЖЦ плана (из БД, обычно new)"
     R=$(http_get "$API/api/plans/$plan_id")
     local status; status=$(field "$R" "workflowStepInternalName")
-    echo "  workflowStepInternalName = $status"
-    [ "$status" = "new" ] && ok "Корректно" || warn "Ожидался new, получен $status"
+    echo "  plan.workflowStepInternalName = $status"
+    [ "$status" = "new" ] && ok "Корректно" || warn "Ожидался new (firststep wf-plan), получен $status"
 
     step "${SCENARIO_NUM}.3  POST /execute — запуск (браузер откроется)"
     log "  Ждём выполнения..."
@@ -148,8 +152,8 @@ run_scenario() {
     R=$(http_get "$API/api/plans/$plan_id")
     status=$(field "$R" "workflowStepInternalName")
     local stopped; stopped=$(field "$R" "stoppedAtPlanStepId")
-    echo "  workflowStepInternalName = $status"
-    echo "  stoppedAtPlanStepId      = $stopped"
+    echo "  plan.workflowStepInternalName = $status"
+    echo "  stoppedAtPlanStepId             = $stopped"
     echo "  planResultId             = $result_id"
 
     if [ "$success" = "true" ]; then
@@ -279,11 +283,11 @@ pause
 # =========================================================================== #
 header "ЧАСТЬ 2: Жизненный цикл плана"
 
-step "2.1  Создание плана (статус: new)"
+step "2.1  Создание плана (начальный ЖЦ = firststep wf-plan в БД)"
 R=$(http_post "$API/api/plans" -d '{
-  "workflowId":"wf-plan","workflowStepInternalName":"new",
+  "workflowId":"wf-plan",
   "target":"ЖЦ-демо","explanation":"Демонстрация переходов",
-  "steps":[{"workflowId":"wf-plan-step","workflowStepInternalName":"new",
+  "steps":[{"workflowId":"wf-plan-step",
     "entityTypeId":"ent-page","entityId":"https://example.com","sortOrder":1,
     "displayName":"Шаг","actions":[{"actionId":"act-open-page"}]}]
 }')
@@ -325,9 +329,9 @@ header "ЧАСТЬ 3: Листинг и поиск планов"
 step "3.1  Создаём 3 плана для листинга"
 for i in 1 2 3; do
     http_post "$API/api/plans" -d "{
-      \"workflowId\":\"wf-plan\",\"workflowStepInternalName\":\"new\",
+      \"workflowId\":\"wf-plan\",
       \"target\":\"Тест #$i\",\"explanation\":\"Листинг\",
-      \"steps\":[{\"workflowId\":\"wf-plan-step\",\"workflowStepInternalName\":\"new\",
+      \"steps\":[{\"workflowId\":\"wf-plan-step\",
         \"entityTypeId\":\"ent-page\",\"entityId\":\"x\",\"sortOrder\":1,
         \"displayName\":\"Шаг\",\"actions\":[{\"actionId\":\"act-open-page\"}]}]
     }" > /dev/null
@@ -355,13 +359,11 @@ log "Поиск статьи → история изменений → возв�
 
 run_scenario "Wikipedia" '{
   "workflowId": "wf-plan",
-  "workflowStepInternalName": "new",
   "target": "Wikipedia: deep navigation",
   "explanation": "Поиск, переходы по вкладкам статьи и внутренняя навигация",
   "steps": [
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
       "entityTypeId": "ent-page",
       "entityId": "https://en.wikipedia.org",
       "sortOrder": 1,
@@ -370,7 +372,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "input#searchInput",
       "sortOrder": 2,
@@ -379,7 +380,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input#searchInput",
       "sortOrder": 3,
@@ -388,7 +388,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "#firstHeading",
       "sortOrder": 4,
@@ -397,7 +396,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "#ca-history",
       "sortOrder": 5,
@@ -406,7 +404,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "#pagehistory",
       "sortOrder": 6,
@@ -415,7 +412,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "#ca-view",
       "sortOrder": 7,
@@ -424,7 +420,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "#firstHeading",
       "sortOrder": 8,
@@ -433,7 +428,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "a[href*=Microsoft]",
       "sortOrder": 9,
@@ -442,7 +436,6 @@ run_scenario "Wikipedia" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "#firstHeading",
       "sortOrder": 10,
@@ -461,13 +454,11 @@ log "Поиск → выдача → переход в первый резуль
 
 run_scenario "DuckDuckGo" '{
   "workflowId": "wf-plan",
-  "workflowStepInternalName": "new",
   "target": "DuckDuckGo: search chain",
   "explanation": "Поиск с переходом в результат и дополнительными шагами проверки",
   "steps": [
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
       "entityTypeId": "ent-page",
       "entityId": "https://duckduckgo.com",
       "sortOrder": 1,
@@ -476,7 +467,6 @@ run_scenario "DuckDuckGo" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "input[name=q]",
       "sortOrder": 2,
@@ -485,7 +475,6 @@ run_scenario "DuckDuckGo" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input[name=q]",
       "sortOrder": 3,
@@ -494,7 +483,6 @@ run_scenario "DuckDuckGo" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "article[data-testid=result]",
       "sortOrder": 4,
@@ -503,7 +491,6 @@ run_scenario "DuckDuckGo" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "article[data-testid=result] h2 a",
       "sortOrder": 5,
@@ -512,7 +499,6 @@ run_scenario "DuckDuckGo" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "main",
       "sortOrder": 6,
@@ -531,13 +517,11 @@ log "Code → Issues → Pull Requests → Actions с проверкой каж�
 
 run_scenario "GitHub" '{
   "workflowId": "wf-plan",
-  "workflowStepInternalName": "new",
   "target": "GitHub: extended tab navigation",
   "explanation": "Многошаговый обход вкладок репозитория с проверками",
   "steps": [
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
       "entityTypeId": "ent-page",
       "entityId": "https://github.com/microsoft/playwright",
       "sortOrder": 1,
@@ -546,7 +530,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "main",
       "sortOrder": 2,
@@ -555,7 +538,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "a[href$=\"/microsoft/playwright/issues\"]",
       "sortOrder": 3,
@@ -564,7 +546,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "a[href*=\"/microsoft/playwright/issues/\"]",
       "sortOrder": 4,
@@ -573,7 +554,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "a[href$=\"/microsoft/playwright/pulls\"]",
       "sortOrder": 5,
@@ -582,7 +562,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "main",
       "sortOrder": 6,
@@ -591,7 +570,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "a[href=\"/microsoft/playwright\"]",
       "sortOrder": 7,
@@ -600,7 +578,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "#readme",
       "sortOrder": 8,
@@ -609,7 +586,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "a[href$=\"/microsoft/playwright/actions\"]",
       "sortOrder": 9,
@@ -618,7 +594,6 @@ run_scenario "GitHub" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "main",
       "sortOrder": 10,
@@ -637,13 +612,11 @@ log "Открыть форму → заполнить поля → отправ�
 
 run_scenario "HTTPBin" '{
   "workflowId": "wf-plan",
-  "workflowStepInternalName": "new",
   "target": "HTTPBin: form submission chain",
   "explanation": "Полный пользовательский поток заполнения формы и проверки результата",
   "steps": [
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
       "entityTypeId": "ent-page",
       "entityId": "https://httpbin.org/forms/post",
       "sortOrder": 1,
@@ -652,7 +625,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "form",
       "sortOrder": 2,
@@ -661,7 +633,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input[name=custname]",
       "sortOrder": 3,
@@ -670,7 +641,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input[name=custtel]",
       "sortOrder": 4,
@@ -679,7 +649,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input[name=custemail]",
       "sortOrder": 5,
@@ -688,7 +657,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-button",
       "entityId": "input[value=medium]",
       "sortOrder": 6,
@@ -697,7 +665,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-button",
       "entityId": "input[value=cheese]",
       "sortOrder": 7,
@@ -706,7 +673,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-button",
       "entityId": "form button",
       "sortOrder": 8,
@@ -715,7 +681,6 @@ run_scenario "HTTPBin" '{
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "pre",
       "sortOrder": 9,

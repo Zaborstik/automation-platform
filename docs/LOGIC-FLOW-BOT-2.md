@@ -7,7 +7,7 @@
 Практически это означает:
 
 - хранение и управление справочниками (`action_type`, `action`, `entity_type`, `workflow`, `workflow_step`);
-- хранение и управление рабочими сущностями (`plan`, `plan_step`, `plan_step_action`, `plan_result`, `plan_step_log_entry`, `attachment`);
+- хранение и управление рабочими сущностями (`plan`, `plan_step`, `plan_step_action`, `plan_result`, `plan_step_log`, `attachment`);
 - предоставление API для создания/чтения/обновления доменных данных;
 - управление жизненным циклом (ЖЦ) плана и шагов плана;
 - фиксирование ошибок, артефактов и точки остановки выполнения.
@@ -140,7 +140,7 @@
 
 При ошибке/прерывании:
 
-- записывается `plan_step_log_entry`;
+- записывается `plan_step_log`;
 - создается `attachment` (например скриншот экрана).
 
 ### 3.7 Примеры для Потока 2
@@ -179,7 +179,7 @@
 Во время шага 3 пользователь нажал стоп:
 
 - `plan_result.success = false`;
-- в `plan_step_log_entry` фиксируется причина;
+- в `plan_step_log` фиксируется причина;
 - создается `attachment` со скриншотом текущего состояния.
 
 #### Пример 5: ошибка селектора
@@ -263,7 +263,7 @@
 - `plan_step`: шаги выполнения;
 - `plan_step_action`: действия внутри шага;
 - `plan_result`: итог;
-- `plan_step_log_entry`: ошибки/диагностика;
+- `plan_step_log`: ошибки/диагностика;
 - `attachment`: вложения (скриншоты и др.).
 
 ## 5.3 Ключевые связи
@@ -272,8 +272,8 @@
 - `plan_step_action.plan_step -> plan_step.id`
 - `plan_step_action.action -> action.id`
 - `plan_result.plan -> plan.id`
-- `plan_step_log_entry.plan_step -> plan_step.id`
-- `plan_step_log_entry.attachment -> attachment.id`
+- `plan_step_log.plan_step -> plan_step.id`
+- `plan_step_log.attachment -> attachment.id`
 
 ---
 
@@ -312,7 +312,7 @@ GET /api/plans?status=completed&page=0&size=20
 2) Фиксируется:
 
 - `plan_result` с `success=false`;
-- `plan_step_log_entry` с `error`;
+- `plan_step_log` с `error`;
 - `attachment` со screenshot path.
 
 3) Клиент видит план в `failed`.
@@ -371,7 +371,7 @@ flowchart TD
     StepStart["PlanStep:new"] --> StepRun["PlanStep:in_progress"]
     StepRun --> StepOk["PlanStep:completed"]
     StepRun --> StepErr["PlanStep:failed"]
-    StepErr --> LogEntry["Create plan_step_log_entry"]
+    StepErr --> LogEntry["Create plan_step_log"]
     LogEntry --> Attachment["Create attachment(screenshot)"]
     StepErr --> PlanFail["Plan:failed"]
 ```
@@ -465,6 +465,6 @@ GET /api/plans?status=failed&page=0&size=5
 
 - Любое новое действие должно иметь валидный `action_type` и карту применимости к `entity_type`.
 - Любой runtime-сценарий должен приводить к созданию `plan_result` (успех/ошибка).
-- Ошибки должны быть диагностируемы: обязательны `plan_step_log_entry` и желателен `attachment`.
+- Ошибки должны быть диагностируемы: обязательны `plan_step_log` и желателен `attachment`.
 - ЖЦ должен обновляться последовательно и прозрачно для клиента API.
 

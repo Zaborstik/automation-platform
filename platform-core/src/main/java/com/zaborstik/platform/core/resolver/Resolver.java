@@ -44,4 +44,10 @@ public interface Resolver {
      * Привязка действия к UI (опционально, для executor).
      */
     Optional<UIBinding> findUIBinding(String actionId);
+
+    /**
+     * true, если {@code internalName} совпадает с {@code internalname} какой-либо записи {@code system.workflow_step}
+     * (элемент справочника шагов ЖЦ).
+     */
+    boolean isWorkflowStepInternalName(String internalName);
 }

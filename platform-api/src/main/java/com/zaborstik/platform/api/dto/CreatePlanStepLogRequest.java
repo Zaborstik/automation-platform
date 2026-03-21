@@ -8,7 +8,7 @@ import java.time.Instant;
 /**
  * Запрос на создание записи лога по шагу плана (при ошибке/прерывании).
  */
-public class CreatePlanStepLogEntryRequest {
+public class CreatePlanStepLogRequest {
 
     @NotBlank
     private String planStepId;

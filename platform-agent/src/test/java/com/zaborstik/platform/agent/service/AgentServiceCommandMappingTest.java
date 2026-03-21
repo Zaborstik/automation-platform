@@ -5,6 +5,7 @@ import com.zaborstik.platform.agent.dto.AgentCommand;
 import com.zaborstik.platform.agent.dto.AgentResponse;
 import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
+import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import com.zaborstik.platform.core.plan.PlanStepAction;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,9 +47,11 @@ class AgentServiceCommandMappingTest {
     void shouldMapSelectOptionStepToSelectOptionCommand() throws Exception {
         when(agentClient.initialize(any(), anyBoolean())).thenReturn(AgentResponse.success("ok", Map.of(), 0));
         when(agentClient.execute(any())).thenReturn(AgentResponse.success("done", Map.of(), 1));
+        when(resolver.findAction("a1")).thenReturn(Optional.of(
+            Action.of("a1", "Select", "select_option", "D", "t")));
 
         PlanStep step = new PlanStep(
-            "s1", "p1", "wf", "select_option", "ent-input", "#country", 0, "Select country",
+            "s1", "p1", "wf-plan-step", "new", "ent-input", "#country", 0, "Select country",
             List.of(new PlanStepAction("a1", "DE"))
         );
         service.executePlan(plan(step));
@@ -55,26 +59,29 @@ class AgentServiceCommandMappingTest {
         ArgumentCaptor<AgentCommand> captor = ArgumentCaptor.forClass(AgentCommand.class);
         verify(agentClient).execute(captor.capture());
         AgentCommand command = captor.getValue();
-        assertEquals(AgentCommand.CommandType.SELECT_OPTION, command.getType());
-        assertEquals("#country", command.getTarget());
-        assertEquals("DE", command.getParameters().get("value"));
+        assertEquals(AgentCommand.CommandType.SELECT_OPTION, command.type());
+        assertEquals("#country", command.target());
+        assertEquals("DE", command.parameters().get("value"));
     }
 
     @Test
     void shouldMapReadTextStepToReadTextCommand() throws Exception {
         when(agentClient.initialize(any(), anyBoolean())).thenReturn(AgentResponse.success("ok", Map.of(), 0));
         when(agentClient.execute(any())).thenReturn(AgentResponse.success("done", Map.of(), 1));
+        when(resolver.findAction("act-read")).thenReturn(Optional.of(
+            Action.of("act-read", "Read", "read_text", "D", "t")));
 
         PlanStep step = new PlanStep(
-            "s1", "p1", "wf", "read_text", "ent-input", "#result", 0, "Read result", List.of()
+            "s1", "p1", "wf-plan-step", "new", "ent-input", "#result", 0, "Read result",
+            List.of(new PlanStepAction("act-read", null))
         );
         service.executePlan(plan(step));
 
         ArgumentCaptor<AgentCommand> captor = ArgumentCaptor.forClass(AgentCommand.class);
         verify(agentClient).execute(captor.capture());
         AgentCommand command = captor.getValue();
-        assertEquals(AgentCommand.CommandType.READ_TEXT, command.getType());
-        assertEquals("#result", command.getTarget());
+        assertEquals(AgentCommand.CommandType.READ_TEXT, command.type());
+        assertEquals("#result", command.target());
     }
 
     @Test
@@ -82,9 +89,12 @@ class AgentServiceCommandMappingTest {
         when(agentClient.initialize(any(), anyBoolean())).thenReturn(AgentResponse.success("ok", Map.of(), 0));
         when(agentClient.execute(any()))
             .thenReturn(AgentResponse.success("done", Map.of("screenshot", "/tmp/screen.png"), 1));
+        when(resolver.findAction("act-shot")).thenReturn(Optional.of(
+            Action.of("act-shot", "Shot", "take_screenshot", "D", "t")));
 
         PlanStep step = new PlanStep(
-            "s1", "p1", "wf", "take_screenshot", "ent-page", "fullpage", 0, "Take screen", List.of()
+            "s1", "p1", "wf-plan-step", "new", "ent-page", "fullpage", 0, "Take screen",
+            List.of(new PlanStepAction("act-shot", null))
         );
 
         List<StepExecutionResult> results = service.executePlan(plan(step));
@@ -92,18 +102,20 @@ class AgentServiceCommandMappingTest {
         ArgumentCaptor<AgentCommand> captor = ArgumentCaptor.forClass(AgentCommand.class);
         verify(agentClient).execute(captor.capture());
         AgentCommand command = captor.getValue();
-        assertEquals(AgentCommand.CommandType.SCREENSHOT, command.getType());
-        assertEquals("fullpage", command.getTarget());
-        assertEquals("/tmp/screen.png", results.get(0).getScreenshotPath());
+        assertEquals(AgentCommand.CommandType.SCREENSHOT, command.type());
+        assertEquals("fullpage", command.target());
+        assertEquals("/tmp/screen.png", results.get(0).screenshotPath());
     }
 
     @Test
     void shouldUseEmptyStringWhenSelectOptionMetaValueMissing() throws Exception {
         when(agentClient.initialize(any(), anyBoolean())).thenReturn(AgentResponse.success("ok", Map.of(), 0));
         when(agentClient.execute(any())).thenReturn(AgentResponse.success("done", Map.of(), 1));
+        when(resolver.findAction("a1")).thenReturn(Optional.of(
+            Action.of("a1", "Select", "select_option", "D", "t")));
 
         PlanStep step = new PlanStep(
-            "s1", "p1", "wf", "select_option", "ent-input", "#country", 0, "Select country",
+            "s1", "p1", "wf-plan-step", "new", "ent-input", "#country", 0, "Select country",
             List.of(new PlanStepAction("a1", null))
         );
         service.executePlan(plan(step));
@@ -111,7 +123,7 @@ class AgentServiceCommandMappingTest {
         ArgumentCaptor<AgentCommand> captor = ArgumentCaptor.forClass(AgentCommand.class);
         verify(agentClient).execute(captor.capture());
         AgentCommand command = captor.getValue();
-        assertEquals("", command.getParameters().get("value"));
+        assertEquals("", command.parameters().get("value"));
     }
 
     private Plan plan(PlanStep step) {

@@ -2,7 +2,7 @@ package com.zaborstik.platform.api.controller;
 
 import com.zaborstik.platform.api.dto.*;
 import com.zaborstik.platform.api.entity.PlanResultEntity;
-import com.zaborstik.platform.api.entity.PlanStepLogEntryEntity;
+import com.zaborstik.platform.api.entity.PlanStepLogEntity;
 import com.zaborstik.platform.api.service.PlanExecutionService;
 import com.zaborstik.platform.api.service.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -88,10 +88,10 @@ public class PlanController {
     @PostMapping("/{planId}/step-log")
     @Operation(summary = "Create plan step log entry")
     @ApiResponse(responseCode = "201", description = "Plan step log entry created")
-    public ResponseEntity<PlanStepLogEntryEntity> createPlanStepLogEntry(
+    public ResponseEntity<PlanStepLogEntity> createPlanStepLog(
             @PathVariable("planId") String planId,
-            @Valid @RequestBody CreatePlanStepLogEntryRequest request) {
-        PlanStepLogEntryEntity entry = planService.createPlanStepLogEntry(
+            @Valid @RequestBody CreatePlanStepLogRequest request) {
+        PlanStepLogEntity entry = planService.createPlanStepLog(
                 planId,
                 request.getPlanStepId(),
                 request.getPlanResultId(),

@@ -87,7 +87,7 @@ class StepExecutionCallbackTest {
         List<StepExecutionResult> results = service.executePlan(plan, callback);
 
         assertEquals(1, results.size());
-        assertFalse(results.get(0).isSuccess());
+        assertFalse(results.get(0).success());
         assertTrue(callback.events.contains("planStarted"));
         assertTrue(callback.events.contains("stepStarted:0"));
         assertTrue(callback.events.contains("stepCompleted:0:false"));
@@ -134,7 +134,7 @@ class StepExecutionCallbackTest {
 
         @Override
         public void onStepCompleted(PlanStep step, StepExecutionResult result, int stepIndex) {
-            events.add("stepCompleted:" + stepIndex + ":" + result.isSuccess());
+            events.add("stepCompleted:" + stepIndex + ":" + result.success());
         }
 
         @Override

@@ -9,17 +9,12 @@ import java.util.Objects;
 /**
  * Одна запись в execution_log.
  * Связывает шаг плана с фактическим результатом выполнения через UI-агента.
- * 
+ * <p>
  * One entry in execution_log.
  * Links plan step with actual execution result through UI agent.
  */
-public class ExecutionLogEntry {
-    private final String planId;
-    private final int stepIndex;
-    private final PlanStep step;
-    private final StepExecutionResult result;
-    private final Instant loggedAt;
-
+public record ExecutionLogEntry(String planId, int stepIndex, PlanStep step, StepExecutionResult result,
+                                Instant loggedAt) {
     public ExecutionLogEntry(String planId, int stepIndex, PlanStep step, StepExecutionResult result, Instant loggedAt) {
         this.planId = Objects.requireNonNull(planId, "planId cannot be null");
         this.stepIndex = stepIndex;
@@ -28,35 +23,15 @@ public class ExecutionLogEntry {
         this.loggedAt = loggedAt != null ? loggedAt : Instant.now();
     }
 
-    public String getPlanId() {
-        return planId;
-    }
-
-    public int getStepIndex() {
-        return stepIndex;
-    }
-
-    public PlanStep getStep() {
-        return step;
-    }
-
-    public StepExecutionResult getResult() {
-        return result;
-    }
-
-    public Instant getLoggedAt() {
-        return loggedAt;
-    }
-
     @Override
     public String toString() {
         return "ExecutionLogEntry{" +
-            "planId='" + planId + '\'' +
-            ", stepIndex=" + stepIndex +
-            ", step=" + step +
-            ", result=" + result +
-            ", loggedAt=" + loggedAt +
-            '}';
+                "planId='" + planId + '\'' +
+                ", stepIndex=" + stepIndex +
+                ", step=" + step +
+                ", result=" + result +
+                ", loggedAt=" + loggedAt +
+                '}';
     }
 }
 

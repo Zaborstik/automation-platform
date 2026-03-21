@@ -17,16 +17,13 @@ import java.util.stream.Collectors;
 public class PlanMapper {
 
     private final WorkflowRepository workflowRepository;
-    private final WorkflowStepRepository workflowStepRepository;
     private final EntityTypeRepository entityTypeRepository;
     private final ActionRepository actionRepository;
 
     public PlanMapper(WorkflowRepository workflowRepository,
-                      WorkflowStepRepository workflowStepRepository,
                       EntityTypeRepository entityTypeRepository,
                       ActionRepository actionRepository) {
         this.workflowRepository = workflowRepository;
-        this.workflowStepRepository = workflowStepRepository;
         this.entityTypeRepository = entityTypeRepository;
         this.actionRepository = actionRepository;
     }

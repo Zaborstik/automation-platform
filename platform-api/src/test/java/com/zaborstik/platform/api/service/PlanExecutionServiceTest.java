@@ -46,8 +46,8 @@ class PlanExecutionServiceTest {
         PlanStep step1 = new PlanStep(
             "step-1",
             "plan-1",
-            "wf-plan",
-            "click",
+            "wf-plan-step",
+            "new",
             "ent-button",
             "#submit",
             0,
@@ -57,8 +57,8 @@ class PlanExecutionServiceTest {
         PlanStep step2 = new PlanStep(
             "step-2",
             "plan-1",
-            "wf-plan",
-            "type",
+            "wf-plan-step",
+            "new",
             "ent-input",
             "#input",
             1,
@@ -124,7 +124,7 @@ class PlanExecutionServiceTest {
         verify(planService).transitionPlanStep("plan-1", "step-2", "failed");
         verify(planService).transitionPlan("plan-1", "failed");
         verify(planService).createAttachment("/tmp/error.png");
-        verify(planService).createPlanStepLogEntry(
+        verify(planService).createPlanStepLog(
             eq("plan-1"),
             eq("step-2"),
             eq("result-1"),

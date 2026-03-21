@@ -18,9 +18,9 @@ import java.util.Objects;
  *
  * Берёт {@link Plan}, передаёт шаги в {@link AgentService}, собирает execution_log
  * и возвращает агрегированный {@link PlanExecutionResult}.
- * 
+ *
  * Plan executor.
- * 
+ *
  * Takes {@link Plan}, passes steps to {@link AgentService}, collects execution_log
  * and returns aggregated {@link PlanExecutionResult}.
  */
@@ -68,7 +68,7 @@ public class PlanExecutor {
 
         if (stopOnFailure) {
             for (int i = 0; i < count; i++) {
-                if (!results.get(i).isSuccess()) {
+                if (!results.get(i).success()) {
                     processedCount = i + 1;
                     break;
                 }
@@ -112,7 +112,7 @@ public class PlanExecutor {
             }
         }
 
-        boolean success = logEntries.stream().allMatch(e -> e.getResult().isSuccess());
+        boolean success = logEntries.stream().allMatch(e -> e.result().success());
         Instant finishedAt = Instant.now();
 
         PlanExecutionResult executionResult = new PlanExecutionResult(

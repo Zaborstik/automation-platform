@@ -152,4 +152,11 @@ class DatabaseResolverTest {
         assertTrue(databaseResolver.findTransition("wf-plan", "new", "in_progress").isPresent());
         assertTrue(databaseResolver.findTransition("wf-plan", "completed", "new").isEmpty());
     }
+
+    @Test
+    void isWorkflowStepInternalNameShouldReflectWorkflowStepTable() {
+        assertTrue(databaseResolver.isWorkflowStepInternalName("new"));
+        assertFalse(databaseResolver.isWorkflowStepInternalName("open_page"));
+        assertFalse(databaseResolver.isWorkflowStepInternalName(""));
+    }
 }

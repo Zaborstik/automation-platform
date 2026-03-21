@@ -36,7 +36,7 @@ class AsyncPlanExecutorTest {
         CompletableFuture<PlanExecutionResult> future = async.executeAsync(plan);
 
         PlanExecutionResult actual = future.get(2, TimeUnit.SECONDS);
-        assertEquals("p1", actual.getPlanId());
+        assertEquals("p1", actual.planId());
         async.shutdown();
     }
 

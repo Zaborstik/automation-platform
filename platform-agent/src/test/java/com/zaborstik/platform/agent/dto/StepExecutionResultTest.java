@@ -22,10 +22,10 @@ class StepExecutionResultTest {
             "CLICK"
         );
 
-        assertTrue(result.isSuccess());
-        assertEquals(1, result.getRetryCount());
-        assertEquals(2, result.getStepIndex());
-        assertEquals("CLICK", result.getCommandType());
+        assertTrue(result.success());
+        assertEquals(1, result.retryCount());
+        assertEquals(2, result.stepIndex());
+        assertEquals("CLICK", result.commandType());
     }
 
     @Test
@@ -33,13 +33,13 @@ class StepExecutionResultTest {
         StepExecutionResult success = StepExecutionResult.success("wait", "result", "Done", 10, null);
         StepExecutionResult failure = StepExecutionResult.failure("wait", "result", "Err", 11);
 
-        assertEquals(0, success.getRetryCount());
-        assertEquals(-1, success.getStepIndex());
-        assertNull(success.getCommandType());
+        assertEquals(0, success.retryCount());
+        assertEquals(-1, success.stepIndex());
+        assertNull(success.commandType());
 
-        assertEquals(0, failure.getRetryCount());
-        assertEquals(-1, failure.getStepIndex());
-        assertNull(failure.getCommandType());
+        assertEquals(0, failure.retryCount());
+        assertEquals(-1, failure.stepIndex());
+        assertNull(failure.commandType());
     }
 
     @Test
@@ -55,8 +55,8 @@ class StepExecutionResultTest {
             "TYPE"
         );
 
-        assertEquals(2, result.getRetryCount());
-        assertEquals(4, result.getStepIndex());
-        assertEquals("TYPE", result.getCommandType());
+        assertEquals(2, result.retryCount());
+        assertEquals(4, result.stepIndex());
+        assertEquals("TYPE", result.commandType());
     }
 }

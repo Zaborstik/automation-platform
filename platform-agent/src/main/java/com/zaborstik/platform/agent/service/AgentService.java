@@ -6,9 +6,11 @@ import com.zaborstik.platform.agent.dto.AgentCommand;
 import com.zaborstik.platform.agent.dto.AgentResponse;
 import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
+import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.domain.UIBinding;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
+import com.zaborstik.platform.core.plan.PlanStepAction;
 import com.zaborstik.platform.core.resolver.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +33,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class AgentService {
     private static final Logger log = LoggerFactory.getLogger(AgentService.class);
-    
+
     private final AgentClient agentClient;
     private final Resolver resolver;
     private final String baseUrl;
@@ -78,12 +80,12 @@ public class AgentService {
         safeOnPlanStarted(effectiveCallback, plan);
         try {
             AgentResponse initResponse = agentClient.initialize(baseUrl, headless);
-            if (!initResponse.isSuccess()) {
-                log.error("Failed to initialize agent: {}", initResponse.getError());
+            if (!initResponse.success()) {
+                log.error("Failed to initialize agent: {}", initResponse.error());
                 results.add(StepExecutionResult.failure(
                     "initialize",
                     "browser",
-                    initResponse.getError(),
+                    initResponse.error(),
                     0,
                     Map.of(),
                     0,
@@ -103,9 +105,9 @@ public class AgentService {
                 results.add(result);
                 safeOnStepCompleted(effectiveCallback, step, result, stepIndex);
 
-                if (!result.isSuccess()) {
+                if (!result.success()) {
                     success = false;
-                    log.error("Step execution failed: {}", result.getError());
+                    log.error("Step execution failed: {}", result.error());
                     if (stopOnFailure) {
                         break;
                     }
@@ -129,7 +131,7 @@ public class AgentService {
             success = false;
             return results;
         } finally {
-            boolean finalSuccess = success && results.stream().allMatch(StepExecutionResult::isSuccess);
+            boolean finalSuccess = success && results.stream().allMatch(StepExecutionResult::success);
             safeOnPlanCompleted(effectiveCallback, plan, List.copyOf(results), finalSuccess);
         }
     }
@@ -148,7 +150,7 @@ public class AgentService {
             log.info("Executing step {} attempt {}/{}", step.id(), attempt, maxAttempts);
 
             StepExecutionResult result = executeStepOnce(step, stepIndex, retryCount);
-            if (result.isSuccess()) {
+            if (result.success()) {
                 return result;
             }
 
@@ -174,8 +176,31 @@ public class AgentService {
             );
     }
 
-    private boolean isCoordinateStep(String stepType) {
-        return "click".equals(stepType) || "hover".equals(stepType) || "type".equals(stepType);
+    private boolean isCoordinateStep(String operationInternalName) {
+        return "click".equals(operationInternalName)
+            || "hover".equals(operationInternalName)
+            || "type".equals(operationInternalName);
+    }
+
+    /**
+     * Тип UI-операции для исполнителя: {@code system.action.internalname} первого шага с валидным {@code actionId}.
+     * Если действий нет — устаревший fallback: {@link PlanStep#workflowStepInternalName()}, если это не состояние ЖЦ шага.
+     */
+    private String resolveExecutorInternalName(PlanStep step) {
+        for (PlanStepAction a : step.actions()) {
+            if (a.actionId() == null || a.actionId().isBlank()) {
+                continue;
+            }
+            Optional<Action> found = resolver.findAction(a.actionId());
+            if (found.isPresent()) {
+                return found.get().internalName();
+            }
+        }
+        String w = step.workflowStepInternalName();
+        if (w != null && !resolver.isWorkflowStepInternalName(w)) {
+            return w;
+        }
+        return null;
     }
 
     private StepExecutionResult executeStepOnce(PlanStep step, int stepIndex, int retryCount) {
@@ -183,13 +208,28 @@ public class AgentService {
         log.debug("Executing step: {}", step);
 
         try {
-            if (isCoordinateStep(step.workflowStepInternalName())) {
-                return executeCoordinateStep(step, startTime, stepIndex, retryCount);
+            String operation = resolveExecutorInternalName(step);
+            if (operation == null) {
+                return StepExecutionResult.failure(
+                    step.id(),
+                    step.displayName(),
+                    "Cannot resolve executor operation: add plan_step_action with a valid action id "
+                        + "(system.action.internalname defines the UI operation).",
+                    System.currentTimeMillis() - startTime,
+                    Map.of(),
+                    retryCount,
+                    stepIndex,
+                    null
+                );
             }
 
-            AgentCommand command = convertToCommand(step);
+            if (isCoordinateStep(operation)) {
+                return executeCoordinateStep(step, operation, startTime, stepIndex, retryCount);
+            }
+
+            AgentCommand command = convertToCommand(step, operation);
             if (command == null) {
-                String error = "Unknown step type: " + step.workflowStepInternalName();
+                String error = "Unknown executor operation: " + operation;
                 return StepExecutionResult.failure(
                     step.id(),
                     step.displayName(),
@@ -205,29 +245,29 @@ public class AgentService {
             AgentResponse response = agentClient.execute(command);
             long executionTime = System.currentTimeMillis() - startTime;
 
-            if (response.isSuccess()) {
-                String screenshotPath = extractScreenshotPath(response.getData());
+            if (response.success()) {
+                String screenshotPath = extractScreenshotPath(response.data());
                 return StepExecutionResult.success(
                     step.id(),
                     step.displayName(),
-                    response.getMessage(),
+                    response.message(),
                     executionTime,
                     screenshotPath,
-                    response.getData(),
+                    response.data(),
                     retryCount,
                     stepIndex,
-                    command.getType().name()
+                    command.type().name()
                 );
             }
             return StepExecutionResult.failure(
                 step.id(),
                 step.displayName(),
-                response.getError(),
+                response.error(),
                 executionTime,
-                response.getData(),
+                response.data(),
                 retryCount,
                 stepIndex,
-                command.getType().name()
+                command.type().name()
             );
         } catch (AgentException e) {
             long executionTime = System.currentTimeMillis() - startTime;
@@ -256,7 +296,8 @@ public class AgentService {
         }
     }
 
-    private StepExecutionResult executeCoordinateStep(PlanStep step, long startTime,
+    private StepExecutionResult executeCoordinateStep(PlanStep step, String operation,
+                                                      long startTime,
                                                       int stepIndex, int retryCount) throws AgentException {
         String selector = resolveSelector(step.entityId());
         if (selector == null || selector.isBlank()) {
@@ -275,13 +316,13 @@ public class AgentService {
         String explanation = step.displayName();
         AgentResponse coordsResponse = agentClient.execute(AgentCommand.resolveCoords(selector, explanation));
         long executionTime = System.currentTimeMillis() - startTime;
-        if (!coordsResponse.isSuccess()) {
+        if (!coordsResponse.success()) {
             return StepExecutionResult.failure(
                 step.id(),
                 step.displayName(),
-                coordsResponse.getError(),
+                coordsResponse.error(),
                 executionTime,
-                mergeMetadata(selector, coordsResponse.getData(), null),
+                mergeMetadata(selector, coordsResponse.data(), null),
                 retryCount,
                 stepIndex,
                 AgentCommand.CommandType.RESOLVE_COORDS.name()
@@ -289,10 +330,10 @@ public class AgentService {
         }
 
         AgentCommand command;
-        switch (step.workflowStepInternalName()) {
+        switch (operation) {
             case "click":
-                double x = extractRequiredNumber(coordsResponse.getData(), "x");
-                double y = extractRequiredNumber(coordsResponse.getData(), "y");
+                double x = extractRequiredNumber(coordsResponse.data(), "x");
+                double y = extractRequiredNumber(coordsResponse.data(), "y");
                 command = AgentCommand.clickAt(x, y, explanation, selector);
                 break;
             case "hover":
@@ -311,7 +352,7 @@ public class AgentService {
                 return StepExecutionResult.failure(
                     step.id(),
                     step.displayName(),
-                    "Unknown coordinate step type: " + step.workflowStepInternalName(),
+                    "Unknown coordinate step type: " + operation,
                     System.currentTimeMillis() - startTime,
                     Map.of(),
                     retryCount,
@@ -322,30 +363,30 @@ public class AgentService {
 
         AgentResponse executeResponse = agentClient.execute(command);
         executionTime = System.currentTimeMillis() - startTime;
-        Map<String, Object> mergedMetadata = mergeMetadata(selector, coordsResponse.getData(), executeResponse.getData());
-        String screenshotPath = extractScreenshotPath(executeResponse.getData());
-        if (executeResponse.isSuccess()) {
+        Map<String, Object> mergedMetadata = mergeMetadata(selector, coordsResponse.data(), executeResponse.data());
+        String screenshotPath = extractScreenshotPath(executeResponse.data());
+        if (executeResponse.success()) {
             return StepExecutionResult.success(
                 step.id(),
                 step.displayName(),
-                executeResponse.getMessage(),
+                executeResponse.message(),
                 executionTime,
                 screenshotPath,
                 mergedMetadata,
                 retryCount,
                 stepIndex,
-                command.getType().name()
+                command.type().name()
             );
         }
         return StepExecutionResult.failure(
             step.id(),
             step.displayName(),
-            executeResponse.getError(),
+            executeResponse.error(),
             executionTime,
             mergedMetadata,
             retryCount,
             stepIndex,
-            command.getType().name()
+            command.type().name()
         );
     }
 
@@ -390,11 +431,11 @@ public class AgentService {
 
     /**
      * Преобразует PlanStep в AgentCommand.
-     * Использует workflowStepInternalName как тип шага, entityId как target, displayName как explanation.
-     * Действия шага (plan_step_action) задают actionId и metaValue.
+     * Тип операции — {@code system.action.internalname} (см. {@link #resolveExecutorInternalName(PlanStep)}).
+     * entityId — target, displayName — explanation; plan_step_action задаёт actionId и metaValue.
      */
-    private AgentCommand convertToCommand(PlanStep step) {
-        String type = step.workflowStepInternalName();
+    private AgentCommand convertToCommand(PlanStep step, String operationInternalName) {
+        String type = operationInternalName;
         String target = step.entityId();
         String explanation = step.displayName();
 
@@ -455,7 +496,7 @@ public class AgentService {
         if (attempt >= maxAttempts) {
             return false;
         }
-        String error = result.getError();
+        String error = result.error();
         boolean retryable = retryPolicy.isRetryable(error);
         if (retryable) {
             log.warn("Retrying step due to retryable error: {}", error);

@@ -7,26 +7,15 @@ import java.util.Objects;
 /**
  * Результат выполнения шага плана.
  */
-public class StepExecutionResult {
-    private final String stepType;
-    private final String stepTarget;
-    private final boolean success;
-    private final String message;
-    private final String error;
-    private final Instant executedAt;
-    private final long executionTimeMs;
-    private final String screenshotPath;
-    private final Map<String, Object> metadata;
-    private final int retryCount;
-    private final int stepIndex;
-    private final String commandType;
-
-    public StepExecutionResult(String stepType, String stepTarget, boolean success, 
-                               String message, String error, Instant executedAt, 
+public record StepExecutionResult(String stepType, String stepTarget, boolean success, String message, String error,
+                                  Instant executedAt, long executionTimeMs, String screenshotPath,
+                                  Map<String, Object> metadata, int retryCount, int stepIndex, String commandType) {
+    public StepExecutionResult(String stepType, String stepTarget, boolean success,
+                               String message, String error, Instant executedAt,
                                long executionTimeMs, String screenshotPath,
                                Map<String, Object> metadata) {
         this(stepType, stepTarget, success, message, error, executedAt, executionTimeMs, screenshotPath,
-            metadata, 0, -1, null);
+                metadata, 0, -1, null);
     }
 
     public StepExecutionResult(String stepType, String stepTarget, boolean success,
@@ -54,59 +43,11 @@ public class StepExecutionResult {
         this(stepType, stepTarget, success, message, error, executedAt, executionTimeMs, screenshotPath, Map.of());
     }
 
-    public String getStepType() {
-        return stepType;
-    }
-
-    public String getStepTarget() {
-        return stepTarget;
-    }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public Instant getExecutedAt() {
-        return executedAt;
-    }
-
-    public long getExecutionTimeMs() {
-        return executionTimeMs;
-    }
-
-    public String getScreenshotPath() {
-        return screenshotPath;
-    }
-
-    public Map<String, Object> getMetadata() {
-        return metadata;
-    }
-
-    public int getRetryCount() {
-        return retryCount;
-    }
-
-    public int getStepIndex() {
-        return stepIndex;
-    }
-
-    public String getCommandType() {
-        return commandType;
-    }
-
-    public static StepExecutionResult success(String stepType, String stepTarget, 
-                                              String message, long executionTimeMs, 
+    public static StepExecutionResult success(String stepType, String stepTarget,
+                                              String message, long executionTimeMs,
                                               String screenshotPath) {
-        return new StepExecutionResult(stepType, stepTarget, true, message, null, 
-                                      Instant.now(), executionTimeMs, screenshotPath, Map.of());
+        return new StepExecutionResult(stepType, stepTarget, true, message, null,
+                Instant.now(), executionTimeMs, screenshotPath, Map.of());
     }
 
     public static StepExecutionResult success(String stepType, String stepTarget,
@@ -120,13 +61,13 @@ public class StepExecutionResult {
                                               String screenshotPath, Map<String, Object> metadata,
                                               int retryCount, int stepIndex, String commandType) {
         return new StepExecutionResult(stepType, stepTarget, true, message, null,
-            Instant.now(), executionTimeMs, screenshotPath, metadata, retryCount, stepIndex, commandType);
+                Instant.now(), executionTimeMs, screenshotPath, metadata, retryCount, stepIndex, commandType);
     }
 
-    public static StepExecutionResult failure(String stepType, String stepTarget, 
+    public static StepExecutionResult failure(String stepType, String stepTarget,
                                               String error, long executionTimeMs) {
-        return new StepExecutionResult(stepType, stepTarget, false, null, error, 
-                                      Instant.now(), executionTimeMs, null, Map.of());
+        return new StepExecutionResult(stepType, stepTarget, false, null, error,
+                Instant.now(), executionTimeMs, null, Map.of());
     }
 
     public static StepExecutionResult failure(String stepType, String stepTarget,
@@ -140,16 +81,16 @@ public class StepExecutionResult {
                                               Map<String, Object> metadata,
                                               int retryCount, int stepIndex, String commandType) {
         return new StepExecutionResult(stepType, stepTarget, false, null, error,
-            Instant.now(), executionTimeMs, null, metadata, retryCount, stepIndex, commandType);
+                Instant.now(), executionTimeMs, null, metadata, retryCount, stepIndex, commandType);
     }
 
     @Override
     public String toString() {
-        return "StepExecutionResult{type='" + stepType + "', target='" + stepTarget + 
-               "', success=" + success + ", message='" + message + 
-               "', error='" + error + "', time=" + executionTimeMs +
-               "ms, retryCount=" + retryCount + ", stepIndex=" + stepIndex +
-               ", commandType='" + commandType + "'}";
+        return "StepExecutionResult{type='" + stepType + "', target='" + stepTarget +
+                "', success=" + success + ", message='" + message +
+                "', error='" + error + "', time=" + executionTimeMs +
+                "ms, retryCount=" + retryCount + ", stepIndex=" + stepIndex +
+                ", commandType='" + commandType + "'}";
     }
 }
 

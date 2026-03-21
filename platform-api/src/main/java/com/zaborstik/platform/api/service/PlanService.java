@@ -25,33 +25,38 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final PlanMapper planMapper;
     private final PlanResultRepository planResultRepository;
-    private final PlanStepLogEntryRepository planStepLogEntryRepository;
+    private final PlanStepLogRepository PlanStepLogRepository;
     private final ActionRepository actionRepository;
     private final AttachmentRepository attachmentRepository;
     private final PlanStepRepository planStepRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final WorkflowRepository workflowRepository;
 
     public PlanService(PlanRepository planRepository,
                        PlanMapper planMapper,
                        PlanResultRepository planResultRepository,
-                       PlanStepLogEntryRepository planStepLogEntryRepository,
+                       PlanStepLogRepository PlanStepLogRepository,
                        ActionRepository actionRepository,
                        AttachmentRepository attachmentRepository,
                        PlanStepRepository planStepRepository,
-                       WorkflowTransitionRepository workflowTransitionRepository) {
+                       WorkflowTransitionRepository workflowTransitionRepository,
+                       WorkflowRepository workflowRepository) {
         this.planRepository = planRepository;
         this.planMapper = planMapper;
         this.planResultRepository = planResultRepository;
-        this.planStepLogEntryRepository = planStepLogEntryRepository;
+        this.PlanStepLogRepository = PlanStepLogRepository;
         this.actionRepository = actionRepository;
         this.attachmentRepository = attachmentRepository;
         this.planStepRepository = planStepRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
+        this.workflowRepository = workflowRepository;
     }
 
     @Transactional
     public PlanResponse createPlan(CreatePlanRequest request) {
         String planId = UUID.randomUUID().toString();
+        Map<String, String> firstStepByWorkflow = new HashMap<>();
+        String planWorkflowFirstStep = firstWorkflowStepInternalName(request.getWorkflowId(), firstStepByWorkflow);
         List<PlanStep> steps = new ArrayList<>();
         for (int i = 0; i < request.getSteps().size(); i++) {
             CreatePlanRequest.PlanStepRequest sr = request.getSteps().get(i);
@@ -59,11 +64,12 @@ public class PlanService {
             List<PlanStepAction> actions = sr.getActions().stream()
                     .map(a -> new PlanStepAction(a.getActionId(), a.getMetaValue()))
                     .collect(Collectors.toList());
+            String stepInitialLifecycle = firstWorkflowStepInternalName(sr.getWorkflowId(), firstStepByWorkflow);
             steps.add(new PlanStep(
                     stepId,
                     planId,
                     sr.getWorkflowId(),
-                    sr.getWorkflowStepInternalName(),
+                    stepInitialLifecycle,
                     sr.getEntityTypeId(),
                     sr.getEntityId(),
                     sr.getSortOrder(),
@@ -74,7 +80,7 @@ public class PlanService {
         Plan plan = new Plan(
                 planId,
                 request.getWorkflowId(),
-                request.getWorkflowStepInternalName(),
+                planWorkflowFirstStep,
                 steps.isEmpty() ? planId : steps.get(0).id(),
                 request.getTarget(),
                 request.getExplanation(),
@@ -176,7 +182,7 @@ public class PlanService {
 
     /** Запись лога по шагу (при падении/прерывании). */
     @Transactional
-    public PlanStepLogEntryEntity createPlanStepLogEntry(String planId, String planStepId, String planResultId,
+    public PlanStepLogEntity createPlanStepLog(String planId, String planStepId, String planResultId,
                                                          String actionId, String message, String error,
                                                          Instant executedTime, Long executionTimeMs, String attachmentId) {
         Objects.requireNonNull(planId, "planId");
@@ -189,7 +195,7 @@ public class PlanService {
         PlanResultEntity planResult = planResultRepository.findById(planResultId).orElseThrow(() -> new IllegalArgumentException("Plan result not found: " + planResultId));
         ActionEntity action = actionRepository.findById(actionId).orElseThrow(() -> new IllegalArgumentException("Action not found: " + actionId));
 
-        PlanStepLogEntryEntity entry = new PlanStepLogEntryEntity();
+        PlanStepLogEntity entry = new PlanStepLogEntity();
         entry.setId(UUID.randomUUID().toString());
         entry.setPlan(plan);
         entry.setPlanStep(planStep);
@@ -202,7 +208,7 @@ public class PlanService {
         if (attachmentId != null) {
             attachmentRepository.findById(attachmentId).ifPresent(entry::setAttachment);
         }
-        return planStepLogEntryRepository.save(entry);
+        return PlanStepLogRepository.save(entry);
     }
 
     @Transactional
@@ -241,5 +247,19 @@ public class PlanService {
             return ar;
         }).collect(Collectors.toList()));
         return r;
+    }
+
+    private String firstWorkflowStepInternalName(String workflowId, Map<String, String> cache) {
+        return cache.computeIfAbsent(workflowId, this::loadFirstWorkflowStepInternalName);
+    }
+
+    private String loadFirstWorkflowStepInternalName(String workflowId) {
+        WorkflowEntity wf = workflowRepository.findById(workflowId)
+                .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + workflowId));
+        WorkflowStepEntity first = wf.getFirststep();
+        if (first == null || first.getInternalname() == null || first.getInternalname().isBlank()) {
+            throw new IllegalStateException("Workflow has no first step: " + workflowId);
+        }
+        return first.getInternalname();
     }
 }

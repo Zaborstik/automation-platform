@@ -1,0 +1,13 @@
+package com.zaborstik.platform.api.repository;
+
+import com.zaborstik.platform.api.entity.PlanStepLogEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface PlanStepLogRepository extends JpaRepository<PlanStepLogEntity, String> {
+
+    List<PlanStepLogEntity> findByPlan_Id(String planId);
+}

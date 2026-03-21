@@ -137,5 +137,14 @@ public class InMemoryResolver implements Resolver {
         return Optional.ofNullable(uiBindings.get(actionId));
     }
 
+    @Override
+    public boolean isWorkflowStepInternalName(String internalName) {
+        if (internalName == null || internalName.isBlank()) {
+            return false;
+        }
+        return workflowSteps.values().stream()
+            .anyMatch(s -> internalName.equals(s.internalName()));
+    }
+
     private record ActionEntityTypeKey(String actionId, String entityTypeId) {}
 }

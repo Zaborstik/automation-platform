@@ -45,11 +45,11 @@ class ExecutionLogEntryTest {
         ExecutionLogEntry entry = new ExecutionLogEntry(planId, stepIndex, step, result, loggedAt);
 
         // Then
-        assertEquals(planId, entry.getPlanId());
-        assertEquals(stepIndex, entry.getStepIndex());
-        assertEquals(step, entry.getStep());
-        assertEquals(result, entry.getResult());
-        assertEquals(loggedAt, entry.getLoggedAt());
+        assertEquals(planId, entry.planId());
+        assertEquals(stepIndex, entry.stepIndex());
+        assertEquals(step, entry.step());
+        assertEquals(result, entry.result());
+        assertEquals(loggedAt, entry.loggedAt());
     }
 
     @Test
@@ -64,9 +64,9 @@ class ExecutionLogEntryTest {
         Instant after = Instant.now();
 
         // Then
-        assertNotNull(entry.getLoggedAt());
-        assertTrue(entry.getLoggedAt().isAfter(before.minusSeconds(1)));
-        assertTrue(entry.getLoggedAt().isBefore(after.plusSeconds(1)));
+        assertNotNull(entry.loggedAt());
+        assertTrue(entry.loggedAt().isAfter(before.minusSeconds(1)));
+        assertTrue(entry.loggedAt().isBefore(after.plusSeconds(1)));
     }
 
     @Test
@@ -113,7 +113,7 @@ class ExecutionLogEntryTest {
         ExecutionLogEntry entry = new ExecutionLogEntry("plan-1", -1, step, result, Instant.now());
 
         // Then
-        assertEquals(-1, entry.getStepIndex());
+        assertEquals(-1, entry.stepIndex());
     }
 
     @Test
@@ -126,7 +126,7 @@ class ExecutionLogEntryTest {
         ExecutionLogEntry entry = new ExecutionLogEntry("plan-1", Integer.MAX_VALUE, step, result, Instant.now());
 
         // Then
-        assertEquals(Integer.MAX_VALUE, entry.getStepIndex());
+        assertEquals(Integer.MAX_VALUE, entry.stepIndex());
     }
 
     @Test
@@ -144,8 +144,8 @@ class ExecutionLogEntryTest {
         ExecutionLogEntry entry = new ExecutionLogEntry("plan-1", 0, step, failureResult, Instant.now());
 
         // Then
-        assertFalse(entry.getResult().isSuccess());
-        assertEquals("Element not found", entry.getResult().getError());
+        assertFalse(entry.result().success());
+        assertEquals("Element not found", entry.result().error());
     }
 
     @Test

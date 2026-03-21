@@ -26,7 +26,7 @@
 - `plan_step` — шаг плана (мини-задача), который выполняется в порядке `sortOrder`.
 - `plan_step_action` — действие(я) внутри шага, включая `meta_value` (например, строка для ввода).
 - `plan_result` — итог выполнения плана (успех/ошибка, временные метки).
-- `plan_step_log_entry` — журнал по шагу (сообщение, ошибка, время, ссылка на вложения).
+- `plan_step_log` — журнал по шагу (сообщение, ошибка, время, ссылка на вложения).
 - `attachment` — вложение (чаще всего скриншот).
 
 ---
@@ -44,7 +44,7 @@ flowchart TD
     execStart --> agentService[AgentServiceExecute]
     agentService --> agentClient[AgentClientPlaywright]
     agentClient --> stepResult[StepExecutionResult]
-    stepResult --> stepLog[PlanStepLogEntry]
+    stepResult --> stepLog[PlanStepLog]
     stepResult --> planResult[PlanResult]
     planResult --> apiResponse[APIReturnExecutionState]
 ```
@@ -169,7 +169,7 @@ flowchart TD
 
 - шаги переводятся в команды браузерного агента;
 - фиксируется `plan_result`;
-- при неуспехе/прерывании создается `plan_step_log_entry`;
+- при неуспехе/прерывании создается `plan_step_log`;
 - на ошибке может сохраняться скриншот (`attachment`).
 
 ---
@@ -352,7 +352,7 @@ flowchart TD
 }
 ```
 
-### 9.5 Пример `plan_step_log_entry`
+### 9.5 Пример `plan_step_log`
 
 ```json
 {
@@ -449,7 +449,7 @@ flowchart TD
 - шаги 3 и 4 помечаются как не выполненные;
 - `plan_result.success=false`;
 - `plan.workflowStepInternalName=failed`;
-- создается `plan_step_log_entry` и скриншот ошибки.
+- создается `plan_step_log` и скриншот ошибки.
 
 ---
 
@@ -463,7 +463,7 @@ flowchart TD
 ### Где сохраняется наблюдаемость
 
 - `StepExecutionResult` — тех. результат шага;
-- `plan_step_log_entry` — бизнес-журнал шага;
+- `plan_step_log` — бизнес-журнал шага;
 - `attachment` — скриншоты и артефакты;
 - callback-события — канал для realtime-статусов.
 
@@ -498,4 +498,4 @@ flowchart TD
 3. Применимость `action` к `entity_type` задается отдельно — покрыто в разделах 4 и 5.  
 4. Создание `plan` и управление его ЖЦ — покрыто в разделах 5 и 6.  
 5. Создание `plan_step` и `plan_step_action` с `meta_value` — покрыто в разделах 5 и 9.  
-6. После выполнения сохраняются `plan_result`, `plan_step_log_entry`, скриншоты — покрыто в разделах 5, 9, 11.
+6. После выполнения сохраняются `plan_result`, `plan_step_log`, скриншоты — покрыто в разделах 5, 9, 11.

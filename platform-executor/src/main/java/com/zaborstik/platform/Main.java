@@ -20,18 +20,14 @@ import java.util.UUID;
 /**
  * Простой CLI-вход для manual-run MVP:
  * - собирает in-memory Resolver (EntityType, ActionType, Action, UIBinding)
- * - создаёт простой Plan с шагами (новая модель: plan → plan_step → plan_step_action)
- * - передаёт его в PlanExecutor, который управляет UI-агентом.
- *
- *
+ * - создаёт Plan: у шагов {@code workflow_step_internalname = new} (ЖЦ), тип UI-операции — {@code action.internalname} через {@code plan_step_action}
+ * - передаёт план в {@link PlanExecutor}.
  *
  * Это пример, а не продовый bootstrap.
  */
 public class Main {
     public static void main(String[] args) {
 
-
-        // 1. Конфигурируем resolver
         InMemoryResolver resolver = new InMemoryResolver();
 
         EntityType building = EntityType.of("Building", "Здание");
@@ -40,64 +36,63 @@ public class Main {
         ActionType clickType = new ActionType("action-type-click", "click", "Клик");
         resolver.registerActionType(clickType);
 
-        Action orderEgrn = Action.of(
-            "order_egrn_extract",
-            "Заказать выписку ЕГРН",
-            "order_egrn_extract",
-            "Заказать выписку ЕГРН по зданию",
-            clickType.id()
-        );
-        resolver.registerAction(orderEgrn);
-        resolver.registerActionApplicableToEntityType(orderEgrn.id(), building.id());
+        Action actOpen = Action.of("act_open", "Открыть страницу", "open_page", "Переход по URL", clickType.id());
+        Action actExplain = Action.of("act_explain", "Пояснение", "explain", "Пояснение для агента", clickType.id());
+        Action actHover = Action.of("act_hover", "Наведение", "hover", "Наведение на элемент", clickType.id());
+        Action actClick = Action.of("act_click_order", "Клик заказа", "click", "Клик по кнопке заказа", clickType.id());
+        Action actWait = Action.of("act_wait", "Ожидание", "wait", "Ожидание результата", clickType.id());
 
-        UIBinding binding = new UIBinding(
-            orderEgrn.id(),
-            "button[data-action='order_egrn_extract']",
-            UIBinding.SelectorType.CSS,
-            Map.of()
-        );
-        resolver.registerUIBinding(binding);
+        resolver.registerAction(actOpen);
+        resolver.registerAction(actExplain);
+        resolver.registerAction(actHover);
+        resolver.registerAction(actClick);
+        resolver.registerAction(actWait);
 
-        // 2. Конструируем план (новая модель: id, workflowId, workflowStepInternalName, stoppedAtPlanStepId, target, explanation, steps)
+        String selector = "button[data-action='order_egrn_extract']";
+        resolver.registerUIBinding(new UIBinding(actHover.id(), selector, UIBinding.SelectorType.CSS, Map.of()));
+        resolver.registerUIBinding(new UIBinding(actClick.id(), selector, UIBinding.SelectorType.CSS, Map.of()));
+
         String entityId = "93939";
         String planId = UUID.randomUUID().toString();
+        String wfPlanStep = "wf-plan-step";
+        String listUrl = "http://localhost:8080/buildings/" + entityId;
 
         List<PlanStep> steps = List.of(
             new PlanStep(
-                "step-1", planId, "workflow-plan", "open_page",
-                building.id(), "/buildings/" + entityId, 0,
+                "step-1", planId, wfPlanStep, "new",
+                building.id(), listUrl, 0,
                 "Открываю карточку здания",
-                List.of()
+                List.of(new PlanStepAction(actOpen.id(), listUrl))
             ),
             new PlanStep(
-                "step-2", planId, "workflow-plan", "explain",
+                "step-2", planId, wfPlanStep, "new",
                 building.id(), null, 1,
-                "Навожу курсор на действие 'Заказать выписку ЕГРН'",
-                List.of()
+                "Навожу курсор на действие «Заказать выписку ЕГРН»",
+                List.of(new PlanStepAction(actExplain.id(), null))
             ),
             new PlanStep(
-                "step-3", planId, "workflow-plan", "hover",
-                building.id(), "action(" + orderEgrn.id() + ")", 2,
+                "step-3", planId, wfPlanStep, "new",
+                building.id(), "action(" + actClick.id() + ")", 2,
                 "Подсвечиваю действие",
-                List.of(new PlanStepAction(orderEgrn.id(), null))
+                List.of(new PlanStepAction(actHover.id(), null))
             ),
             new PlanStep(
-                "step-4", planId, "workflow-plan", "click",
-                building.id(), "action(" + orderEgrn.id() + ")", 3,
+                "step-4", planId, wfPlanStep, "new",
+                building.id(), "action(" + actClick.id() + ")", 3,
                 "Запускаю заказ выписки",
-                List.of(new PlanStepAction(orderEgrn.id(), null))
+                List.of(new PlanStepAction(actClick.id(), null))
             ),
             new PlanStep(
-                "step-5", planId, "workflow-plan", "wait",
+                "step-5", planId, wfPlanStep, "new",
                 building.id(), "result", 4,
                 "Жду результата выполнения действия",
-                List.of()
+                List.of(new PlanStepAction(actWait.id(), "5000"))
             )
         );
 
         Plan plan = new Plan(
             planId,
-            "workflow-plan",
+            "wf-plan",
             "in_progress",
             "step-1",
             "Здание " + entityId,
@@ -105,30 +100,28 @@ public class Main {
             steps
         );
 
-        // 3. Поднимаем клиента к Playwright-агенту
-        String agentBaseUrl = "http://localhost:3000"; // URL Playwright-сервера
+        String agentBaseUrl = "http://localhost:3000";
         AgentClient agentClient = new AgentClient(agentBaseUrl);
 
-        String appBaseUrl = "http://localhost:8080"; // URL бизнес-приложения
+        String appBaseUrl = "http://localhost:8080";
         boolean headless = false;
         AgentService agentService = new AgentService(agentClient, resolver, appBaseUrl, headless);
 
-        // 4. Исполняем план через executor
         PlanExecutor executor = new PlanExecutor(agentService);
         PlanExecutionResult result = executor.execute(plan);
 
         System.out.println("=== Plan execution finished ===");
-        System.out.println("Plan id: " + result.getPlanId());
-        System.out.println("Success: " + result.isSuccess());
-        result.getLogEntries().forEach(entry -> {
+        System.out.println("Plan id: " + result.planId());
+        System.out.println("Success: " + result.success());
+        result.logEntries().forEach(entry -> {
             System.out.printf(
                 "[%s] #%d %s -> success=%s, msg=%s, err=%s%n",
-                entry.getLoggedAt(),
-                entry.getStepIndex(),
-                entry.getStep().displayName(),
-                entry.getResult().isSuccess(),
-                entry.getResult().getMessage(),
-                entry.getResult().getError()
+                entry.loggedAt(),
+                entry.stepIndex(),
+                entry.step().displayName(),
+                entry.result().success(),
+                entry.result().message(),
+                entry.result().error()
             );
         });
     }
