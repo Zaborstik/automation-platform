@@ -42,7 +42,7 @@
 - `PlanStep` - шаг внутри плана (мини-задача).
 - `PlanStepAction` - действие внутри шага, с `metaValue`.
 - `PlanResult` - агрегированный итог выполнения.
-- `PlanStepLogEntry` - детальный лог шага и ошибки.
+- `PlanStepLog` - детальный лог шага и ошибки.
 
 ---
 
@@ -118,7 +118,7 @@ flowchart TD
 2. Находит/предлагает подходящие `entityType` и `action`.
 3. Ядро строит `plan`.
 4. План исполняется внешним исполнителем.
-5. Формируются `plan_result` и при необходимости `plan_step_log_entry` + `attachment`.
+5. Формируются `plan_result` и при необходимости `plan_step_log` + `attachment`.
 
 ### 5.2 Фактическая текущая логика в этом репозитории
 
@@ -279,7 +279,7 @@ flowchart TD
 
 ### Уже реализовано в текущем `platform-core`
 
-- доменные records (`Action`, `EntityType`, `Workflow`, `Plan`, `PlanStep`, `PlanStepAction`, `PlanResult`, `PlanStepLogEntry`);
+- доменные records (`Action`, `EntityType`, `Workflow`, `Plan`, `PlanStep`, `PlanStepAction`, `PlanResult`, `PlanStepLog`);
 - `Resolver` и `InMemoryResolver`;
 - одношаговый `Planner`;
 - `ExecutionEngine` как точка входа;
@@ -330,7 +330,7 @@ flowchart TD
 1. сохраняем план и шаги;
 2. передаем шаги в исполнитель;
 3. фиксируем `PlanResult`;
-4. при ошибке пишем `PlanStepLogEntry` и attachment.
+4. при ошибке пишем `PlanStepLog` и attachment.
 
 ---
 
@@ -347,7 +347,7 @@ flowchart TD
 - `platform-core/src/main/java/com/zaborstik/platform/core/plan/PlanStep.java`
 - `platform-core/src/main/java/com/zaborstik/platform/core/plan/PlanStepAction.java`
 - `platform-core/src/main/java/com/zaborstik/platform/core/plan/PlanResult.java`
-- `platform-core/src/main/java/com/zaborstik/platform/core/plan/PlanStepLogEntry.java`
+- `platform-core/src/main/java/com/zaborstik/platform/core/plan/PlanStepLog.java`
 - `platform-core/src/main/java/com/zaborstik/platform/core/domain/Action.java`
 - `platform-core/src/main/java/com/zaborstik/platform/core/domain/EntityType.java`
 - `platform-core/src/main/java/com/zaborstik/platform/core/domain/Workflow.java`

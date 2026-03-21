@@ -414,7 +414,7 @@ flowchart TB
 | PlanRepository | JPA | Хранение планов |
 | PlanMapper | Component | Plan ↔ PlanEntity |
 | PlanResultRepository | JPA | Результаты выполнения |
-| PlanStepLogEntryRepository | JPA | Логи шагов при ошибках |
+| PlanStepLogRepository | JPA | Логи шагов при ошибках |
 | ActionRepository | JPA | Действия (для логов) |
 | AttachmentRepository | JPA | Вложения (скриншоты) |
 | PlanStepRepository | JPA | Шаги плана |

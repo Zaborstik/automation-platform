@@ -37,7 +37,7 @@
         <mxCell id="plan_result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_result&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;success BOOLEAN&lt;br&gt;started_time TIMESTAMP&lt;br&gt;finished_time TIMESTAMP" vertex="1">
           <mxGeometry height="160" width="300" x="670" y="1070" as="geometry" />
         </mxCell>
-        <mxCell id="plan_step_log_entry" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log_entry&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)" vertex="1">
+        <mxCell id="plan_step_log" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)" vertex="1">
           <mxGeometry height="270" width="360" x="1170" y="950" as="geometry" />
         </mxCell>
         <mxCell id="legend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;align=left;spacingLeft=8;verticalAlign=top;" value="Automation Platform — актуальная схема по V1__Create_schemas_and_tables.sql&#xa;PK = первичный ключ, FK = внешний ключ.&#xa;Связи на диаграмме показывают все реальные FOREIGN KEY из V1." vertex="1">
@@ -129,21 +129,21 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_log_plan" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan">
+        <mxCell id="e_log_plan" edge="1" parent="1" source="plan_step_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="320" y="1020" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_log_plan_step" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_step">
+        <mxCell id="e_log_plan_step" edge="1" parent="1" source="plan_step_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_step">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1350" y="910" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_log_plan_result" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_result">
+        <mxCell id="e_log_plan_result" edge="1" parent="1" source="plan_step_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="plan_result">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1060" y="1140" />
@@ -151,7 +151,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_log_action" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action">
+        <mxCell id="e_log_action" edge="1" parent="1" source="plan_step_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="action">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1450" y="670" />
@@ -159,7 +159,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_log_attachment" edge="1" parent="1" source="plan_step_log_entry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="attachment">
+        <mxCell id="e_log_attachment" edge="1" parent="1" source="plan_step_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;" target="attachment">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1350" y="1250" />

@@ -166,7 +166,7 @@ CREATE INDEX IF NOT EXISTS idx_plan_result_plan ON zbrtstk.plan_result(plan);
 
 
 -- execution_log_entry: Лог по шагам
-CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_log_entry ( -- создаётся в случае падения
+CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_log ( -- создаётся в случае падения
     id VARCHAR(36) NOT NULL PRIMARY KEY,
     plan VARCHAR(36) NOT NULL,
     plan_step VARCHAR(36) NOT NULL,
@@ -183,8 +183,8 @@ CREATE TABLE IF NOT EXISTS zbrtstk.plan_step_log_entry ( -- создаётся �
     FOREIGN KEY (action) REFERENCES system.action(id),
     FOREIGN KEY (attachment) REFERENCES zbrtstk.attachment(id)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_log_entry_id_uniq ON zbrtstk.plan_step_log_entry(id);
-CREATE INDEX IF NOT EXISTS idx_plan_step_log_entry_plan ON zbrtstk.plan_step_log_entry(plan);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_plan_step_log_id_uniq ON zbrtstk.plan_step_log(id);
+CREATE INDEX IF NOT EXISTS idx_plan_step_log_plan ON zbrtstk.plan_step_log(plan);
 
 -- scenario / scenario_step / scenario_step_action: шаблоны планов
 CREATE TABLE IF NOT EXISTS zbrtstk.scenario (

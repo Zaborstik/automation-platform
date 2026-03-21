@@ -25,7 +25,7 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final PlanMapper planMapper;
     private final PlanResultRepository planResultRepository;
-    private final PlanStepLogEntryRepository planStepLogEntryRepository;
+    private final PlanStepLogRepository PlanStepLogRepository;
     private final ActionRepository actionRepository;
     private final AttachmentRepository attachmentRepository;
     private final PlanStepRepository planStepRepository;
@@ -35,7 +35,7 @@ public class PlanService {
     public PlanService(PlanRepository planRepository,
                        PlanMapper planMapper,
                        PlanResultRepository planResultRepository,
-                       PlanStepLogEntryRepository planStepLogEntryRepository,
+                       PlanStepLogRepository PlanStepLogRepository,
                        ActionRepository actionRepository,
                        AttachmentRepository attachmentRepository,
                        PlanStepRepository planStepRepository,
@@ -44,7 +44,7 @@ public class PlanService {
         this.planRepository = planRepository;
         this.planMapper = planMapper;
         this.planResultRepository = planResultRepository;
-        this.planStepLogEntryRepository = planStepLogEntryRepository;
+        this.PlanStepLogRepository = PlanStepLogRepository;
         this.actionRepository = actionRepository;
         this.attachmentRepository = attachmentRepository;
         this.planStepRepository = planStepRepository;
@@ -182,7 +182,7 @@ public class PlanService {
 
     /** Запись лога по шагу (при падении/прерывании). */
     @Transactional
-    public PlanStepLogEntryEntity createPlanStepLogEntry(String planId, String planStepId, String planResultId,
+    public PlanStepLogEntity createPlanStepLog(String planId, String planStepId, String planResultId,
                                                          String actionId, String message, String error,
                                                          Instant executedTime, Long executionTimeMs, String attachmentId) {
         Objects.requireNonNull(planId, "planId");
@@ -195,7 +195,7 @@ public class PlanService {
         PlanResultEntity planResult = planResultRepository.findById(planResultId).orElseThrow(() -> new IllegalArgumentException("Plan result not found: " + planResultId));
         ActionEntity action = actionRepository.findById(actionId).orElseThrow(() -> new IllegalArgumentException("Action not found: " + actionId));
 
-        PlanStepLogEntryEntity entry = new PlanStepLogEntryEntity();
+        PlanStepLogEntity entry = new PlanStepLogEntity();
         entry.setId(UUID.randomUUID().toString());
         entry.setPlan(plan);
         entry.setPlanStep(planStep);
@@ -208,7 +208,7 @@ public class PlanService {
         if (attachmentId != null) {
             attachmentRepository.findById(attachmentId).ifPresent(entry::setAttachment);
         }
-        return planStepLogEntryRepository.save(entry);
+        return PlanStepLogRepository.save(entry);
     }
 
     @Transactional

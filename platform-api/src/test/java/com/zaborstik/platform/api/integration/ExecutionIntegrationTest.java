@@ -7,7 +7,7 @@ import com.zaborstik.platform.api.dto.PlanResponse;
 import com.zaborstik.platform.api.PlatformApiApplication;
 import com.zaborstik.platform.api.repository.AttachmentRepository;
 import com.zaborstik.platform.api.repository.PlanResultRepository;
-import com.zaborstik.platform.api.repository.PlanStepLogEntryRepository;
+import com.zaborstik.platform.api.repository.PlanStepLogRepository;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
 import com.zaborstik.platform.agent.service.AgentService;
 import com.zaborstik.platform.executor.ExecutionLogEntry;
@@ -51,7 +51,7 @@ class ExecutionIntegrationTest {
     private PlanResultRepository planResultRepository;
 
     @Autowired
-    private PlanStepLogEntryRepository planStepLogEntryRepository;
+    private PlanStepLogRepository PlanStepLogRepository;
 
     @Autowired
     private AttachmentRepository attachmentRepository;
@@ -227,7 +227,7 @@ class ExecutionIntegrationTest {
         );
         assertNotNull(executeResponse.getPlanResultId());
         assertTrue(planResultRepository.findByPlan_Id(created.getId()).isPresent());
-        assertEquals(1, planStepLogEntryRepository.findByPlan_Id(created.getId()).size());
+        assertEquals(1, PlanStepLogRepository.findByPlan_Id(created.getId()).size());
         assertEquals(attachmentCountBefore + 1, attachmentRepository.count());
     }
 }

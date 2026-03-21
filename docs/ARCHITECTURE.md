@@ -82,7 +82,7 @@ flowchart LR
 | **plan_step** | Шаг плана | FK `plan`, `workflow`, `entitytype` → `entity_type`, `workflow_step_internalname` (**только ЖЦ шага**: `new`, `in_progress`, `completed`, …), `entity_id` (до **510** символов), `sortorder`, `displayname`, timestamps |
 | **plan_step_action** | Действия внутри шага | PK (`plan_step`, `action`), `meta_value` TEXT |
 | **plan_result** | Итог выполнения | FK `plan`, `success`, `started_time`, `finished_time` |
-| **plan_step_log_entry** | Лог при ошибке | FK `plan`, `plan_step`, `plan_result`, `action`, `attachment`; `message`, `error` (до **2000** символов), `executed_time`, `execution_time_ms` |
+| **plan_step_log** | Лог при ошибке | FK `plan`, `plan_step`, `plan_result`, `action`, `attachment`; `message`, `error` (до **2000** символов), `executed_time`, `execution_time_ms` |
 | **scenario** | Шаблон плана | FK `workflow`, поля имени, цели, пояснения, ЖЦ |
 | **scenario_step** | Шаг шаблона | FK `scenario`, `workflow`, `entitytype`, структура аналогична `plan_step` |
 | **scenario_step_action** | Действия шага шаблона | PK (`scenario_step`, `action`), `meta_value` |
@@ -93,7 +93,7 @@ flowchart LR
 
 Поле **`plan_step.workflow_step_internalname`** хранит **только жизненный цикл шага** (`new` → `in_progress` → `completed` / `failed` / …). При создании плана через API ([`PlanService.createPlan`](platform-api/src/main/java/com/zaborstik/platform/api/service/PlanService.java)) начальный шаг ЖЦ **плана** и **каждого шага** берётся из `system.workflow.firststep` для соответствующего `workflow_id` (не из тела запроса); поля `workflowStepInternalName` в DTO при создании игнорируются (см. [`CreatePlanRequest`](platform-api/src/main/java/com/zaborstik/platform/api/dto/CreatePlanRequest.java)).
 
-Связь `plan_step_action` → `action` нужна и для логирования: [`plan_step_log_entry.action`](platform-api/src/main/resources/db/migration/V1__Create_schemas_and_tables.sql).
+Связь `plan_step_action` → `action` нужна и для логирования: [`plan_step_log.action`](platform-api/src/main/resources/db/migration/V1__Create_schemas_and_tables.sql).
 
 [`V2__Insert_initial_data.sql`](platform-api/src/main/resources/db/migration/V2__Insert_initial_data.sql) — начальное наполнение справочников (`workflow_step`, `workflow`, `action*`, `entity_type`, `workflow_transition` и т.д.) без post-migrate правок legacy-данных.
 
@@ -173,7 +173,7 @@ sequenceDiagram
   loop each step
     API->>DB: update stopped_at, transitionPlanStep
     alt failure
-      API->>DB: attachment, plan_step_log_entry
+      API->>DB: attachment, plan_step_log
     end
   end
   API->>DB: transitionPlan completed or failed
@@ -231,7 +231,7 @@ sequenceDiagram
 
 | Класс | Ответственность |
 |-------|-----------------|
-| **PlanService** | Создание плана из DTO; маппинг через `PlanMapper`; переходы ЖЦ плана/шага; `createPlanResult`, `createPlanStepLogEntry`, `createAttachment`; список планов с фильтром по статусу |
+| **PlanService** | Создание плана из DTO; маппинг через `PlanMapper`; переходы ЖЦ плана/шага; `createPlanResult`, `createPlanStepLog`, `createAttachment`; список планов с фильтром по статусу |
 | **PlanExecutionService** | `executePlan`: перевод плана в `in_progress`, вызов `PlanExecutor`, запись результата и логов по шагам, скриншот → `attachment`, финальный переход плана. Зависимость `AgentService` в конструкторе **не используется** в теле класса (выполнение идёт через `PlanExecutor` → внутренний `AgentService`) |
 | **ActionService** | CRUD действий; выборка по `entityTypeId` через `action_applicable_entity_type` |
 | **EntityTypeService** | CRUD типов сущностей |

@@ -76,7 +76,7 @@ public class PlanExecutionService {
 
             String message = stepResult.message() != null ? stepResult.message() : logEntry.step().displayName();
             String error = truncateForDb(stepResult.error(), 2000);
-            planService.createPlanStepLogEntry(
+            planService.createPlanStepLog(
                 executionResult.planId(),
                 logEntry.step().id(),
                 planResult.getId(),

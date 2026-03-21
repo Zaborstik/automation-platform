@@ -38,7 +38,7 @@ class PlanServiceTest {
     private PlanResultRepository planResultRepository;
 
     @Mock
-    private PlanStepLogEntryRepository planStepLogEntryRepository;
+    private PlanStepLogRepository PlanStepLogRepository;
 
     @Mock
     private ActionRepository actionRepository;

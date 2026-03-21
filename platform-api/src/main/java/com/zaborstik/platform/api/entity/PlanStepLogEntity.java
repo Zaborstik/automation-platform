@@ -5,11 +5,11 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 /**
- * Лог по шагу выполнения (zbrtstk.plan_step_log_entry). Создаётся при падении/прерывании; может содержать скриншот (attachment).
+ * Лог по шагу выполнения (zbrtstk.plan_step_log). Создаётся при падении/прерывании; может содержать скриншот (attachment).
  */
 @Entity
-@Table(name = "plan_step_log_entry", schema = "zbrtstk")
-public class PlanStepLogEntryEntity {
+@Table(name = "plan_step_log", schema = "zbrtstk")
+public class PlanStepLogEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 36)
@@ -47,7 +47,7 @@ public class PlanStepLogEntryEntity {
     @JoinColumn(name = "attachment")
     private AttachmentEntity attachment;
 
-    public PlanStepLogEntryEntity() {}
+    public PlanStepLogEntity() {}
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

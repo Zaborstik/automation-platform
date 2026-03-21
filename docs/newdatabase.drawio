@@ -49,7 +49,7 @@
           <mxGeometry x="360" y="860" width="300" height="160" as="geometry" />
         </mxCell>
 
-        <mxCell id="plan_step_log_entry" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log_entry&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)">
+        <mxCell id="plan_step_log" parent="1" vertex="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;spacingLeft=6;spacingRight=6;verticalAlign=top;" value="zbrtstk.plan_step_log&lt;br&gt;────────────────&lt;br&gt;id (PK) VARCHAR(36)&lt;br&gt;plan (FK) VARCHAR(36)&lt;br&gt;plan_step (FK) VARCHAR(36)&lt;br&gt;plan_result (FK) VARCHAR(36)&lt;br&gt;action (FK) VARCHAR(36)&lt;br&gt;message VARCHAR(510)&lt;br&gt;error VARCHAR(510)&lt;br&gt;executed_time TIMESTAMP&lt;br&gt;execution_time_ms BIGINT&lt;br&gt;attachment (FK) VARCHAR(36)">
           <mxGeometry x="740" y="860" width="360" height="270" as="geometry" />
         </mxCell>
 
@@ -90,19 +90,19 @@
         <mxCell id="e_plan_result_plan" parent="1" edge="1" source="plan_result" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_log_plan" parent="1" edge="1" source="plan_step_log_entry" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+        <mxCell id="e_log_plan" parent="1" edge="1" source="plan_step_log" target="plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_log_plan_step" parent="1" edge="1" source="plan_step_log_entry" target="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+        <mxCell id="e_log_plan_step" parent="1" edge="1" source="plan_step_log" target="plan_step" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_log_plan_result" parent="1" edge="1" source="plan_step_log_entry" target="plan_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+        <mxCell id="e_log_plan_result" parent="1" edge="1" source="plan_step_log" target="plan_result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_log_action" parent="1" edge="1" source="plan_step_log_entry" target="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+        <mxCell id="e_log_action" parent="1" edge="1" source="plan_step_log" target="action" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_log_attachment" parent="1" edge="1" source="plan_step_log_entry" target="attachment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
+        <mxCell id="e_log_attachment" parent="1" edge="1" source="plan_step_log" target="attachment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=ERmany;startFill=0;endArrow=ERone;endFill=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
