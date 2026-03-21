@@ -1,7 +1,6 @@
 package com.zaborstik.platform.api.service;
 
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
-import com.zaborstik.platform.agent.service.AgentService;
 import com.zaborstik.platform.api.dto.ExecutePlanResponse;
 import com.zaborstik.platform.api.entity.AttachmentEntity;
 import com.zaborstik.platform.api.entity.PlanResultEntity;
@@ -26,14 +25,11 @@ public class PlanExecutionService {
 
     private final PlanService planService;
     private final PlanExecutor planExecutor;
-    private final AgentService agentService;
 
     public PlanExecutionService(PlanService planService,
-                                PlanExecutor planExecutor,
-                                AgentService agentService) {
+                                PlanExecutor planExecutor) {
         this.planService = planService;
         this.planExecutor = planExecutor;
-        this.agentService = agentService;
     }
 
     public Optional<ExecutePlanResponse> executePlan(String planId) {
@@ -47,27 +43,27 @@ public class PlanExecutionService {
         PlanExecutionResult executionResult = planExecutor.execute(plan);
 
         PlanResultEntity planResult = planService.createPlanResult(
-            executionResult.getPlanId(),
-            executionResult.isSuccess(),
-            executionResult.getStartedAt(),
-            executionResult.getFinishedAt()
+            executionResult.planId(),
+            executionResult.success(),
+            executionResult.startedAt(),
+            executionResult.finishedAt()
         );
 
         int failedSteps = 0;
-        for (ExecutionLogEntry logEntry : executionResult.getLogEntries()) {
-            safelyUpdateStoppedAt(executionResult.getPlanId(), logEntry.getStep().id());
-            safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "in_progress");
+        for (ExecutionLogEntry logEntry : executionResult.logEntries()) {
+            safelyUpdateStoppedAt(executionResult.planId(), logEntry.step().id());
+            safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "in_progress");
 
-            StepExecutionResult stepResult = logEntry.getResult();
-            if (stepResult.isSuccess()) {
-                safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "completed");
+            StepExecutionResult stepResult = logEntry.result();
+            if (stepResult.success()) {
+                safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "completed");
                 continue;
             }
-            safelyTransitionPlanStep(executionResult.getPlanId(), logEntry.getStep().id(), "failed");
+            safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "failed");
             failedSteps++;
             String actionId = resolveActionId(logEntry);
             if (actionId == null) {
-                log.warn("Skipping log persistence for step {} because actionId is missing", logEntry.getStep().id());
+                log.warn("Skipping log persistence for step {} because actionId is missing", logEntry.step().id());
                 continue;
             }
 
@@ -78,31 +74,31 @@ public class PlanExecutionService {
                 attachmentId = attachment.getId();
             }
 
-            String message = stepResult.getMessage() != null ? stepResult.getMessage() : logEntry.getStep().displayName();
-            String error = truncateForDb(stepResult.getError(), 2000);
+            String message = stepResult.message() != null ? stepResult.message() : logEntry.step().displayName();
+            String error = truncateForDb(stepResult.error(), 2000);
             planService.createPlanStepLogEntry(
-                executionResult.getPlanId(),
-                logEntry.getStep().id(),
+                executionResult.planId(),
+                logEntry.step().id(),
                 planResult.getId(),
                 actionId,
                 message,
                 error,
-                stepResult.getExecutedAt(),
-                stepResult.getExecutionTimeMs(),
+                stepResult.executedAt(),
+                stepResult.executionTimeMs(),
                 attachmentId
             );
         }
 
-        safelyTransitionPlan(executionResult.getPlanId(), executionResult.isSuccess() ? "completed" : "failed");
+        safelyTransitionPlan(executionResult.planId(), executionResult.success() ? "completed" : "failed");
 
         ExecutePlanResponse response = new ExecutePlanResponse();
-        response.setPlanId(executionResult.getPlanId());
+        response.setPlanId(executionResult.planId());
         response.setPlanResultId(planResult.getId());
-        response.setSuccess(executionResult.isSuccess());
-        response.setTotalSteps(executionResult.getLogEntries().size());
+        response.setSuccess(executionResult.success());
+        response.setTotalSteps(executionResult.logEntries().size());
         response.setFailedSteps(failedSteps);
-        response.setStartedTime(executionResult.getStartedAt());
-        response.setFinishedTime(executionResult.getFinishedAt());
+        response.setStartedTime(executionResult.startedAt());
+        response.setFinishedTime(executionResult.finishedAt());
         return Optional.of(response);
     }
 
@@ -131,7 +127,7 @@ public class PlanExecutionService {
     }
 
     private String resolveActionId(ExecutionLogEntry logEntry) {
-        return logEntry.getStep().actions().stream()
+        return logEntry.step().actions().stream()
             .map(PlanStepAction::actionId)
             .filter(actionId -> actionId != null && !actionId.isBlank())
             .findFirst()
@@ -139,10 +135,10 @@ public class PlanExecutionService {
     }
 
     private String resolveScreenshotPath(StepExecutionResult stepResult) {
-        if (stepResult.getScreenshotPath() != null && !stepResult.getScreenshotPath().isBlank()) {
-            return stepResult.getScreenshotPath();
+        if (stepResult.screenshotPath() != null && !stepResult.screenshotPath().isBlank()) {
+            return stepResult.screenshotPath();
         }
-        Map<String, Object> metadata = stepResult.getMetadata();
+        Map<String, Object> metadata = stepResult.metadata();
         Object screenshot = metadata.get("screenshot");
         return screenshot instanceof String screenshotPath ? screenshotPath : null;
     }

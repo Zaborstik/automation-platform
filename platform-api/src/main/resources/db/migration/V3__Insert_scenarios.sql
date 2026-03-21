@@ -1,5 +1,8 @@
 -- ========== СЦЕНАРИИ (ШАБЛОНЫ ПЛАНОВ) ==========
 -- Идемпотентные вставки (WHERE NOT EXISTS) для совместимости с H2 и PostgreSQL.
+--
+-- У scenario_step с workflow = wf-plan-step колонка workflow_step_internalname — только ЖЦ шага (здесь new).
+-- Тип UI-операции задаётся строкой action в scenario_step_action → system.action.internalname.
 
 -- Сценарий 1: Поиск в DuckDuckGo и переход по первой ссылке (полный демо-сценарий)
 INSERT INTO zbrtstk.scenario (
@@ -10,19 +13,19 @@ SELECT 'scen-duck-search-full', 'Поиск в DuckDuckGo и переход по
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario WHERE id = 'scen-duck-search-full');
 
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-full-1', 'scen-duck-search-full', 'wf-plan-step', 'open_page', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
+SELECT 'sst-duck-full-1', 'scen-duck-search-full', 'wf-plan-step', 'new', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-full-1');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-full-2', 'scen-duck-search-full', 'wf-plan-step', 'type', 'ent-input', 'input[name=''q'']', 1, 'Ввести запрос и нажать Enter', NOW(), NOW()
+SELECT 'sst-duck-full-2', 'scen-duck-search-full', 'wf-plan-step', 'new', 'ent-input', 'input[name=''q'']', 1, 'Ввести запрос и нажать Enter', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-full-2');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-full-3', 'scen-duck-search-full', 'wf-plan-step', 'wait', 'ent-page', 'article[data-testid=''result'']', 2, 'Дождаться результатов поиска', NOW(), NOW()
+SELECT 'sst-duck-full-3', 'scen-duck-search-full', 'wf-plan-step', 'new', 'ent-page', 'article[data-testid=''result'']', 2, 'Дождаться результатов поиска', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-full-3');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-full-4', 'scen-duck-search-full', 'wf-plan-step', 'click', 'ent-link', 'article[data-testid=''result''] h2 a', 3, 'Открыть первый результат', NOW(), NOW()
+SELECT 'sst-duck-full-4', 'scen-duck-search-full', 'wf-plan-step', 'new', 'ent-link', 'article[data-testid=''result''] h2 a', 3, 'Открыть первый результат', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-full-4');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-full-5', 'scen-duck-search-full', 'wf-plan-step', 'wait', 'ent-page', 'domcontentloaded', 4, 'Дождаться загрузки страницы', NOW(), NOW()
+SELECT 'sst-duck-full-5', 'scen-duck-search-full', 'wf-plan-step', 'new', 'ent-page', 'domcontentloaded', 4, 'Дождаться загрузки страницы', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-full-5');
 
 INSERT INTO zbrtstk.scenario_step_action (scenario_step, action, meta_value)
@@ -47,7 +50,7 @@ SELECT 'scen-duck-open-only', 'Открыть DuckDuckGo', 'Открыть по�
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario WHERE id = 'scen-duck-open-only');
 
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-open-1', 'scen-duck-open-only', 'wf-plan-step', 'open_page', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
+SELECT 'sst-duck-open-1', 'scen-duck-open-only', 'wf-plan-step', 'new', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-open-1');
 
 INSERT INTO zbrtstk.scenario_step_action (scenario_step, action, meta_value)
@@ -60,13 +63,13 @@ SELECT 'scen-duck-search-only', 'Поиск в DuckDuckGo (без переход
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario WHERE id = 'scen-duck-search-only');
 
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-nc-1', 'scen-duck-search-only', 'wf-plan-step', 'open_page', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
+SELECT 'sst-duck-nc-1', 'scen-duck-search-only', 'wf-plan-step', 'new', 'ent-page', 'https://duckduckgo.com', 0, 'Открыть DuckDuckGo', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-nc-1');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-nc-2', 'scen-duck-search-only', 'wf-plan-step', 'type', 'ent-input', 'input[name=''q'']', 1, 'Ввести запрос и нажать Enter', NOW(), NOW()
+SELECT 'sst-duck-nc-2', 'scen-duck-search-only', 'wf-plan-step', 'new', 'ent-input', 'input[name=''q'']', 1, 'Ввести запрос и нажать Enter', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-nc-2');
 INSERT INTO zbrtstk.scenario_step (id, scenario, workflow, workflow_step_internalname, entitytype, entity_id, sortorder, displayname, created_time, updated_time)
-SELECT 'sst-duck-nc-3', 'scen-duck-search-only', 'wf-plan-step', 'wait', 'ent-page', 'article[data-testid=''result'']', 2, 'Дождаться результатов поиска', NOW(), NOW()
+SELECT 'sst-duck-nc-3', 'scen-duck-search-only', 'wf-plan-step', 'new', 'ent-page', 'article[data-testid=''result'']', 2, 'Дождаться результатов поиска', NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM zbrtstk.scenario_step WHERE id = 'sst-duck-nc-3');
 
 INSERT INTO zbrtstk.scenario_step_action (scenario_step, action, meta_value)

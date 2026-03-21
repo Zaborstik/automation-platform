@@ -16,20 +16,14 @@ public class CustomLevelConverter extends ForegroundCompositeConverterBase<ILogg
     @Override
     protected String getForegroundColorCode(ILoggingEvent event) {
         Level level = event.getLevel();
-        switch (level.levelInt) {
-            case Level.ERROR_INT:
-                return ANSIConstants.RED_FG;
-            case Level.WARN_INT:
-                return ANSIConstants.YELLOW_FG;
-            case Level.INFO_INT:
-                return ANSIConstants.DEFAULT_FG; // обычный текст
-            case Level.DEBUG_INT:
-                return ANSIConstants.CYAN_FG;
-            case Level.TRACE_INT:
-                return ANSIConstants.MAGENTA_FG;
-            default:
-                return ANSIConstants.DEFAULT_FG;
-        }
+        return switch (level.levelInt) {
+            case Level.ERROR_INT -> ANSIConstants.RED_FG;
+            case Level.WARN_INT -> ANSIConstants.YELLOW_FG;
+            case Level.INFO_INT -> ANSIConstants.DEFAULT_FG; // обычный текст
+            case Level.DEBUG_INT -> ANSIConstants.CYAN_FG;
+            case Level.TRACE_INT -> ANSIConstants.MAGENTA_FG;
+            default -> ANSIConstants.DEFAULT_FG;
+        };
     }
 }
 

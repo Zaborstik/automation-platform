@@ -8,15 +8,13 @@ VALUES
     ('wfs-paused', 'paused', 'Приостановлена', 30),
     ('wfs-completed', 'completed', 'Завершена', 40),
     ('wfs-failed', 'failed', 'Ошибка', 50),
-    ('wfs-cancelled', 'cancelled', 'Отменена', 60)
-ON CONFLICT DO NOTHING;
+    ('wfs-cancelled', 'cancelled', 'Отменена', 60);
 
 -- workflow: ЖЦ для plan и plan_step
 INSERT INTO system.workflow (id, displayname, firststep)
 VALUES
     ('wf-plan', 'Жизненный цикл плана', 'wfs-new'),
-    ('wf-plan-step', 'Жизненный цикл шага плана', 'wfs-new')
-ON CONFLICT DO NOTHING;
+    ('wf-plan-step', 'Жизненный цикл шага плана', 'wfs-new');
 
 -- action_type: типы действий в RAD/LLM-среде
 INSERT INTO system.action_type (id, internalname, displayname)
@@ -25,8 +23,7 @@ VALUES
     ('act-type-interaction', 'interaction', 'Взаимодействие с UI'),
     ('act-type-data-input', 'data_input', 'Ввод данных'),
     ('act-type-validation', 'validation', 'Проверка результата'),
-    ('act-type-artifact', 'artifact', 'Артефакты выполнения')
-ON CONFLICT DO NOTHING;
+    ('act-type-artifact', 'artifact', 'Артефакты выполнения');
 
 -- action: базовые действия платформы
 INSERT INTO system.action (
@@ -63,7 +60,7 @@ VALUES
     (
         'act-input-text',
         'Ввести текст',
-        'input_text',
+        'type',
         NULL,
         'Ввод текста в поле/контрол.',
         'act-type-data-input',
@@ -83,7 +80,7 @@ VALUES
     (
         'act-wait-element',
         'Ожидать элемент',
-        'wait_element',
+        'wait',
         NULL,
         'Ожидание появления/доступности элемента.',
         'act-type-validation',
@@ -109,8 +106,27 @@ VALUES
         'act-type-artifact',
         NOW(),
         NOW()
-    )
-ON CONFLICT DO NOTHING;
+    ),
+    (
+        'act-hover',
+        'Навести курсор',
+        'hover',
+        NULL,
+        'Наведение на элемент интерфейса.',
+        'act-type-interaction',
+        NOW(),
+        NOW()
+    ),
+    (
+        'act-explain',
+        'Пояснение',
+        'explain',
+        NULL,
+        'Поясняющий шаг для агента.',
+        'act-type-validation',
+        NOW(),
+        NOW()
+    );
 
 -- entity_type и применимость действий (таблица system.entity_type создана в V1)
 INSERT INTO system.entity_type (
@@ -129,8 +145,7 @@ VALUES
     ('ent-input', 'Поле ввода', NOW(), NOW(), NULL, 'Текстовое поле/контрол ввода.', NULL, NULL),
     ('ent-button', 'Кнопка', NOW(), NOW(), NULL, 'Кнопка действия.', NULL, NULL),
     ('ent-link', 'Ссылка', NOW(), NOW(), NULL, 'Навигационная ссылка.', NULL, NULL),
-    ('ent-table', 'Таблица', NOW(), NOW(), NULL, 'Табличные данные.', NULL, NULL)
-ON CONFLICT DO NOTHING;
+    ('ent-table', 'Таблица', NOW(), NOW(), NULL, 'Табличные данные.', NULL, NULL);
 
 INSERT INTO system.action_applicable_entity_type (action, entity_type)
 VALUES
@@ -143,5 +158,24 @@ VALUES
     ('act-wait-element', 'ent-form'),
     ('act-read-text', 'ent-table'),
     ('act-read-text', 'ent-page'),
-    ('act-take-screenshot', 'ent-page')
-ON CONFLICT DO NOTHING;
+    ('act-take-screenshot', 'ent-page'),
+    ('act-hover', 'ent-button'),
+    ('act-hover', 'ent-link'),
+    ('act-explain', 'ent-page');
+
+-- workflow_transition: только переходы по состояниям ЖЦ (не по типам UI-действий)
+INSERT INTO system.workflow_transition (id, workflow, from_step, to_step) VALUES
+    ('wft-1', 'wf-plan', 'new', 'in_progress'),
+    ('wft-2', 'wf-plan', 'in_progress', 'paused'),
+    ('wft-3', 'wf-plan', 'in_progress', 'completed'),
+    ('wft-4', 'wf-plan', 'in_progress', 'failed'),
+    ('wft-5', 'wf-plan', 'paused', 'in_progress'),
+    ('wft-6', 'wf-plan', 'paused', 'cancelled'),
+    ('wft-7', 'wf-plan', 'new', 'cancelled'),
+    ('wft-8', 'wf-plan-step', 'new', 'in_progress'),
+    ('wft-9', 'wf-plan-step', 'in_progress', 'completed'),
+    ('wft-10', 'wf-plan-step', 'in_progress', 'failed'),
+    ('wft-11', 'wf-plan-step', 'in_progress', 'paused'),
+    ('wft-12', 'wf-plan-step', 'paused', 'in_progress'),
+    ('wft-13', 'wf-plan-step', 'paused', 'cancelled'),
+    ('wft-14', 'wf-plan-step', 'new', 'cancelled');

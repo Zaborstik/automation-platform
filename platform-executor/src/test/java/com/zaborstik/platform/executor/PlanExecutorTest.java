@@ -61,12 +61,12 @@ class PlanExecutorTest {
 
         PlanExecutionResult executionResult = executor.execute(testPlan, true);
 
-        assertFalse(executionResult.isSuccess());
-        assertEquals(4, executionResult.getLogEntries().size());
-        assertTrue(executionResult.getLogEntries().get(0).getResult().isSuccess());
-        assertFalse(executionResult.getLogEntries().get(1).getResult().isSuccess());
-        assertTrue(executionResult.getLogEntries().get(2).getResult().getError().contains("not executed"));
-        assertTrue(executionResult.getLogEntries().get(3).getResult().getError().contains("not executed"));
+        assertFalse(executionResult.success());
+        assertEquals(4, executionResult.logEntries().size());
+        assertTrue(executionResult.logEntries().get(0).result().success());
+        assertFalse(executionResult.logEntries().get(1).result().success());
+        assertTrue(executionResult.logEntries().get(2).result().error().contains("not executed"));
+        assertTrue(executionResult.logEntries().get(3).result().error().contains("not executed"));
     }
 
     @Test
@@ -82,10 +82,10 @@ class PlanExecutorTest {
 
         PlanExecutionResult executionResult = executor.execute(testPlan, false);
 
-        assertEquals(4, executionResult.getLogEntries().size());
-        assertFalse(executionResult.getLogEntries().get(1).getResult().isSuccess());
-        assertTrue(executionResult.getLogEntries().get(2).getResult().isSuccess());
-        assertTrue(executionResult.getLogEntries().get(3).getResult().isSuccess());
+        assertEquals(4, executionResult.logEntries().size());
+        assertFalse(executionResult.logEntries().get(1).result().success());
+        assertTrue(executionResult.logEntries().get(2).result().success());
+        assertTrue(executionResult.logEntries().get(3).result().success());
     }
 
     @Test
@@ -101,7 +101,7 @@ class PlanExecutorTest {
 
         PlanExecutionResult executionResult = executor.execute(testPlan);
 
-        assertTrue(executionResult.isSuccess());
+        assertTrue(executionResult.success());
         verify(agentService).executePlan(any(Plan.class), org.mockito.ArgumentMatchers.eq(false), any(StepExecutionCallback.class));
     }
 

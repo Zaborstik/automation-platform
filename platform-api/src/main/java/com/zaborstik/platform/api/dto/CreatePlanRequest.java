@@ -12,7 +12,10 @@ public class CreatePlanRequest {
 
     @NotBlank
     private String workflowId;
-    @NotBlank
+    /**
+     * Игнорируется при создании: начальный шаг ЖЦ плана берётся из {@code system.workflow.firststep}
+     * для {@link #workflowId} (см. {@link com.zaborstik.platform.api.service.PlanService#createPlan}).
+     */
     private String workflowStepInternalName;
     /** ID шага плана, на котором остановилось выполнение (опционально при создании — подставится первый шаг). */
     private String stoppedAtPlanStepId;
@@ -37,7 +40,10 @@ public class CreatePlanRequest {
     public static class PlanStepRequest {
         @NotBlank
         private String workflowId;
-        @NotBlank
+        /**
+         * Игнорируется при создании: начальный шаг ЖЦ шага плана берётся из {@code workflow.firststep}
+         * для {@link #workflowId}. Тип UI-операции для исполнителя — из {@link #actions} → {@code system.action.internalname}.
+         */
         private String workflowStepInternalName;
         @NotBlank
         private String entityTypeId;

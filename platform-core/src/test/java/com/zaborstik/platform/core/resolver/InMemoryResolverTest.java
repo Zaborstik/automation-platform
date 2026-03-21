@@ -82,6 +82,14 @@ class InMemoryResolverTest {
     }
 
     @Test
+    void isWorkflowStepInternalNameShouldUseRegisteredSteps() {
+        assertFalse(resolver.isWorkflowStepInternalName("new"));
+        resolver.registerWorkflowStep(new com.zaborstik.platform.core.domain.WorkflowStep("wfs-new", "new", "Новая", 10));
+        assertTrue(resolver.isWorkflowStepInternalName("new"));
+        assertFalse(resolver.isWorkflowStepInternalName("unknown"));
+    }
+
+    @Test
     void shouldRegisterAndFindTransitions() {
         resolver.registerTransition(new WorkflowTransition("wf-plan", "new", "in_progress"));
         resolver.registerTransition(new WorkflowTransition("wf-plan", "in_progress", "completed"));

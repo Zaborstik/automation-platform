@@ -7,12 +7,7 @@ import java.util.Objects;
  * Команда для выполнения агентом.
  * Содержит тип команды, целевой элемент и параметры.
  */
-public class AgentCommand {
-    private final CommandType type;
-    private final String target;
-    private final String explanation;
-    private final Map<String, Object> parameters;
-
+public record AgentCommand(CommandType type, String target, String explanation, Map<String, Object> parameters) {
     public enum CommandType {
         OPEN_PAGE,
         CLICK,
@@ -35,22 +30,6 @@ public class AgentCommand {
         this.parameters = parameters != null ? Map.copyOf(parameters) : Map.of();
     }
 
-    public CommandType getType() {
-        return type;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public String getExplanation() {
-        return explanation;
-    }
-
-    public Map<String, Object> getParameters() {
-        return parameters;
-    }
-
     public static AgentCommand openPage(String url, String explanation) {
         return new AgentCommand(CommandType.OPEN_PAGE, url, explanation, Map.of());
     }
@@ -62,10 +41,10 @@ public class AgentCommand {
     public static AgentCommand clickAt(double x, double y, String explanation, String selectorUsed) {
         String normalizedSelector = selectorUsed != null ? selectorUsed : "";
         return new AgentCommand(
-            CommandType.CLICK_AT,
-            normalizedSelector,
-            explanation,
-            Map.of("x", x, "y", y, "selectorUsed", normalizedSelector)
+                CommandType.CLICK_AT,
+                normalizedSelector,
+                explanation,
+                Map.of("x", x, "y", y, "selectorUsed", normalizedSelector)
         );
     }
 
@@ -116,8 +95,8 @@ public class AgentCommand {
 
     @Override
     public String toString() {
-        return "AgentCommand{type=" + type + ", target='" + target + 
-               "', explanation='" + explanation + "'}";
+        return "AgentCommand{type=" + type + ", target='" + target +
+                "', explanation='" + explanation + "'}";
     }
 }
 

@@ -45,11 +45,11 @@ class PlanExecutionResultTest {
         );
 
         // Then
-        assertEquals(planId, result.getPlanId());
-        assertTrue(result.isSuccess());
-        assertEquals(startedAt, result.getStartedAt());
-        assertEquals(finishedAt, result.getFinishedAt());
-        assertEquals(3, result.getLogEntries().size());
+        assertEquals(planId, result.planId());
+        assertTrue(result.success());
+        assertEquals(startedAt, result.startedAt());
+        assertEquals(finishedAt, result.finishedAt());
+        assertEquals(3, result.logEntries().size());
     }
 
     @Test
@@ -68,7 +68,7 @@ class PlanExecutionResultTest {
         );
 
         // Then
-        assertFalse(result.isSuccess());
+        assertFalse(result.success());
     }
 
     @Test
@@ -83,8 +83,8 @@ class PlanExecutionResultTest {
         );
 
         // Then
-        assertNotNull(result.getLogEntries());
-        assertTrue(result.getLogEntries().isEmpty());
+        assertNotNull(result.logEntries());
+        assertTrue(result.logEntries().isEmpty());
     }
 
     @Test
@@ -103,7 +103,7 @@ class PlanExecutionResultTest {
 
         // When & Then
         assertThrows(UnsupportedOperationException.class, () -> {
-            result.getLogEntries().add(createLogEntry("plan-1", 1, true));
+            result.logEntries().add(createLogEntry("plan-1", 1, true));
         });
     }
 
@@ -126,7 +126,7 @@ class PlanExecutionResultTest {
 
         // Then
         assertEquals(3, stepResults.size());
-        assertTrue(stepResults.stream().allMatch(StepExecutionResult::isSuccess));
+        assertTrue(stepResults.stream().allMatch(StepExecutionResult::success));
     }
 
     @Test
@@ -148,7 +148,7 @@ class PlanExecutionResultTest {
 
         // Then
         assertEquals(2, stepResults.size());
-        assertTrue(stepResults.stream().noneMatch(StepExecutionResult::isSuccess));
+        assertTrue(stepResults.stream().noneMatch(StepExecutionResult::success));
     }
 
     @Test
@@ -177,7 +177,7 @@ class PlanExecutionResultTest {
         );
 
         // Then
-        assertTrue(result.getLogEntries().isEmpty());
+        assertTrue(result.logEntries().isEmpty());
         assertTrue(result.getStepResults().isEmpty());
     }
 
@@ -197,8 +197,8 @@ class PlanExecutionResultTest {
 
         // When
         long executionTimeMs = java.time.Duration.between(
-            result.getStartedAt(),
-            result.getFinishedAt()
+            result.startedAt(),
+            result.finishedAt()
         ).toMillis();
 
         // Then
@@ -249,9 +249,9 @@ class PlanExecutionResultTest {
 
         // Then
         assertEquals(3, stepResults.size());
-        assertTrue(stepResults.get(0).isSuccess());
-        assertFalse(stepResults.get(1).isSuccess());
-        assertTrue(stepResults.get(2).isSuccess());
+        assertTrue(stepResults.get(0).success());
+        assertFalse(stepResults.get(1).success());
+        assertTrue(stepResults.get(2).success());
     }
 
     // Helper methods

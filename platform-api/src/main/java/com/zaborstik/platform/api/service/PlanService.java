@@ -30,6 +30,7 @@ public class PlanService {
     private final AttachmentRepository attachmentRepository;
     private final PlanStepRepository planStepRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final WorkflowRepository workflowRepository;
 
     public PlanService(PlanRepository planRepository,
                        PlanMapper planMapper,
@@ -38,7 +39,8 @@ public class PlanService {
                        ActionRepository actionRepository,
                        AttachmentRepository attachmentRepository,
                        PlanStepRepository planStepRepository,
-                       WorkflowTransitionRepository workflowTransitionRepository) {
+                       WorkflowTransitionRepository workflowTransitionRepository,
+                       WorkflowRepository workflowRepository) {
         this.planRepository = planRepository;
         this.planMapper = planMapper;
         this.planResultRepository = planResultRepository;
@@ -47,11 +49,14 @@ public class PlanService {
         this.attachmentRepository = attachmentRepository;
         this.planStepRepository = planStepRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
+        this.workflowRepository = workflowRepository;
     }
 
     @Transactional
     public PlanResponse createPlan(CreatePlanRequest request) {
         String planId = UUID.randomUUID().toString();
+        Map<String, String> firstStepByWorkflow = new HashMap<>();
+        String planWorkflowFirstStep = firstWorkflowStepInternalName(request.getWorkflowId(), firstStepByWorkflow);
         List<PlanStep> steps = new ArrayList<>();
         for (int i = 0; i < request.getSteps().size(); i++) {
             CreatePlanRequest.PlanStepRequest sr = request.getSteps().get(i);
@@ -59,11 +64,12 @@ public class PlanService {
             List<PlanStepAction> actions = sr.getActions().stream()
                     .map(a -> new PlanStepAction(a.getActionId(), a.getMetaValue()))
                     .collect(Collectors.toList());
+            String stepInitialLifecycle = firstWorkflowStepInternalName(sr.getWorkflowId(), firstStepByWorkflow);
             steps.add(new PlanStep(
                     stepId,
                     planId,
                     sr.getWorkflowId(),
-                    sr.getWorkflowStepInternalName(),
+                    stepInitialLifecycle,
                     sr.getEntityTypeId(),
                     sr.getEntityId(),
                     sr.getSortOrder(),
@@ -74,7 +80,7 @@ public class PlanService {
         Plan plan = new Plan(
                 planId,
                 request.getWorkflowId(),
-                request.getWorkflowStepInternalName(),
+                planWorkflowFirstStep,
                 steps.isEmpty() ? planId : steps.get(0).id(),
                 request.getTarget(),
                 request.getExplanation(),
@@ -241,5 +247,19 @@ public class PlanService {
             return ar;
         }).collect(Collectors.toList()));
         return r;
+    }
+
+    private String firstWorkflowStepInternalName(String workflowId, Map<String, String> cache) {
+        return cache.computeIfAbsent(workflowId, this::loadFirstWorkflowStepInternalName);
+    }
+
+    private String loadFirstWorkflowStepInternalName(String workflowId) {
+        WorkflowEntity wf = workflowRepository.findById(workflowId)
+                .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + workflowId));
+        WorkflowStepEntity first = wf.getFirststep();
+        if (first == null || first.getInternalname() == null || first.getInternalname().isBlank()) {
+            throw new IllegalStateException("Workflow has no first step: " + workflowId);
+        }
+        return first.getInternalname();
     }
 }

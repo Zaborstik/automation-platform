@@ -8,13 +8,8 @@ import java.util.Map;
 /**
  * Ответ от агента после выполнения команды.
  */
-public class AgentResponse {
-    private final boolean success;
-    private final String message;
-    private final String error;
-    private final Map<String, Object> data;
-    private final long executionTimeMs;
-
+public record AgentResponse(boolean success, String message, String error, Map<String, Object> data,
+                            long executionTimeMs) {
     @JsonCreator
     public AgentResponse(@JsonProperty("success") boolean success,
                          @JsonProperty("message") String message,
@@ -28,26 +23,6 @@ public class AgentResponse {
         this.executionTimeMs = executionTimeMs;
     }
 
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public Map<String, Object> getData() {
-        return data;
-    }
-
-    public long getExecutionTimeMs() {
-        return executionTimeMs;
-    }
-
     public static AgentResponse success(String message, Map<String, Object> data, long executionTimeMs) {
         return new AgentResponse(true, message, null, data, executionTimeMs);
     }
@@ -58,8 +33,8 @@ public class AgentResponse {
 
     @Override
     public String toString() {
-        return "AgentResponse{success=" + success + ", message='" + message + 
-               "', error='" + error + "', executionTime=" + executionTimeMs + "ms}";
+        return "AgentResponse{success=" + success + ", message='" + message +
+                "', error='" + error + "', executionTime=" + executionTimeMs + "ms}";
     }
 }
 

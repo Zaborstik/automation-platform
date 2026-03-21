@@ -44,7 +44,7 @@ class PlanMapperTest {
 
     @BeforeEach
     void setUp() {
-        planMapper = new PlanMapper(workflowRepository, workflowStepRepository, entityTypeRepository, actionRepository);
+        planMapper = new PlanMapper(workflowRepository, entityTypeRepository, actionRepository);
 
         workflowEntity = new WorkflowEntity();
         workflowEntity.setId("wf-plan");

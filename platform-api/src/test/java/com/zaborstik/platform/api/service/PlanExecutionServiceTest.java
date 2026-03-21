@@ -46,8 +46,8 @@ class PlanExecutionServiceTest {
         PlanStep step1 = new PlanStep(
             "step-1",
             "plan-1",
-            "wf-plan",
-            "click",
+            "wf-plan-step",
+            "new",
             "ent-button",
             "#submit",
             0,
@@ -57,8 +57,8 @@ class PlanExecutionServiceTest {
         PlanStep step2 = new PlanStep(
             "step-2",
             "plan-1",
-            "wf-plan",
-            "type",
+            "wf-plan-step",
+            "new",
             "ent-input",
             "#input",
             1,

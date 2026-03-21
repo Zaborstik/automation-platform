@@ -71,12 +71,12 @@ public class AgentClient {
             if (response.statusCode() != 200) {
                 try {
                     AgentResponse errorResponse = objectMapper.readValue(response.body(), AgentResponse.class);
-                    log.error("Agent returned status {}: {}", response.statusCode(), errorResponse.getError());
+                    log.error("Agent returned status {}: {}", response.statusCode(), errorResponse.error());
                     return new AgentResponse(
                         false,
-                        errorResponse.getMessage(),
-                        errorResponse.getError(),
-                        errorResponse.getData(),
+                        errorResponse.message(),
+                        errorResponse.error(),
+                        errorResponse.data(),
                         executionTime
                     );
                 } catch (Exception parseException) {

@@ -16,6 +16,9 @@
 #  Сценарий: открыть DuckDuckGo → ввести поисковый запрос → нажать поиск →
 #            дождаться результатов → авто-скриншот каждого шага
 #
+#  API: при POST /api/plans начальный ЖЦ плана и шагов берётся из БД (system.workflow.firststep),
+#  а не из JSON. Тип UI-операции задаётся только через actions[].actionId → system.action.internalname.
+#
 #  Запуск: ./local-demo/run-demo.sh
 #  В IntelliJ: Edit Configurations → + → Shell Script → выбрать этот файл
 # =============================================================================
@@ -234,13 +237,11 @@ log "Поисковый запрос: \"$DEMO_QUERY\""
 PLAN_JSON=$(cat <<EOF
 {
   "workflowId": "wf-plan",
-  "workflowStepInternalName": "new",
   "target": "Найти информацию в интернете",
   "explanation": "Demo: открыть DuckDuckGo и найти '${DEMO_QUERY}'",
   "steps": [
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "open_page",
       "entityTypeId": "ent-page",
       "entityId": "https://duckduckgo.com",
       "sortOrder": 0,
@@ -251,7 +252,6 @@ PLAN_JSON=$(cat <<EOF
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "type",
       "entityTypeId": "ent-input",
       "entityId": "input[name='q']",
       "sortOrder": 1,
@@ -262,7 +262,6 @@ PLAN_JSON=$(cat <<EOF
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "article[data-testid='result']",
       "sortOrder": 2,
@@ -273,7 +272,6 @@ PLAN_JSON=$(cat <<EOF
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "click",
       "entityTypeId": "ent-link",
       "entityId": "article[data-testid='result'] h2 a",
       "sortOrder": 3,
@@ -284,7 +282,6 @@ PLAN_JSON=$(cat <<EOF
     },
     {
       "workflowId": "wf-plan-step",
-      "workflowStepInternalName": "wait",
       "entityTypeId": "ent-page",
       "entityId": "domcontentloaded",
       "sortOrder": 4,

@@ -4,6 +4,7 @@ import com.zaborstik.platform.agent.client.AgentClient;
 import com.zaborstik.platform.agent.dto.AgentResponse;
 import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
+import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import com.zaborstik.platform.core.plan.PlanStepAction;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,14 +49,17 @@ class AgentServiceTest {
         PlanStep step = new PlanStep(
             "step-1",
             "plan-1",
-            "wf-1",
-            "wait",
+            "wf-plan-step",
+            "new",
             "ent-page",
             "result",
             0,
             "Wait result",
             List.of(new PlanStepAction("act-1", "50"))
         );
+
+        when(resolver.findAction("act-1"))
+            .thenReturn(Optional.of(Action.of("act-1", "Wait", "wait", "Wait", "act-type-validation")));
 
         oneStepPlan = new Plan(
             "plan-1",
@@ -77,8 +82,8 @@ class AgentServiceTest {
         List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
 
         assertEquals(1, results.size());
-        assertTrue(results.get(0).isSuccess());
-        assertEquals(0, results.get(0).getRetryCount());
+        assertTrue(results.get(0).success());
+        assertEquals(0, results.get(0).retryCount());
         verify(agentClient).execute(any());
     }
 
@@ -92,8 +97,8 @@ class AgentServiceTest {
         List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
 
         assertEquals(1, results.size());
-        assertFalse(results.get(0).isSuccess());
-        assertEquals(2, results.get(0).getRetryCount());
+        assertFalse(results.get(0).success());
+        assertEquals(2, results.get(0).retryCount());
         verify(agentClient, org.mockito.Mockito.times(3)).execute(any());
     }
 
@@ -107,8 +112,8 @@ class AgentServiceTest {
         List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
 
         assertEquals(1, results.size());
-        assertFalse(results.get(0).isSuccess());
-        assertEquals(0, results.get(0).getRetryCount());
+        assertFalse(results.get(0).success());
+        assertEquals(0, results.get(0).retryCount());
         verify(agentClient, org.mockito.Mockito.times(1)).execute(any());
     }
 
@@ -125,8 +130,8 @@ class AgentServiceTest {
         List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
 
         assertEquals(1, results.size());
-        assertTrue(results.get(0).isSuccess());
-        assertEquals(1, results.get(0).getRetryCount());
+        assertTrue(results.get(0).success());
+        assertEquals(1, results.get(0).retryCount());
         verify(agentClient, org.mockito.Mockito.times(2)).execute(any());
     }
 }
