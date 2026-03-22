@@ -122,6 +122,38 @@ class PlanServiceTest {
         verify(planMapper, never()).toDomain(any());
     }
 
+    @Test
+    void shouldCreatePlanWithEmptyStepsAndSetStoppedAtPlanStepToEmpty() {
+        CreatePlanRequest emptyRequest = new CreatePlanRequest();
+        emptyRequest.setWorkflowId("wf-plan");
+        emptyRequest.setWorkflowStepInternalName("new");
+        emptyRequest.setTarget("Empty plan");
+        emptyRequest.setExplanation("No steps");
+        emptyRequest.setSteps(List.of());
+
+        PlanEntity savedEntity = new PlanEntity();
+        when(planMapper.toEntity(any(Plan.class))).thenAnswer(inv -> {
+            Plan p = inv.getArgument(0);
+            savedEntity.setId(p.id());
+            savedEntity.setStoppedAtPlanStep(p.stoppedAtPlanStepId());
+            return savedEntity;
+        });
+        when(planRepository.save(any(PlanEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(planMapper.toDomain(any(PlanEntity.class))).thenAnswer(inv -> {
+            PlanEntity e = inv.getArgument(0);
+            Plan p = new Plan(e.getId(), "wf-plan", "new", e.getStoppedAtPlanStep(),
+                    "Empty plan", "No steps", List.of());
+            return p;
+        });
+
+        PlanResponse result = planService.createPlan(emptyRequest);
+
+        assertNotNull(result);
+        assertEquals(0, result.getSteps().size());
+        assertEquals("", result.getStoppedAtPlanStepId(),
+                "When steps are empty, stoppedAtPlanStepId is empty string (no step to reference)");
+    }
+
     private static CreatePlanRequest.PlanStepActionRequest createActionRequest(String actionId, String metaValue) {
         CreatePlanRequest.PlanStepActionRequest a = new CreatePlanRequest.PlanStepActionRequest();
         a.setActionId(actionId);

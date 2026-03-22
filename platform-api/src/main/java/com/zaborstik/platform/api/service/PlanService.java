@@ -71,15 +71,29 @@ public class PlanService {
                     actions
             ));
         }
+        // stoppedAtPlanStep должен ссылаться на plan_step.id; при пустых шагах используем "" (нет шагов)
+        String stoppedAt = steps.isEmpty() ? "" : steps.get(0).id();
         Plan plan = new Plan(
                 planId,
                 request.getWorkflowId(),
                 request.getWorkflowStepInternalName(),
-                steps.isEmpty() ? planId : steps.get(0).id(),
+                stoppedAt,
                 request.getTarget(),
                 request.getExplanation(),
                 steps
         );
+        PlanEntity entity = planMapper.toEntity(plan);
+        planRepository.save(entity);
+        return toResponse(planMapper.toDomain(entity));
+    }
+
+    /**
+     * Создаёт план из доменного объекта (например, сгенерированного KnowledgeService).
+     * Сохраняет план с его исходными id.
+     */
+    @Transactional
+    public PlanResponse createPlanFromDomain(Plan plan) {
+        Objects.requireNonNull(plan, "plan cannot be null");
         PlanEntity entity = planMapper.toEntity(plan);
         planRepository.save(entity);
         return toResponse(planMapper.toDomain(entity));
@@ -205,11 +219,17 @@ public class PlanService {
         return planStepLogEntryRepository.save(entry);
     }
 
+    /**
+     * Создаёт вложение (артефакт). Параметр хранится в поле displayname — для скриншотов
+     * это путь к файлу, для прочих артефактов — отображаемое имя.
+     *
+     * @param pathOrDisplayName путь к файлу (напр. скриншот ошибки) или отображаемое имя
+     */
     @Transactional
-    public AttachmentEntity createAttachment(String displayName) {
+    public AttachmentEntity createAttachment(String pathOrDisplayName) {
         AttachmentEntity attachment = new AttachmentEntity();
         attachment.setId(UUID.randomUUID().toString());
-        attachment.setDisplayname(displayName);
+        attachment.setDisplayname(pathOrDisplayName);
         return attachmentRepository.save(attachment);
     }
 
