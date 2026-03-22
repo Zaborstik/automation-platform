@@ -2,7 +2,6 @@ package com.zaborstik.platform.api.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import com.zaborstik.platform.api.dto.ErrorResponseDTO;
-import com.zaborstik.platform.knowledge.service.ClarificationNeededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -60,24 +59,6 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    /**
-     * Обрабатывает ClarificationNeededException — LLM запрашивает уточнение у пользователя.
-     * Возвращает HTTP 422 Unprocessable Entity с вопросом для уточнения.
-     */
-    @ExceptionHandler(ClarificationNeededException.class)
-    public ResponseEntity<ErrorResponseDTO> handleClarificationNeededException(
-            ClarificationNeededException ex, WebRequest request) {
-
-        ErrorResponseDTO error = new ErrorResponseDTO(
-            HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            "Clarification Needed",
-            ex.getQuestion(),
-            request.getDescription(false).replace("uri=", "")
-        );
-
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**

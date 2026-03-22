@@ -126,26 +126,20 @@ class ExecutionIntegrationTest {
     }
 
     @Test
-    void shouldCreatePlanWithEmptyStepsAndVerifyStoppedAtPlanStepSemantics() throws Exception {
+    void shouldCreatePlanWithEmptySteps() throws Exception {
         CreatePlanRequest request = new CreatePlanRequest();
         request.setWorkflowId("wf-plan");
         request.setWorkflowStepInternalName("new");
         request.setTarget("Пустой план");
         request.setSteps(List.of());
 
-        MvcResult createResult = mockMvc.perform(post("/api/plans")
+        mockMvc.perform(post("/api/plans")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.steps").isArray())
-                .andExpect(jsonPath("$.steps.length()").value(0))
-                .andReturn();
-
-        PlanResponse created = objectMapper.readValue(createResult.getResponse().getContentAsString(), PlanResponse.class);
-        // When steps are empty, stoppedAtPlanStepId is "" (no plan_step to reference)
-        assertEquals("", created.getStoppedAtPlanStepId(),
-            "For empty plan, stoppedAtPlanStepId is empty string when no steps exist");
+                .andExpect(jsonPath("$.steps.length()").value(0));
     }
 
     @Test

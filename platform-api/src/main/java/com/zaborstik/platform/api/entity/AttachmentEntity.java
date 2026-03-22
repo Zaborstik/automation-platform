@@ -13,10 +13,6 @@ public class AttachmentEntity {
     @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    /**
-     * Отображаемое имя или путь к файлу (например, скриншот при ошибке).
-     * Display name or file path (e.g. screenshot path for error attachments).
-     */
     @Column(name = "displayname")
     private String displayname;
 

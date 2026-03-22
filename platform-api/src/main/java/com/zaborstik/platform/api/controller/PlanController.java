@@ -5,8 +5,6 @@ import com.zaborstik.platform.api.entity.PlanResultEntity;
 import com.zaborstik.platform.api.entity.PlanStepLogEntryEntity;
 import com.zaborstik.platform.api.service.PlanExecutionService;
 import com.zaborstik.platform.api.service.PlanService;
-import com.zaborstik.platform.core.plan.Plan;
-import com.zaborstik.platform.knowledge.service.KnowledgeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,13 +27,10 @@ public class PlanController {
 
     private final PlanService planService;
     private final PlanExecutionService planExecutionService;
-    private final KnowledgeService knowledgeService;
 
-    public PlanController(PlanService planService, PlanExecutionService planExecutionService,
-                          KnowledgeService knowledgeService) {
+    public PlanController(PlanService planService, PlanExecutionService planExecutionService) {
         this.planService = planService;
         this.planExecutionService = planExecutionService;
-        this.knowledgeService = knowledgeService;
     }
 
     @GetMapping
@@ -54,16 +49,6 @@ public class PlanController {
     @ApiResponse(responseCode = "201", description = "Plan created")
     public ResponseEntity<PlanResponse> createPlan(@Valid @RequestBody CreatePlanRequest request) {
         PlanResponse created = planService.createPlan(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
-    }
-
-    @PostMapping("/from-request")
-    @Operation(summary = "Create plan from natural language user request (LLM)")
-    @ApiResponse(responseCode = "201", description = "Plan created from user request")
-    @ApiResponse(responseCode = "422", description = "Clarification needed from user")
-    public ResponseEntity<?> createPlanFromRequest(@Valid @RequestBody CreatePlanFromRequestRequest request) {
-        Plan plan = knowledgeService.generatePlanFromRequest(request.getUserInput());
-        PlanResponse created = planService.createPlanFromDomain(plan);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 

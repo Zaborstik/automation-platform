@@ -13,8 +13,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
-import com.zaborstik.platform.knowledge.service.ClarificationNeededException;
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -141,20 +139,6 @@ class GlobalExceptionHandlerTest {
         // Then
         assertNotNull(response.getBody());
         assertNotNull(response.getBody().getTimestamp());
-    }
-
-    @Test
-    void shouldHandleClarificationNeededException() {
-        ClarificationNeededException ex = new ClarificationNeededException("Какую страницу открыть?");
-
-        ResponseEntity<ErrorResponseDTO> response = handler.handleClarificationNeededException(ex, webRequest);
-
-        assertNotNull(response);
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY.value(), response.getBody().getStatus());
-        assertEquals("Clarification Needed", response.getBody().getError());
-        assertEquals("Какую страницу открыть?", response.getBody().getMessage());
     }
 }
 
