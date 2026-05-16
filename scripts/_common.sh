@@ -30,6 +30,24 @@ docker_compose() {
     fi
 }
 
+detect_mvn() {
+    if [[ -x "${REPO_ROOT}/mvnw" ]]; then
+        printf '%s' "${REPO_ROOT}/mvnw"
+        return
+    fi
+    if command -v mvn >/dev/null 2>&1; then
+        printf '%s' "mvn"
+        return
+    fi
+    local idea_mvn="/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn"
+    if [[ -x "${idea_mvn}" ]]; then
+        printf '%s' "${idea_mvn}"
+        return
+    fi
+    echo "Maven not found: install mvn / add ./mvnw / IntelliJ IDEA with bundled Maven." >&2
+    return 1
+}
+
 ensure_env_file() {
     local env_file="$1"
     local example_file="$2"

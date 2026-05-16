@@ -1,5 +1,8 @@
 # Platform Agent
 
+> **Документ:** описание модуля **`platform-agent`** (локальный Spring Boot + Playwright-сайдкар).  
+> **К чему относится:** только каталог `platform-agent/`; зеркало: [`docs/services/platform-agent/README.ru.md`](../../docs/services/platform-agent/README.ru.md).
+
 UI-агент для выполнения планов через браузер с использованием Playwright.
 
 ## Архитектура

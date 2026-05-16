@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Build every Maven module without running tests. Useful as a smoke check
-# before producing Docker images.
+# Run the full Maven reactor test suite (./mvnw / mvn / IntelliJ IDEA bundle).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,5 +10,5 @@ cd "${REPO_ROOT}"
 
 MVN_CMD="$(detect_mvn)" || exit 1
 
-echo "[*] Building all modules with: ${MVN_CMD}"
-"${MVN_CMD}" -B -DskipTests clean install "$@"
+echo "[*] Running tests with: ${MVN_CMD}"
+"${MVN_CMD}" -B test "$@"

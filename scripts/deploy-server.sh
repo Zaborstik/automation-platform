@@ -22,6 +22,12 @@ done
 
 ensure_env_file "${SERVER_ENV_FILE}" "${SERVER_ENV_EXAMPLE}"
 
+# Populate shell vars for summary lines (PLATFORM_API_PORT, etc.).
+set -a
+# shellcheck source=/dev/null
+source "${SERVER_ENV_FILE}"
+set +a
+
 cd "${REPO_ROOT}"
 
 if $PULL; then

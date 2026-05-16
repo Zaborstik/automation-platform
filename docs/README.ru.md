@@ -1,5 +1,9 @@
 # automation-platform
 
+> **Документ:** главный обзор монорепозитория automation-platform (архитектура, быстрый старт, навигация).  
+> **К чему относится:** репозиторий целиком; точка входа в русскоязычную документацию.  
+> **Полный указатель:** [`INDEX.ru.md`](INDEX.ru.md). Описания модулей также доступны через [`services/README.ru.md`](services/README.ru.md).
+
 Микросервисная платформа для генерации и выполнения планов автоматизации UI. Тяжёлая логика (БД, генерация плана) живёт на сервере, исполнение (Playwright, браузер) — на машине пользователя.
 
 ---
@@ -49,6 +53,24 @@
 
 ---
 
+## Документация: что и где читать
+
+| Файл | Содержание |
+|------|------------|
+| [`README.ru.md`](README.ru.md) (этот файл) | Архитектура, быстрый старт, `make`‑цели, структура репозитория. |
+| [`INDEX.ru.md`](INDEX.ru.md) | Указатель всех документов в `docs/` и симлинков модулей. |
+| [`DEPLOY_SERVER.ru.md`](DEPLOY_SERVER.ru.md) | Сервер: Docker, порты, `.env`, миграции, reverse proxy, бэкап, **автодеплой по SSH**. |
+| [`DEPLOY_LOCAL.ru.md`](DEPLOY_LOCAL.ru.md) | Локально: Docker Desktop, `docker/local/.env`, chat-overlay, логи. |
+| [`../docker/server/.env.example`](../docker/server/.env.example) | Шаблон переменных для **серверного** compose (Postgres, порт API). |
+| [`../docker/local/.env.example`](../docker/local/.env.example) | Шаблон для **локального** стека (URL удалённого API). |
+| [`../.env.deploy.example`](../.env.deploy.example) | Шаблон для **скрипта автодеплоя** (IP сервера, SSH, каталог на хосте). |
+
+**Где физически лежат Docker-образы:** они не хранятся в git. После `make images` или `docker compose ... build` они попадают в **локальный Docker** (на вашей машине или на сервере) с тегами вроде `platform-api:local`, `platform-knowledge:local`. Сборочный контекст описан в `docker/server/Dockerfile.*` и `docker/local/Dockerfile.*`; при деплое на сервер образы **собираются на сервере** из скопированного репозитория (или подтягиваются из registry, если задать `API_IMAGE` / `KNOWLEDGE_IMAGE` и `make server-pull` / `deploy-server.sh --pull`).
+
+**Автодеплой одной командой:** скопируйте `.env.deploy.example` → `.env.deploy`, укажите IP, пользователя и пароль SSH (и при необходимости пароль БД), затем `./scripts/auto-deploy-remote.sh` или `make deploy-remote`. Подробности — в [`DEPLOY_SERVER.ru.md`](DEPLOY_SERVER.ru.md), раздел «Автодеплой с рабочей машины».
+
+---
+
 ## Быстрый старт
 
 ### 1. Сервер
@@ -62,7 +84,7 @@ make server-deploy                    # postgres + api + knowledge
 curl http://localhost:8080/actuator/health
 ```
 
-Подробно: [`docs/DEPLOY_SERVER.ru.md`](docs/DEPLOY_SERVER.ru.md).
+Подробно: [`DEPLOY_SERVER.ru.md`](DEPLOY_SERVER.ru.md).
 
 ### 2. Локальная машина
 
@@ -75,7 +97,7 @@ make local-up                         # executor + agent + playwright
 curl http://localhost:7070/actuator/health
 ```
 
-Подробно: [`docs/DEPLOY_LOCAL.ru.md`](docs/DEPLOY_LOCAL.ru.md).
+Подробно: [`DEPLOY_LOCAL.ru.md`](DEPLOY_LOCAL.ru.md).
 
 ### 3. Тестовый прогон
 
@@ -101,6 +123,7 @@ make server-pull       # пулл pre-built образов с registry и зап
 make server-down       # stop серверного стека
 make server-logs       # tail -f
 
+make deploy-remote     # автодеплой на сервер по SSH (нужен .env.deploy)
 make local-up          # запустить локальный стек
 make local-down        # stop локального
 make local-logs        # tail -f
@@ -112,22 +135,26 @@ make local-logs        # tail -f
 
 ```
 automation-platform/
-├── platform-core/          # общие DTO/Resolver (jar)
-├── platform-api/           # Spring Boot, server-side
-├── platform-knowledge/     # Spring Boot, server-side (генерация плана)
-├── platform-executor/      # Spring Boot, local-side (оркестратор)
-├── platform-agent/         # Spring Boot, local-side + playwright-server.js
-│   └── chat-overlay/       # Tauri UI
+├── platform-core/          # общие DTO/Resolver (jar); README.ru.md — описание модуля
+├── platform-api/
+├── platform-knowledge/
+├── platform-executor/
+├── platform-agent/
+│   └── chat-overlay/
 ├── docker/
-│   ├── server/             # Dockerfile.api, Dockerfile.knowledge, docker-compose.yml
-│   └── local/              # Dockerfile.executor, Dockerfile.agent, Dockerfile.playwright, docker-compose.yml
-├── docs/
+│   ├── server/
+│   └── local/
+├── docs/                   # вся Markdown-документация репозитория (кроме .github/templates)
+│   ├── README.ru.md        # этот обзор
+│   ├── INDEX.ru.md         # указатель документов
 │   ├── DEPLOY_SERVER.ru.md
-│   └── DEPLOY_LOCAL.ru.md
-├── scripts/                # build/deploy/logs helpers
-├── docker-compose.dev-db.yml   # только Postgres, для локальной разработки
+│   ├── DEPLOY_LOCAL.ru.md
+│   └── services/           # симлинки на README модулей (platform-*, mcp-servers)
+├── scripts/
+├── .env.deploy.example
+├── docker-compose.dev-db.yml
 ├── Makefile
-└── README.ru.md
+└── README.md               # короткая ссылка в docs/
 ```
 
 ---

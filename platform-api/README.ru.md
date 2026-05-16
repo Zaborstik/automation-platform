@@ -1,5 +1,8 @@
 # Platform API
 
+> **Документ:** описание модуля **`platform-api`** (Spring Boot REST gateway на сервере).  
+> **К чему относится:** только каталог `platform-api/`; то же содержание доступно из общей документации: [`docs/services/platform-api/README.ru.md`](../../docs/services/platform-api/README.ru.md).
+
 REST API для универсальной execution-платформы. Предоставляет эндпоинты для создания планов выполнения действий через UI.
 
 ## Архитектура

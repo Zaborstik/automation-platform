@@ -40,3 +40,6 @@ local-demo/playwright.log
 
 ### MCP servers (Node.js) ###
 mcp-servers/**/node_modules/
+
+### Remote deploy secrets (IP/SSH password) ###
+.env.deploy

@@ -21,7 +21,7 @@ build: ## Build all Maven modules (skip tests).
 
 .PHONY: test
 test: ## Run all Maven tests.
-	@cd $(REPO_ROOT) && ./mvnw -B test || mvn -B test
+	@$(SCRIPTS_DIR)/test-all.sh
 
 .PHONY: images
 images: ## Build every Docker image (api, knowledge, executor, agent, playwright).
@@ -52,6 +52,10 @@ server-down: ## Stop the server stack.
 server-logs: ## Tail server-stack logs.
 	@$(SCRIPTS_DIR)/logs-server.sh
 
+.PHONY: deploy-remote
+deploy-remote: ## Автодеплой сервера по SSH (.env.deploy в корне репозитория).
+	@$(SCRIPTS_DIR)/auto-deploy-remote.sh
+
 .PHONY: local-up
 local-up: ## Start the local stack (executor + agent + playwright).
 	@$(SCRIPTS_DIR)/start-local.sh
@@ -70,4 +74,4 @@ smoke: ## Run the full distributed smoke test (server+local in one compose).
 
 .PHONY: clean
 clean: ## Maven clean.
-	@cd $(REPO_ROOT) && (./mvnw -B clean 2>/dev/null || mvn -B clean)
+	@bash -c 'source $(SCRIPTS_DIR)/_common.sh && cd "$(REPO_ROOT)" && MVN="$$(detect_mvn)" || exit 1; exec "$$MVN" -B clean'

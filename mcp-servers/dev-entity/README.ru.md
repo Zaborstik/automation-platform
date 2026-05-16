@@ -1,5 +1,8 @@
 # mcp-entity — MCP-сервер над внешним Entity REST API
 
+> **Документ:** описание подпроекта **`mcp-servers/dev-entity`**.  
+> **К чему относится:** только этот MCP-сервер; зеркало: [`docs/services/mcp-servers/dev-entity/README.ru.md`](../../../docs/services/mcp-servers/dev-entity/README.ru.md).
+
 Это **референсный MCP-сервер** (Model Context Protocol) на Node.js, который через stdio
 экспонирует CRUD-инструменты над внешним REST API (стиль Jmix/CUBA: `POST /json/login`,
 `/json/v2/mcp/entities/*`). Запускается LLM-клиентом (Claude Desktop, Cursor, Codex и т.п.)

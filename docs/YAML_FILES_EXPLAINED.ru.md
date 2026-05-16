@@ -1,5 +1,8 @@
 # 📋 Описание YAML файлов в проекте
 
+> **Документ:** назначение YAML-конфигов в корне репозитория и GitHub Actions.  
+> **К чему относится:** инфраструктура CI/CD и качества кода (не бизнес-логика приложения).
+
 Этот документ объясняет назначение и использование всех YAML файлов в проекте automation-platform.
 
 ---
@@ -8,7 +11,7 @@
 
 1. **`qodana.yaml`** - Конфигурация статического анализа кода
 2. **`.github/workflows/ci.yml`** - CI/CD pipeline для GitHub Actions
-3. **`docker-compose.yml`** - Конфигурация Docker контейнеров для локальной разработки
+3. **`docker-compose.dev-db.yml`** — только PostgreSQL для локальной разработки (корень репозитория); полные стеки см. [`docker/server/`](../docker/server/) и [`docker/local/`](../docker/local/).
 4. **`.pre-commit-config.yaml`** - Конфигурация pre-commit hooks
 
 ---
@@ -115,11 +118,11 @@ failureConditions:  # Пороги для провала CI/CD
 
 ---
 
-## 3. 🐳 `docker-compose.yml`
+## 3. 🐳 `docker-compose.dev-db.yml`
 
 ### Что это такое?
 
-**Docker Compose** - это инструмент для определения и запуска multi-container Docker приложений. Этот файл описывает все сервисы (контейнеры), которые нужны для локальной разработки.
+**Docker Compose** описывает один сервис **PostgreSQL** для локальной разработки Java-сервисов. Полные стеки «сервер» и «локальный рантайм» находятся в [`docker/server/`](../docker/server/) и [`docker/local/`](../docker/local/).
 
 ### Зачем нужен?
 
@@ -143,28 +146,28 @@ failureConditions:  # Пороги для провала CI/CD
 
 2. **Запустите контейнеры**:
    ```bash
-   docker-compose up -d
+   docker compose -f docker-compose.dev-db.yml up -d
    ```
    Флаг `-d` запускает в фоновом режиме (detached)
 
 3. **Проверьте статус**:
    ```bash
-   docker-compose ps
+   docker compose -f docker-compose.dev-db.yml ps
    ```
 
 4. **Посмотрите логи**:
    ```bash
-   docker-compose logs -f postgres
+   docker compose -f docker-compose.dev-db.yml logs -f postgres
    ```
 
 5. **Остановите контейнеры**:
    ```bash
-   docker-compose down
+   docker compose -f docker-compose.dev-db.yml down
    ```
 
 6. **Остановите и удалите данные**:
    ```bash
-   docker-compose down -v
+   docker compose -f docker-compose.dev-db.yml down -v
    ```
 
 ### Подключение к БД:
@@ -258,7 +261,7 @@ spring.datasource.password=platform_pass
 |------|-----------|-------------------|
 | `qodana.yaml` | Статический анализ кода | В CI/CD и локально |
 | `.github/workflows/ci.yml` | Автоматические проверки | При каждом push/PR |
-| `docker-compose.yml` | Локальная разработка | При запуске БД локально |
+| `docker-compose.dev-db.yml` | Локально только Postgres | При запуске БД для разработки |
 | `.pre-commit-config.yaml` | Проверки перед коммитом | При каждом `git commit` |
 
 ---

@@ -1,0 +1,1 @@
+../../../platform-core/README.ru.md

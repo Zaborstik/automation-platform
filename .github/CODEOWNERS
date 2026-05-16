@@ -13,9 +13,8 @@
 /.github/ @Zaborstik
 /.github/workflows/ @Zaborstik
 
-# Документация
+# Документация (все Markdown в репозитории)
 *.md @Zaborstik
-/CONTRIBUTING.md @Zaborstik
 
 # Конфигурация проекта
 /pom.xml @Zaborstik

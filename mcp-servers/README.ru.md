@@ -1,5 +1,8 @@
 # mcp-servers/
 
+> **Документ:** каталог Node.js **MCP-серверов** рядом с продуктом.  
+> **К чему относится:** только каталог `mcp-servers/`; зеркало: [`docs/services/mcp-servers/README.ru.md`](../../docs/services/mcp-servers/README.ru.md).
+
 Каталог для **MCP-серверов** (Model Context Protocol), запускаемых LLM-клиентами
 (Claude Desktop, Cursor, Codex и т.п.) как локальные процессы. Каждый подкаталог —
 самостоятельный артефакт со своим `package.json`, своим README и своими переменными

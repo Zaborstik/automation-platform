@@ -1,0 +1,1 @@
+../../../../mcp-servers/dev-entity/README.ru.md

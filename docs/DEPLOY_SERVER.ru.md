@@ -1,5 +1,8 @@
 # Деплой серверной части
 
+> **Документ:** запуск серверного стека в Docker (Postgres, `platform-api`, `platform-knowledge`).  
+> **К чему относится:** удалённый хост и файлы в [`docker/server/`](../docker/server/).
+
 Серверная сторона состоит из трёх контейнеров:
 
 | Сервис              | Порт   | Назначение                                                                |
@@ -36,6 +39,33 @@ cd automation-platform
 ```
 
 ---
+
+### 2a. Автодеплой с вашего ноутбука (IP + пароль SSH)
+
+Если сервер уже с Docker Engine и доступен по SSH, можно не клонировать проект руками на хосте, а **слить каталог целиком с вашей машины** и сразу вызвать `scripts/deploy-server.sh` на удалённом хосте.
+
+1. На своём ПК установите **`sshpass`** (передаёт пароль неинтерактивно для `ssh`/`rsync`/`scp`):
+   - macOS: `brew install hudochenkov/sshpass/sshpass` или см. описание образа-пакета;
+   - Linux: `sudo apt install sshpass`.
+2. В корне репозитория: `cp .env.deploy.example .env.deploy`, отредактируйте:
+   - `DEPLOY_REMOTE_HOST` — IP или DNS сервера;
+   - `DEPLOY_REMOTE_USER` — пользователь SSH (часто `ubuntu`, `debian`);
+   - `DEPLOY_REMOTE_PASSWORD` — пароль SSH (можно оставить пустым, если вход по **ключу**);
+   - `DEPLOY_REMOTE_DIR` — **полный путь** на сервере, куда складывается код (например `/home/ubuntu/automation-platform`). Значение `~/...` при записи в `.env.deploy` **использовать не стоит** — до подстановки сработает ваш локальный `$HOME`;
+   - по желанию `DEPLOY_POSTGRES_PASSWORD` — тогда на сервере будет создан актуальный `docker/server/.env` с паролем БД; иначе подтянется ваш локальный `docker/server/.env`, если он есть, или `docker/server/.env.example` (перед продом обязательно смените пароли).
+3. Запуск:
+   ```bash
+   ./scripts/auto-deploy-remote.sh
+   # или
+   make deploy-remote
+   ```
+
+Файл **`.env.deploy` в `.gitignore`** — не коммитьте пароли.
+
+**Безопаснее**, чем пароль в файле: оставить `DEPLOY_REMOTE_PASSWORD` пустым и использовать SSH-ключ (`ssh-copy-id user@host`).
+
+---
+
 
 ## 3. Конфигурация (`docker/server/.env`)
 

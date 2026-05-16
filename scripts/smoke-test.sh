@@ -49,10 +49,16 @@ docker_compose -f "${COMPOSE_FILE}" up -d
 echo "[*] Waiting for platform-api and platform-executor to become healthy (timeout ${TIMEOUT_SECONDS}s)..."
 deadline=$(( $(date +%s) + TIMEOUT_SECONDS ))
 while true; do
-    api_status=$(docker inspect --format='{{.State.Health.Status}}' \
-        $(docker_compose -f "${COMPOSE_FILE}" ps -q platform-api) 2>/dev/null || echo "starting")
-    exec_status=$(docker inspect --format='{{.State.Health.Status}}' \
-        $(docker_compose -f "${COMPOSE_FILE}" ps -q platform-executor) 2>/dev/null || echo "starting")
+    API_CID="$(docker_compose -f "${COMPOSE_FILE}" ps -q platform-api)"
+    EXEC_CID="$(docker_compose -f "${COMPOSE_FILE}" ps -q platform-executor)"
+    api_status="starting"
+    exec_status="starting"
+    if [[ -n "${API_CID}" ]]; then
+        api_status="$(docker inspect --format='{{.State.Health.Status}}' "${API_CID}" 2>/dev/null || echo "starting")"
+    fi
+    if [[ -n "${EXEC_CID}" ]]; then
+        exec_status="$(docker inspect --format='{{.State.Health.Status}}' "${EXEC_CID}" 2>/dev/null || echo "starting")"
+    fi
     if [[ "${api_status}" == "healthy" && "${exec_status}" == "healthy" ]]; then
         echo "[\u2713] api + executor are healthy."
         break

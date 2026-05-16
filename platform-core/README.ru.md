@@ -1,5 +1,8 @@
 # Platform Core
 
+> **Документ:** описание библиотеки **`platform-core`** (общие доменные модели и Plan DSL).  
+> **К чему относится:** только каталог `platform-core/`; зеркало в документации: [`docs/services/platform-core/README.ru.md`](../../docs/services/platform-core/README.ru.md).
+
 Ядро execution-платформы. Содержит базовые абстракции и логику построения планов выполнения действий.
 
 ## Архитектура

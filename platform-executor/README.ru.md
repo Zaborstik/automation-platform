@@ -1,5 +1,8 @@
 # Platform Executor
 
+> **Документ:** описание модуля **`platform-executor`** (локальный оркестратор планов и связь с API/агентом).  
+> **К чему относится:** только каталог `platform-executor/`; зеркало: [`docs/services/platform-executor/README.ru.md`](../../docs/services/platform-executor/README.ru.md).
+
 Исполнитель планов выполнения действий. Берёт `Plan` из `platform-core`, превращает его шаги в UI-команды через `platform-agent`, управляет агентом и собирает `execution_log` с результатами выполнения.
 
 ## Архитектура
