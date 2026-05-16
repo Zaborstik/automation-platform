@@ -1,0 +1,92 @@
+{
+  "panelId": "__ap_chat_panel",
+  "messagesId": "__ap_chat_messages",
+  "panel": {
+    "position": "fixed",
+    "bottom": "16px",
+    "right": "16px",
+    "width": "380px",
+    "maxWidth": "calc(100vw - 32px)",
+    "maxHeight": "45vh",
+    "zIndex": "2147483646",
+    "boxSizing": "border-box",
+    "background": "rgba(12, 12, 14, 0.88)",
+    "backdropFilter": "blur(8px)",
+    "WebkitBackdropFilter": "blur(8px)",
+    "border": "1px solid rgba(255, 255, 255, 0.12)",
+    "borderRadius": "12px",
+    "boxShadow": "0 8px 32px rgba(0, 0, 0, 0.4)",
+    "display": "flex",
+    "flexDirection": "column",
+    "overflow": "hidden",
+    "pointerEvents": "auto",
+    "fontFamily": "system-ui, -apple-system, Segoe UI, sans-serif",
+    "color": "#e8e8ec",
+    "fontSize": "14px"
+  },
+  "header": {
+    "padding": "10px 14px",
+    "borderBottom": "1px solid rgba(255, 255, 255, 0.1)",
+    "fontWeight": "600",
+    "flexShrink": "0"
+  },
+  "messages": {
+    "flex": "1",
+    "minHeight": "100px",
+    "maxHeight": "28vh",
+    "overflowY": "auto",
+    "padding": "12px 14px",
+    "gap": "8px",
+    "display": "flex",
+    "flexDirection": "column"
+  },
+  "placeholder": {
+    "opacity": "0.65",
+    "fontSize": "13px",
+    "lineHeight": "1.45"
+  },
+  "footer": {
+    "display": "flex",
+    "gap": "8px",
+    "padding": "10px 12px",
+    "borderTop": "1px solid rgba(255, 255, 255, 0.1)",
+    "flexShrink": "0",
+    "alignItems": "center"
+  },
+  "input": {
+    "flex": "1",
+    "minWidth": "0",
+    "padding": "8px 10px",
+    "borderRadius": "8px",
+    "border": "1px solid rgba(255, 255, 255, 0.15)",
+    "background": "rgba(0, 0, 0, 0.35)",
+    "color": "#e8e8ec",
+    "outline": "none",
+    "fontSize": "14px"
+  },
+  "sendButton": {
+    "padding": "8px 12px",
+    "borderRadius": "8px",
+    "border": "none",
+    "background": "rgba(255, 255, 255, 0.14)",
+    "color": "#e8e8ec",
+    "cursor": "pointer",
+    "fontSize": "13px",
+    "fontWeight": "500"
+  },
+  "userBubble": {
+    "alignSelf": "flex-end",
+    "maxWidth": "92%",
+    "padding": "8px 10px",
+    "borderRadius": "10px",
+    "background": "rgba(255, 255, 255, 0.12)",
+    "wordBreak": "break-word"
+  },
+  "strings": {
+    "title": "Ассистент",
+    "placeholder": "Диалог с ассистентом будет доступен здесь. Пока ответы обрабатываются автоматически.",
+    "inputPlaceholder": "Сообщение…",
+    "inputAriaLabel": "Сообщение чата",
+    "sendLabel": "Отправить"
+  }
+}

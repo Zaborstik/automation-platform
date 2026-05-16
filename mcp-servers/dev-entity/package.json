@@ -1,0 +1,18 @@
+{
+  "name": "mcp-entity",
+  "version": "0.1.0",
+  "description": "MCP server for MCP Entity REST API",
+  "type": "module",
+  "main": "server.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.0"
+  }
+}

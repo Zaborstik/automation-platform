@@ -1,0 +1,21 @@
+[package]
+name = "platform-chat-overlay"
+version = "1.0.0"
+description = "Desktop chat panel for automation-platform"
+authors = ["zaborstik"]
+edition = "2021"
+
+[lib]
+name = "platform_chat_overlay_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+simplelog = "0.12"
+base64 = "0.22"

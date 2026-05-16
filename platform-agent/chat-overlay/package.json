@@ -1,0 +1,13 @@
+{
+  "name": "platform-chat-overlay",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Десктоп-панель чата (Tauri), конфиг в src/main/resources",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

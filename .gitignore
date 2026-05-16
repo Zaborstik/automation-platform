@@ -37,3 +37,6 @@ local-demo/api.log
 local-demo/playwright.log
 local-demo/screenshots/
 local-demo/playwright.log
+
+### MCP servers (Node.js) ###
+mcp-servers/**/node_modules/
