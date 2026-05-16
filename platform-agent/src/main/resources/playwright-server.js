@@ -9,18 +9,12 @@ const { chromium } = require('playwright');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const config = require('./playwright-server.config.js');
 
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-const HEADLESS = process.env.HEADLESS === 'true' || process.argv.includes('--headless');
-const SCREENSHOTS_DIR = process.env.SCREENSHOTS_DIR || path.join(__dirname, 'screenshots');
-const ACTION_DELAY_MULTIPLIER = Math.max(1, parseInt(process.env.ACTION_DELAY_MULTIPLIER || '1', 10));
-/** Задержка (мс) после открытия страницы (только OPEN_PAGE); 0 = без задержки */
-const OPEN_PAGE_DELAY_MS = Math.max(0, parseInt(process.env.OPEN_PAGE_DELAY_MS || '0', 10));
-/** Пауза (мс) после наведения перед кликом: навёлся → подождал → нажал. По умолчанию 1000. */
-const PAUSE_BEFORE_CLICK_MS = Math.max(0, parseInt(process.env.PAUSE_BEFORE_CLICK_MS || '1000', 10));
+const SCREENSHOTS_DIR = config.paths.screenshotsDir;
 
 // Создаем директорию для скриншотов
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
@@ -41,9 +35,9 @@ function randomInt(min, max) {
     return Math.floor(randomBetween(min, max + 1));
 }
 
-/** Задержка между действиями (мс), масштабируется ACTION_DELAY_MULTIPLIER */
+/** Задержка между действиями (мс), масштабируется actionDelayMultiplier из конфига */
 function delayMs(min, max) {
-    return Math.round(randomBetween(min, max + 1) * ACTION_DELAY_MULTIPLIER);
+    return Math.round(randomBetween(min, max + 1) * config.delays.actionDelayMultiplier);
 }
 
 // Easing функция для плавного движения
@@ -52,14 +46,18 @@ function easeInOutCubic(t) {
 }
 
 function buildHumanPath(fromX, fromY, toX, toY, steps) {
+    const mp = config.mousePath;
     const dx = toX - fromX;
     const dy = toY - fromY;
     const distance = Math.hypot(dx, dy);
-    const controlOffset = Math.min(60, Math.max(10, distance * 0.15));
-    const cp1x = fromX + dx * 0.35 + randomBetween(-controlOffset, controlOffset);
-    const cp1y = fromY + dy * 0.25 + randomBetween(-controlOffset, controlOffset);
-    const cp2x = fromX + dx * 0.75 + randomBetween(-controlOffset, controlOffset);
-    const cp2y = fromY + dy * 0.65 + randomBetween(-controlOffset, controlOffset);
+    const controlOffset = Math.min(
+        mp.controlOffsetMax,
+        Math.max(mp.controlOffsetMin, distance * mp.distanceFractionForControl)
+    );
+    const cp1x = fromX + dx * mp.cp1xAlong + randomBetween(-controlOffset, controlOffset);
+    const cp1y = fromY + dy * mp.cp1yAlong + randomBetween(-controlOffset, controlOffset);
+    const cp2x = fromX + dx * mp.cp2xAlong + randomBetween(-controlOffset, controlOffset);
+    const cp2y = fromY + dy * mp.cp2yAlong + randomBetween(-controlOffset, controlOffset);
     const points = [];
 
     for (let i = 0; i <= steps; i++) {
@@ -83,9 +81,11 @@ async function ensureCursorInitialized(page) {
     if (cursorState.initialized) {
         return;
     }
-    const viewport = page.viewportSize() || { width: 1920, height: 1080 };
-    const startX = randomBetween(viewport.width * 0.3, viewport.width * 0.7);
-    const startY = randomBetween(viewport.height * 0.2, viewport.height * 0.8);
+    const ci = config.cursorInit;
+    const vb = config.browser;
+    const viewport = page.viewportSize() || { width: vb.viewportWidth, height: vb.viewportHeight };
+    const startX = randomBetween(viewport.width * ci.startXMinFrac, viewport.width * ci.startXMaxFrac);
+    const startY = randomBetween(viewport.height * ci.startYMinFrac, viewport.height * ci.startYMaxFrac);
     await page.mouse.move(startX, startY);
     cursorState = { x: startX, y: startY, initialized: true };
 }
@@ -95,13 +95,17 @@ async function smoothMove(page, toX, toY, options = {}) {
     await ensureCursorInitialized(page);
     const fromX = cursorState.x;
     const fromY = cursorState.y;
+    const sm = config.smoothMove;
     const distance = Math.hypot(toX - fromX, toY - fromY);
-    const steps = options.steps || Math.max(12, Math.min(60, Math.round(distance / randomBetween(7, 11))));
+    const steps = options.steps || Math.max(
+        sm.minSteps,
+        Math.min(sm.maxSteps, Math.round(distance / randomBetween(sm.distanceDivisorMin, sm.distanceDivisorMax)))
+    );
     const points = buildHumanPath(fromX, fromY, toX, toY, steps);
 
     for (const point of points) {
         await page.mouse.move(point.x, point.y);
-        await page.waitForTimeout(delayMs(6, 16));
+        await page.waitForTimeout(delayMs(config.delays.smoothMovePointMinMs, config.delays.smoothMovePointMaxMs));
     }
 
     cursorState = { x: toX, y: toY, initialized: true };
@@ -109,16 +113,23 @@ async function smoothMove(page, toX, toY, options = {}) {
 
 // Подсветка элемента
 async function highlightElement(page, selector) {
-    await page.evaluate((sel) => {
-        const element = document.querySelector(sel);
-        if (element) {
-            const originalStyle = element.style.cssText;
-            element.style.cssText = 'outline: 3px solid #ff6b6b !important; outline-offset: 2px !important; background-color: rgba(255, 107, 107, 0.1) !important;';
-            setTimeout(() => {
-                element.style.cssText = originalStyle;
-            }, 1000);
+    await page.evaluate(
+        ({ sel, styleCss, restoreMs }) => {
+            const element = document.querySelector(sel);
+            if (element) {
+                const originalStyle = element.style.cssText;
+                element.style.cssText = styleCss;
+                setTimeout(() => {
+                    element.style.cssText = originalStyle;
+                }, restoreMs);
+            }
+        },
+        {
+            sel: selector,
+            styleCss: config.highlight.elementStyleCss,
+            restoreMs: config.timeouts.highlightRestoreMs,
         }
-    }, selector);
+    );
 }
 
 // Получение координат элемента
@@ -167,8 +178,8 @@ app.get('/health', (req, res) => {
 // Инициализация браузера
 app.post('/initialize', async (req, res) => {
     try {
-        const { baseUrl: url, headless = HEADLESS } = req.body;
-        baseUrl = url || 'http://localhost:8080';
+        const { baseUrl: url, headless = config.server.headless } = req.body;
+        baseUrl = url || config.browser.defaultBaseUrl;
 
         if (browser) {
             await browser.close();
@@ -179,37 +190,43 @@ app.post('/initialize', async (req, res) => {
         });
 
         context = await browser.newContext({
-            viewport: { width: 1920, height: 1080 },
+            viewport: {
+                width: config.browser.viewportWidth,
+                height: config.browser.viewportHeight,
+            },
         });
+
+        const initPayload = { injectUi: config.injectUi };
+
+        /** На всех страницах контекста: только оверлей курсора; чат — в Electron (chat-overlay). */
+        await context.addInitScript((payload) => {
+            const { injectUi } = payload;
+            const cu = injectUi.cursor;
+            const cursor = document.createElement('div');
+            cursor.id = cu.id;
+            Object.assign(cursor.style, cu.style);
+            document.addEventListener('mousemove', e => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+            document.addEventListener('mousedown', () => {
+                Object.assign(cursor.style, cu.mousedown);
+            });
+            document.addEventListener('mouseup', () => {
+                Object.assign(cursor.style, cu.mouseup);
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const legacyChat = document.getElementById('__ap_chat_panel');
+                if (legacyChat) {
+                    legacyChat.remove();
+                }
+                document.body.appendChild(cursor);
+            });
+        }, initPayload);
 
         page = await context.newPage();
         cursorState = { x: 0, y: 0, initialized: false };
-
-        await page.addInitScript(() => {
-            const cursor = document.createElement('div');
-            cursor.id = '__pw_cursor';
-            Object.assign(cursor.style, {
-                position: 'fixed', zIndex: '2147483647', pointerEvents: 'none',
-                width: '20px', height: '20px', borderRadius: '50%',
-                background: 'rgba(255, 50, 50, 0.7)', border: '2px solid #fff',
-                boxShadow: '0 0 8px rgba(255,50,50,0.5)',
-                transform: 'translate(-50%, -50%)', transition: 'left 0.03s, top 0.03s',
-                left: '-100px', top: '-100px',
-            });
-            document.addEventListener('DOMContentLoaded', () => document.body.appendChild(cursor));
-            document.addEventListener('mousemove', e => {
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top  = e.clientY + 'px';
-            });
-            document.addEventListener('mousedown', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(0.7)';
-                cursor.style.background = 'rgba(255, 0, 0, 0.9)';
-            });
-            document.addEventListener('mouseup', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-                cursor.style.background = 'rgba(255, 50, 50, 0.7)';
-            });
-        });
 
         res.json({
             success: true,
@@ -248,31 +265,31 @@ app.post('/execute', async (req, res) => {
             case 'OPEN_PAGE': {
                 const url = target.startsWith('http') ? target : `${baseUrl}${target}`;
                 await page.goto(url, { waitUntil: 'domcontentloaded' });
-                if (OPEN_PAGE_DELAY_MS > 0) {
-                    await page.waitForTimeout(OPEN_PAGE_DELAY_MS);
+                if (config.delays.openPageDelayMs > 0) {
+                    await page.waitForTimeout(config.delays.openPageDelayMs);
                 }
                 result = { url };
                 break;
             }
 
             case 'CLICK':
-                await page.waitForSelector(target, { timeout: 10000 });
+                await page.waitForSelector(target, { timeout: config.timeouts.selectorMs });
                 await highlightElement(page, target);
                 const coords = await getElementCoordinates(page, target);
                 await smoothMove(page, coords.x, coords.y);
-                if (PAUSE_BEFORE_CLICK_MS > 0) {
-                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                if (config.delays.pauseBeforeClickMs > 0) {
+                    await page.waitForTimeout(config.delays.pauseBeforeClickMs);
                 } else {
-                    await page.waitForTimeout(delayMs(80, 180));
+                    await page.waitForTimeout(delayMs(config.delays.clickFallbackMinMs, config.delays.clickFallbackMaxMs));
                 }
                 await page.mouse.down();
-                await page.waitForTimeout(delayMs(35, 90));
+                await page.waitForTimeout(delayMs(config.delays.mouseDownUpMinMs, config.delays.mouseDownUpMaxMs));
                 await page.mouse.up();
                 result = mergeCoordinates({ selector: target, selectorUsed: target }, coords);
                 break;
 
             case 'HOVER':
-                await page.waitForSelector(target, { timeout: 10000 });
+                await page.waitForSelector(target, { timeout: config.timeouts.selectorMs });
                 await highlightElement(page, target);
                 const hoverCoords = await getElementCoordinates(page, target);
                 await smoothMove(page, hoverCoords.x, hoverCoords.y);
@@ -280,28 +297,32 @@ app.post('/execute', async (req, res) => {
                 break;
 
             case 'TYPE':
-                await page.waitForSelector(target, { timeout: 10000 });
+                await page.waitForSelector(target, { timeout: config.timeouts.selectorMs });
                 await highlightElement(page, target);
                 const typeCoords = await getElementCoordinates(page, target);
                 await smoothMove(page, typeCoords.x, typeCoords.y);
-                if (PAUSE_BEFORE_CLICK_MS > 0) {
-                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                if (config.delays.pauseBeforeClickMs > 0) {
+                    await page.waitForTimeout(config.delays.pauseBeforeClickMs);
                 } else {
-                    await page.waitForTimeout(delayMs(70, 170));
+                    await page.waitForTimeout(delayMs(config.delays.typeFocusFallbackMinMs, config.delays.typeFocusFallbackMaxMs));
                 }
-                await page.mouse.click(typeCoords.x, typeCoords.y, { delay: delayMs(30, 80) });
+                await page.mouse.click(typeCoords.x, typeCoords.y, {
+                    delay: delayMs(config.delays.typeMouseClickMinMs, config.delays.typeMouseClickMaxMs),
+                });
                 await page.keyboard.press('ControlOrMeta+A');
                 await page.keyboard.press('Backspace');
-                await page.keyboard.type(parameters.text || '', { delay: delayMs(40, 120) });
+                await page.keyboard.type(parameters.text || '', {
+                    delay: delayMs(config.delays.typeKeypressMinMs, config.delays.typeKeypressMaxMs),
+                });
                 if (parameters.pressEnter) {
-                    await page.waitForTimeout(delayMs(200, 400));
+                    await page.waitForTimeout(delayMs(config.delays.afterTypeEnterMinMs, config.delays.afterTypeEnterMaxMs));
                     await page.keyboard.press('Enter');
                 }
                 result = mergeCoordinates({ selector: target, selectorUsed: target, text: parameters.text }, typeCoords);
                 break;
 
             case 'WAIT':
-                const timeout = parameters.timeout || 10000;
+                const timeout = parameters.timeout || config.timeouts.waitDefaultMs;
                 const condition = target || 'domcontentloaded';
                 if (condition === 'networkidle' || condition === 'domcontentloaded' || condition === 'load') {
                     await page.waitForLoadState(condition, { timeout });
@@ -320,7 +341,7 @@ app.post('/execute', async (req, res) => {
                 break;
 
             case 'HIGHLIGHT':
-                await page.waitForSelector(target, { timeout: 10000 });
+                await page.waitForSelector(target, { timeout: config.timeouts.selectorMs });
                 await highlightElement(page, target);
                 result = { selector: target };
                 break;
@@ -332,7 +353,7 @@ app.post('/execute', async (req, res) => {
                 break;
 
             case 'RESOLVE_COORDS':
-                await page.waitForSelector(target, { timeout: 10000 });
+                await page.waitForSelector(target, { timeout: config.timeouts.selectorMs });
                 const resolvedCoords = await getElementCoordinates(page, target);
                 result = mergeCoordinates({ selector: target, selectorUsed: target }, resolvedCoords);
                 break;
@@ -342,13 +363,13 @@ app.post('/execute', async (req, res) => {
                     throw new Error('CLICK_AT requires numeric x and y parameters');
                 }
                 await smoothMove(page, Number(parameters.x), Number(parameters.y));
-                if (PAUSE_BEFORE_CLICK_MS > 0) {
-                    await page.waitForTimeout(PAUSE_BEFORE_CLICK_MS);
+                if (config.delays.pauseBeforeClickMs > 0) {
+                    await page.waitForTimeout(config.delays.pauseBeforeClickMs);
                 } else {
-                    await page.waitForTimeout(delayMs(80, 180));
+                    await page.waitForTimeout(delayMs(config.delays.clickFallbackMinMs, config.delays.clickFallbackMaxMs));
                 }
                 await page.mouse.down();
-                await page.waitForTimeout(delayMs(35, 90));
+                await page.waitForTimeout(delayMs(config.delays.mouseDownUpMinMs, config.delays.mouseDownUpMaxMs));
                 await page.mouse.up();
                 result = {
                     x: Number(parameters.x),
@@ -376,7 +397,7 @@ app.post('/execute', async (req, res) => {
         console.error(`[ERROR] Command ${type} failed:`, error);
         let errorScreenshot = null;
         try {
-            await page.waitForTimeout(delayMs(200, 400));
+            await page.waitForTimeout(delayMs(config.delays.errorScreenshotDelayMinMs, config.delays.errorScreenshotDelayMaxMs));
             errorScreenshot = await captureStepScreenshot(page, 'error');
         } catch (ignored) {}
         
@@ -426,15 +447,15 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
-app.listen(PORT, () => {
-    console.log(`Playwright Server running on http://localhost:${PORT}`);
-    console.log(`Headless mode: ${HEADLESS}`);
-    console.log(`ACTION_DELAY_MULTIPLIER: ${ACTION_DELAY_MULTIPLIER}`);
-    if (OPEN_PAGE_DELAY_MS > 0) {
-        console.log(`OPEN_PAGE_DELAY_MS: ${OPEN_PAGE_DELAY_MS}`);
+app.listen(config.server.port, () => {
+    console.log(`Playwright Server running on http://localhost:${config.server.port}`);
+    console.log(`Headless mode: ${config.server.headless}`);
+    console.log(`ACTION_DELAY_MULTIPLIER: ${config.delays.actionDelayMultiplier}`);
+    if (config.delays.openPageDelayMs > 0) {
+        console.log(`OPEN_PAGE_DELAY_MS: ${config.delays.openPageDelayMs}`);
     }
-    if (PAUSE_BEFORE_CLICK_MS > 0) {
-        console.log(`PAUSE_BEFORE_CLICK_MS: ${PAUSE_BEFORE_CLICK_MS}`);
+    if (config.delays.pauseBeforeClickMs > 0) {
+        console.log(`PAUSE_BEFORE_CLICK_MS: ${config.delays.pauseBeforeClickMs}`);
     }
     console.log(`Screenshots directory: ${SCREENSHOTS_DIR}`);
 });

@@ -15,6 +15,21 @@ Platform Agent состоит из двух частей:
    - HTTP API для управления Playwright
    - Визуализация действий (подсветка, плавные движения)
    - Запись видео и скриншотов
+   - В страницу автоматизации внедряется только визуальный курсор; панель чата в браузер не монтируется
+
+3. **Десктоп-панель чата** (`chat-overlay/`, **Tauri 2** + Rust):
+   - Отдельное окно поверх остальных (`alwaysOnTop`), без встроенного Chromium как в Electron — используется **системный WebView** (Windows: WebView2, macOS: WebKit, Linux: WebKitGTK).
+   - Данные UI панели: [`src/main/resources/chat-panel-ui.json`](src/main/resources/chat-panel-ui.json) (при необходимости в Node: `chat-panel-ui.js` реэкспортирует JSON).
+   - Настройки приложения (название, иконка, лог, отступы окна): [`src/main/resources/chat-overlay-app.config.json`](src/main/resources/chat-overlay-app.config.json) — поля `displayName`, `iconPath`, `logFilePath`, `windowMargin`, `windowHeightFraction` (пустые строки у путей = не задано).
+   - Сборка и запуск (нужны [Rust](https://rustup.rs/) и зависимости [Tauri](https://v2.tauri.app/start/prerequisites/) для вашей ОС):
+     ```bash
+     cd platform-agent/chat-overlay/src-tauri
+     cargo build --release
+     ./target/release/platform-chat-overlay
+     ```
+   - Скрипт `./local-demo/run-chat-overlay-preview.sh` собирает в отдельный каталог `src-tauri/target-chat-preview/release/`, чтобы не конкурировать за блокировку с rust-analyzer и другим `cargo` в `target/`.
+   - Для разработки с hot-reload фронта: `npm install` в `chat-overlay`, затем `npm run tauri dev` (опционально).
+   - Совместно с Playwright (из корня репозитория): `./local-demo/run-chat-overlay-preview.sh`
 
 ## Установка
 
