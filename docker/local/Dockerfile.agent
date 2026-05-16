@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1.6
+# Multistage build for the local platform-agent microservice.
+
+############################################################
+# Stage 1 — build
+############################################################
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
+
+WORKDIR /workspace
+
+COPY pom.xml ./pom.xml
+COPY platform-core/pom.xml platform-core/pom.xml
+COPY platform-agent/pom.xml platform-agent/pom.xml
+
+RUN mvn -q -pl platform-core,platform-agent -am -B -DskipTests dependency:go-offline || true
+
+COPY platform-core/src platform-core/src
+COPY platform-agent/src platform-agent/src
+
+RUN mvn -q -pl platform-agent -am -B -DskipTests package
+
+############################################################
+# Stage 2 — runtime
+############################################################
+FROM eclipse-temurin:21-jre AS runtime
+
+ENV SERVER_PORT=7071 \
+    JAVA_OPTS=""
+
+WORKDIR /app
+
+# platform-agent uses a Spring Boot classifier ("exec") so a thin jar can
+# also be installed into the local Maven repo for downstream modules.
+COPY --from=builder /workspace/platform-agent/target/platform-agent-*-exec.jar /app/app.jar
+
+EXPOSE 7071
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=10 \
+    CMD wget --quiet --tries=1 --spider http://localhost:${SERVER_PORT}/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

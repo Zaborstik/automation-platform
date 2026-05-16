@@ -21,45 +21,43 @@
     </properties>
 
     <dependencies>
-        <!-- Spring Boot Starter Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Boot Starter Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Spring Boot Starter Data JPA -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA (explicit dependency for JpaRepository) -->
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-jpa</artifactId>
         </dependency>
 
-        <!-- H2 Database (for development) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- PostgreSQL Driver (for production) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Flyway for database migrations -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -71,24 +69,18 @@
             <version>2.3.0</version>
         </dependency>
 
-        <!-- Platform Core -->
+        <!--
+            platform-api stays pure server-side: only platform-core domain model.
+            platform-agent and platform-executor live on the user's machine and
+            communicate with this gateway over HTTP, so they MUST NOT be linked
+            in as Maven dependencies.
+        -->
         <dependency>
             <groupId>com.zaborstik.platform</groupId>
             <artifactId>platform-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>com.zaborstik.platform</groupId>
-            <artifactId>platform-agent</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zaborstik.platform</groupId>
-            <artifactId>platform-executor</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
 
-        <!-- Spring Boot Starter Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

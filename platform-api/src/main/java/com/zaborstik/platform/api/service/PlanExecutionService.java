@@ -1,104 +1,153 @@
 package com.zaborstik.platform.api.service;
 
-import com.zaborstik.platform.agent.dto.StepExecutionResult;
-import com.zaborstik.platform.api.dto.ExecutePlanResponse;
+import com.zaborstik.platform.api.dto.PlanRunResponse;
+import com.zaborstik.platform.api.dto.StepExecutionReportRequest;
 import com.zaborstik.platform.api.entity.AttachmentEntity;
 import com.zaborstik.platform.api.entity.PlanResultEntity;
-import com.zaborstik.platform.core.plan.Plan;
-import com.zaborstik.platform.core.plan.PlanStepAction;
-import com.zaborstik.platform.executor.ExecutionLogEntry;
-import com.zaborstik.platform.executor.PlanExecutionResult;
-import com.zaborstik.platform.executor.PlanExecutor;
+import com.zaborstik.platform.api.repository.PlanResultRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+import java.time.Instant;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Оркестрация выполнения плана через browser executor и сохранение итогов в БД.
+ * Server-side bookkeeping for plan execution.
+ *
+ * <p>This service no longer drives the browser. The local
+ * {@code platform-executor} fetches a plan over HTTP, runs steps on the
+ * user's machine and then reports outcomes back through this service.
+ * Lifecycle transitions, {@code plan_result} aggregation and
+ * {@code plan_step_log} persistence all happen here.
  */
 @Service
 public class PlanExecutionService {
+
     private static final Logger log = LoggerFactory.getLogger(PlanExecutionService.class);
 
-    private final PlanService planService;
-    private final PlanExecutor planExecutor;
+    private static final int ERROR_MAX_LEN = 2000;
 
-    public PlanExecutionService(PlanService planService,
-                                PlanExecutor planExecutor) {
+    private final PlanService planService;
+    private final PlanResultRepository planResultRepository;
+
+    public PlanExecutionService(PlanService planService, PlanResultRepository planResultRepository) {
         this.planService = planService;
-        this.planExecutor = planExecutor;
+        this.planResultRepository = planResultRepository;
     }
 
-    public Optional<ExecutePlanResponse> executePlan(String planId) {
-        Optional<Plan> maybePlan = planService.getPlanDomain(planId);
-        if (maybePlan.isEmpty()) {
+    /**
+     * Marks the beginning of an external (local) run. Transitions the plan to
+     * {@code in_progress} and pre-creates an empty {@code plan_result} record
+     * that subsequent step reports will be attached to.
+     */
+    @Transactional
+    public Optional<PlanRunResponse> startRun(String planId) {
+        Objects.requireNonNull(planId, "planId");
+        if (planService.getPlanDomain(planId).isEmpty()) {
             return Optional.empty();
         }
+        safelyTransitionPlan(planId, "in_progress");
 
-        Plan plan = maybePlan.get();
-        safelyTransitionPlan(plan.id(), "in_progress");
-        PlanExecutionResult executionResult = planExecutor.execute(plan);
+        Instant now = Instant.now();
+        PlanResultEntity placeholder = planService.createPlanResult(planId, false, now, now);
 
-        PlanResultEntity planResult = planService.createPlanResult(
-            executionResult.planId(),
-            executionResult.success(),
-            executionResult.startedAt(),
-            executionResult.finishedAt()
+        PlanRunResponse response = new PlanRunResponse();
+        response.setPlanId(planId);
+        response.setPlanResultId(placeholder.getId());
+        response.setStartedTime(now);
+        return Optional.of(response);
+    }
+
+    /**
+     * Persists the outcome of a single plan step reported by the local executor
+     * and transitions the step lifecycle accordingly.
+     */
+    @Transactional
+    public void reportStepResult(String planId, String planStepId, String planResultId,
+                                 StepExecutionReportRequest report) {
+        Objects.requireNonNull(planId, "planId");
+        Objects.requireNonNull(planStepId, "planStepId");
+        Objects.requireNonNull(report, "report");
+
+        safelyUpdateStoppedAt(planId, planStepId);
+        safelyTransitionPlanStep(planId, planStepId, "in_progress");
+
+        boolean success = Boolean.TRUE.equals(report.getSuccess());
+        safelyTransitionPlanStep(planId, planStepId, success ? "completed" : "failed");
+
+        if (success || planResultId == null || planResultId.isBlank()) {
+            return;
+        }
+        String actionId = report.getActionId();
+        if (actionId == null || actionId.isBlank()) {
+            log.warn("Skipping plan_step_log for plan {} step {} because actionId is missing",
+                planId, planStepId);
+            return;
+        }
+        String attachmentId = null;
+        String screenshotPath = report.getScreenshotPath();
+        if (screenshotPath != null && !screenshotPath.isBlank()) {
+            AttachmentEntity attachment = planService.createAttachment(screenshotPath);
+            attachmentId = attachment.getId();
+        }
+        Instant executedAt = report.getExecutedAt() != null ? report.getExecutedAt() : Instant.now();
+        planService.createPlanStepLog(
+            planId,
+            planStepId,
+            planResultId,
+            actionId,
+            report.getMessage() != null ? report.getMessage() : planStepId,
+            truncate(report.getError(), ERROR_MAX_LEN),
+            executedAt,
+            report.getExecutionTimeMs() != null ? report.getExecutionTimeMs() : 0L,
+            attachmentId
         );
+    }
 
-        int failedSteps = 0;
-        for (ExecutionLogEntry logEntry : executionResult.logEntries()) {
-            safelyUpdateStoppedAt(executionResult.planId(), logEntry.step().id());
-            safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "in_progress");
+    /**
+     * Finalises a run reported by the local executor: transitions the plan to
+     * {@code completed} or {@code failed} and refreshes the aggregated
+     * {@code plan_result} record created in {@link #startRun(String)}.
+     */
+    @Transactional
+    public Optional<PlanRunResponse> finishRun(String planId, String planResultId,
+                                               boolean success, int totalSteps, int failedSteps,
+                                               Instant startedAt, Instant finishedAt) {
+        Objects.requireNonNull(planId, "planId");
+        if (planService.getPlanDomain(planId).isEmpty()) {
+            return Optional.empty();
+        }
+        safelyTransitionPlan(planId, success ? "completed" : "failed");
 
-            StepExecutionResult stepResult = logEntry.result();
-            if (stepResult.success()) {
-                safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "completed");
-                continue;
+        Instant now = Instant.now();
+        Instant effectiveFinished = finishedAt != null ? finishedAt : now;
+        Instant effectiveStarted = startedAt != null ? startedAt : effectiveFinished;
+
+        if (planResultId != null && !planResultId.isBlank()) {
+            try {
+                PlanResultEntity result = planResultRepository.findById(planResultId)
+                    .orElseThrow(() -> new NoSuchElementException("Plan result not found: " + planResultId));
+                result.setSuccess(success);
+                result.setStartedTime(effectiveStarted);
+                result.setFinishedTime(effectiveFinished);
+                planResultRepository.save(result);
+            } catch (Exception ex) {
+                log.warn("Failed to update plan_result {} for plan {}", planResultId, planId, ex);
             }
-            safelyTransitionPlanStep(executionResult.planId(), logEntry.step().id(), "failed");
-            failedSteps++;
-            String actionId = resolveActionId(logEntry);
-            if (actionId == null) {
-                log.warn("Skipping log persistence for step {} because actionId is missing", logEntry.step().id());
-                continue;
-            }
-
-            String screenshotPath = resolveScreenshotPath(stepResult);
-            String attachmentId = null;
-            if (screenshotPath != null && !screenshotPath.isBlank()) {
-                AttachmentEntity attachment = planService.createAttachment(screenshotPath);
-                attachmentId = attachment.getId();
-            }
-
-            String message = stepResult.message() != null ? stepResult.message() : logEntry.step().displayName();
-            String error = truncateForDb(stepResult.error(), 2000);
-            planService.createPlanStepLog(
-                executionResult.planId(),
-                logEntry.step().id(),
-                planResult.getId(),
-                actionId,
-                message,
-                error,
-                stepResult.executedAt(),
-                stepResult.executionTimeMs(),
-                attachmentId
-            );
         }
 
-        safelyTransitionPlan(executionResult.planId(), executionResult.success() ? "completed" : "failed");
-
-        ExecutePlanResponse response = new ExecutePlanResponse();
-        response.setPlanId(executionResult.planId());
-        response.setPlanResultId(planResult.getId());
-        response.setSuccess(executionResult.success());
-        response.setTotalSteps(executionResult.logEntries().size());
+        PlanRunResponse response = new PlanRunResponse();
+        response.setPlanId(planId);
+        response.setPlanResultId(planResultId);
+        response.setSuccess(success);
+        response.setTotalSteps(totalSteps);
         response.setFailedSteps(failedSteps);
-        response.setStartedTime(executionResult.startedAt());
-        response.setFinishedTime(executionResult.finishedAt());
+        response.setStartedTime(effectiveStarted);
+        response.setFinishedTime(effectiveFinished);
         return Optional.of(response);
     }
 
@@ -126,24 +175,7 @@ public class PlanExecutionService {
         }
     }
 
-    private String resolveActionId(ExecutionLogEntry logEntry) {
-        return logEntry.step().actions().stream()
-            .map(PlanStepAction::actionId)
-            .filter(actionId -> actionId != null && !actionId.isBlank())
-            .findFirst()
-            .orElse(null);
-    }
-
-    private String resolveScreenshotPath(StepExecutionResult stepResult) {
-        if (stepResult.screenshotPath() != null && !stepResult.screenshotPath().isBlank()) {
-            return stepResult.screenshotPath();
-        }
-        Map<String, Object> metadata = stepResult.metadata();
-        Object screenshot = metadata.get("screenshot");
-        return screenshot instanceof String screenshotPath ? screenshotPath : null;
-    }
-
-    private static String truncateForDb(String value, int maxLen) {
+    private static String truncate(String value, int maxLen) {
         if (value == null) return null;
         if (value.length() <= maxLen) return value;
         return value.substring(0, maxLen);

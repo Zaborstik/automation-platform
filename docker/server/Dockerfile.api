@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.6
+#
+# Multistage build for platform-api.
+#
+# Stage 1: builds the whole reactor (platform-core + platform-api) inside a
+# Maven image so the host does not need Java/Maven installed.
+# Stage 2: ships only the Spring Boot fat jar on top of a JRE.
+
+############################################################
+# Stage 1 — build
+############################################################
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
+
+WORKDIR /workspace
+
+# Copy parent + only the modules we actually need to compile platform-api.
+COPY pom.xml ./pom.xml
+COPY platform-core/pom.xml platform-core/pom.xml
+COPY platform-api/pom.xml platform-api/pom.xml
+
+# Warm Maven's local cache. We add the *all* relevant poms first so this
+# layer is cached as long as dependency declarations don't change.
+RUN mvn -q -pl platform-core,platform-api -am -B -DskipTests dependency:go-offline || true
+
+# Now bring in sources and build.
+COPY platform-core/src platform-core/src
+COPY platform-api/src platform-api/src
+
+RUN mvn -q -pl platform-api -am -B -DskipTests package
+
+############################################################
+# Stage 2 — runtime
+############################################################
+FROM eclipse-temurin:21-jre AS runtime
+
+ENV SPRING_PROFILES_ACTIVE=prod \
+    SERVER_PORT=8080 \
+    JAVA_OPTS=""
+
+WORKDIR /app
+
+COPY --from=builder /workspace/platform-api/target/platform-api-*.jar /app/app.jar
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=10 \
+    CMD wget --quiet --tries=1 --spider http://localhost:${SERVER_PORT}/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

@@ -91,6 +91,54 @@ public class PlanService {
         return toResponse(planMapper.toDomain(entity));
     }
 
+    /**
+     * Persists a {@link Plan} produced by an upstream generator (the
+     * knowledge microservice). Step ids from the incoming plan are
+     * regenerated to guarantee uniqueness inside our DB, and the lifecycle
+     * state of each step is forced to the {@code firststep} of its workflow.
+     */
+    @Transactional
+    public PlanResponse createPlanFromDomain(Plan source) {
+        Objects.requireNonNull(source, "source plan cannot be null");
+        Map<String, String> firstStepByWorkflow = new HashMap<>();
+        String planId = UUID.randomUUID().toString();
+        String planWorkflowFirstStep = firstWorkflowStepInternalName(source.workflowId(), firstStepByWorkflow);
+
+        List<PlanStep> steps = new ArrayList<>();
+        for (int i = 0; i < source.steps().size(); i++) {
+            PlanStep src = source.steps().get(i);
+            String stepWorkflowId = src.workflowId();
+            String stepInitialLifecycle = firstWorkflowStepInternalName(stepWorkflowId, firstStepByWorkflow);
+            String stepId = UUID.randomUUID().toString();
+            List<PlanStepAction> actions = src.actions().stream()
+                .map(a -> new PlanStepAction(a.actionId(), a.metaValue()))
+                .collect(Collectors.toList());
+            steps.add(new PlanStep(
+                stepId,
+                planId,
+                stepWorkflowId,
+                stepInitialLifecycle,
+                src.entityTypeId(),
+                src.entityId(),
+                src.sortOrder(),
+                src.displayName(),
+                actions
+            ));
+        }
+        Plan plan = new Plan(
+            planId,
+            source.workflowId(),
+            planWorkflowFirstStep,
+            steps.isEmpty() ? planId : steps.get(0).id(),
+            source.target(),
+            source.explanation(),
+            steps
+        );
+        PlanEntity entity = planMapper.toEntity(plan);
+        planRepository.save(entity);
+        return toResponse(planMapper.toDomain(entity));
+    }
+
     @Transactional(readOnly = true)
     public Optional<PlanResponse> getPlan(String planId) {
         Objects.requireNonNull(planId, "planId");

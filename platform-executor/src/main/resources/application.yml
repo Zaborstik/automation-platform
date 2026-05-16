@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: platform-executor
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+server:
+  port: ${SERVER_PORT:7070}
+
+platform:
+  # Remote (server-side) gateway.
+  api:
+    url: ${PLATFORM_API_URL:http://localhost:8080}
+  # Local sibling microservice on the same host.
+  agent:
+    url: ${PLATFORM_AGENT_URL:http://localhost:7071}
+    base-url: ${PLATFORM_AGENT_BASE_URL:http://localhost:8080}
+    headless: ${PLATFORM_AGENT_HEADLESS:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.zaborstik: ${LOG_LEVEL:INFO}

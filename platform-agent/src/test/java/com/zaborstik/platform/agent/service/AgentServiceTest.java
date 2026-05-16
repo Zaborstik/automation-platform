@@ -1,26 +1,25 @@
 package com.zaborstik.platform.agent.service;
 
 import com.zaborstik.platform.agent.client.AgentClient;
+import com.zaborstik.platform.agent.client.AgentException;
+import com.zaborstik.platform.agent.dto.AgentCommand;
 import com.zaborstik.platform.agent.dto.AgentResponse;
 import com.zaborstik.platform.agent.dto.RetryPolicy;
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
-import com.zaborstik.platform.core.domain.Action;
-import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
 import com.zaborstik.platform.core.plan.PlanStepAction;
-import com.zaborstik.platform.core.resolver.Resolver;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,108 +29,50 @@ class AgentServiceTest {
     @Mock
     private AgentClient agentClient;
 
-    @Mock
-    private Resolver resolver;
+    @Test
+    void executeStepMapsOpenPageToCommandAndReturnsSuccess() throws AgentException {
+        AgentService service = new AgentService(agentClient, RetryPolicy.noRetry());
+        PlanStep step = step("open https://example.com", "https://example.com",
+            new PlanStepAction("act-open-page", "https://example.com"));
 
-    private AgentService agentService;
-    private Plan oneStepPlan;
+        when(agentClient.execute(any(AgentCommand.class)))
+            .thenReturn(AgentResponse.success("ok", Map.of(), 10L));
 
-    @BeforeEach
-    void setUp() {
-        agentService = new AgentService(
-            agentClient,
-            resolver,
-            "https://example.org",
-            true,
-            new RetryPolicy(2, 0, List.of("timeout", "not found", "not visible"))
-        );
+        StepExecutionResult result = service.executeStep(step, "open_page", Map.of(), 0);
 
-        PlanStep step = new PlanStep(
-            "step-1",
-            "plan-1",
+        assertTrue(result.success());
+        ArgumentCaptor<AgentCommand> captor = ArgumentCaptor.forClass(AgentCommand.class);
+        verify(agentClient).execute(captor.capture());
+        assertEquals(AgentCommand.CommandType.OPEN_PAGE, captor.getValue().type());
+        assertEquals("https://example.com", captor.getValue().target());
+    }
+
+    @Test
+    void executeStepReturnsFailureOnUnknownOperation() {
+        AgentService service = new AgentService(agentClient, RetryPolicy.noRetry());
+        PlanStep step = step("noop", null, new PlanStepAction("act-noop", null));
+
+        StepExecutionResult result = service.executeStep(step, "definitely-unknown", Map.of(), 0);
+
+        assertFalse(result.success());
+    }
+
+    private static PlanStep step(String name, String entityId, PlanStepAction action) {
+        return new PlanStep(
+            "step-id",
+            "plan-id",
             "wf-plan-step",
             "new",
             "ent-page",
-            "result",
+            entityId,
             0,
-            "Wait result",
-            List.of(new PlanStepAction("act-1", "50"))
-        );
-
-        when(resolver.findAction("act-1"))
-            .thenReturn(Optional.of(Action.of("act-1", "Wait", "wait", "Wait", "act-type-validation")));
-
-        oneStepPlan = new Plan(
-            "plan-1",
-            "wf-plan",
-            "new",
-            "step-1",
-            "target",
-            "explanation",
-            List.of(step)
+            name,
+            List.of(action)
         );
     }
 
-    @Test
-    void shouldSucceedFromFirstAttempt() throws Exception {
-        when(agentClient.initialize(any(), anyBoolean()))
-            .thenReturn(AgentResponse.success("initialized", java.util.Map.of(), 0));
-        when(agentClient.execute(any()))
-            .thenReturn(AgentResponse.success("ok", java.util.Map.of(), 10));
-
-        List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
-
-        assertEquals(1, results.size());
-        assertTrue(results.get(0).success());
-        assertEquals(0, results.get(0).retryCount());
-        verify(agentClient).execute(any());
-    }
-
-    @Test
-    void shouldRetryForRetryableFailureUntilLimit() throws Exception {
-        when(agentClient.initialize(any(), anyBoolean()))
-            .thenReturn(AgentResponse.success("initialized", java.util.Map.of(), 0));
-        when(agentClient.execute(any()))
-            .thenReturn(AgentResponse.failure("timeout while waiting element", 10));
-
-        List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
-
-        assertEquals(1, results.size());
-        assertFalse(results.get(0).success());
-        assertEquals(2, results.get(0).retryCount());
-        verify(agentClient, org.mockito.Mockito.times(3)).execute(any());
-    }
-
-    @Test
-    void shouldNotRetryForNonRetryableFailure() throws Exception {
-        when(agentClient.initialize(any(), anyBoolean()))
-            .thenReturn(AgentResponse.success("initialized", java.util.Map.of(), 0));
-        when(agentClient.execute(any()))
-            .thenReturn(AgentResponse.failure("something unexpected", 10));
-
-        List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
-
-        assertEquals(1, results.size());
-        assertFalse(results.get(0).success());
-        assertEquals(0, results.get(0).retryCount());
-        verify(agentClient, org.mockito.Mockito.times(1)).execute(any());
-    }
-
-    @Test
-    void shouldSucceedOnSecondAttempt() throws Exception {
-        when(agentClient.initialize(any(), anyBoolean()))
-            .thenReturn(AgentResponse.success("initialized", java.util.Map.of(), 0));
-        when(agentClient.execute(any()))
-            .thenReturn(
-                AgentResponse.failure("timeout", 10),
-                AgentResponse.success("ok", java.util.Map.of(), 10)
-            );
-
-        List<StepExecutionResult> results = agentService.executePlan(oneStepPlan);
-
-        assertEquals(1, results.size());
-        assertTrue(results.get(0).success());
-        assertEquals(1, results.get(0).retryCount());
-        verify(agentClient, org.mockito.Mockito.times(2)).execute(any());
+    @SuppressWarnings("SameParameterValue")
+    private static <T> T any(Class<T> type) {
+        return org.mockito.ArgumentMatchers.any(type);
     }
 }

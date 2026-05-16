@@ -1,9 +1,10 @@
 package com.zaborstik.platform.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaborstik.platform.api.client.KnowledgeClient;
 import com.zaborstik.platform.api.dto.CreatePlanRequest;
-import com.zaborstik.platform.api.dto.ExecutePlanResponse;
 import com.zaborstik.platform.api.dto.PlanResponse;
+import com.zaborstik.platform.api.dto.PlanRunResponse;
 import com.zaborstik.platform.api.dto.TransitionPlanRequest;
 import com.zaborstik.platform.api.exception.GlobalExceptionHandler;
 import com.zaborstik.platform.api.service.PlanExecutionService;
@@ -44,6 +45,9 @@ class PlanControllerTest {
 
     @MockBean
     private PlanExecutionService planExecutionService;
+
+    @MockBean
+    private KnowledgeClient knowledgeClient;
 
     @Test
     void shouldCreatePlanSuccessfully() throws Exception {
@@ -142,20 +146,16 @@ class PlanControllerTest {
     }
 
     @Test
-    void shouldExecutePlanSuccessfully() throws Exception {
-        ExecutePlanResponse response = new ExecutePlanResponse();
+    void shouldStartRunForPlan() throws Exception {
+        PlanRunResponse response = new PlanRunResponse();
         response.setPlanId("plan-1");
         response.setPlanResultId("result-1");
-        response.setSuccess(true);
-        response.setTotalSteps(2);
-        response.setFailedSteps(0);
-        when(planExecutionService.executePlan("plan-1")).thenReturn(java.util.Optional.of(response));
+        when(planExecutionService.startRun("plan-1")).thenReturn(java.util.Optional.of(response));
 
-        mockMvc.perform(post("/api/plans/plan-1/execute"))
+        mockMvc.perform(post("/api/plans/plan-1/runs"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.planId").value("plan-1"))
-            .andExpect(jsonPath("$.planResultId").value("result-1"))
-            .andExpect(jsonPath("$.success").value(true));
+            .andExpect(jsonPath("$.planResultId").value("result-1"));
     }
 
     @Test

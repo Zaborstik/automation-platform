@@ -1,0 +1,129 @@
+# Smoke-test compose: server + local in a single docker-compose so a single
+# `docker compose up` exercises the full distributed flow.
+#
+# This is NOT for production. The local stack here points at the in-network
+# platform-api instead of a remote server.
+#
+# Run from repo root:
+#   docker compose -f docker/dev/docker-compose.smoke.yml up -d --build
+#   ./scripts/smoke-test.sh
+#   docker compose -f docker/dev/docker-compose.smoke.yml down -v
+
+services:
+
+  # ---------------- SERVER ----------------
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: platformdb
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform -d platformdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - smoke-net
+
+  platform-knowledge:
+    build:
+      context: ../..
+      dockerfile: docker/server/Dockerfile.knowledge
+    environment:
+      SERVER_PORT: 8081
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - smoke-net
+
+  platform-api:
+    build:
+      context: ../..
+      dockerfile: docker/server/Dockerfile.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      platform-knowledge:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/platformdb
+      DATABASE_USERNAME: platform
+      DATABASE_PASSWORD: platform
+      PLATFORM_KNOWLEDGE_URL: http://platform-knowledge:8081
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - smoke-net
+
+  # ---------------- LOCAL ----------------
+
+  playwright-server:
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.playwright
+    shm_size: "1gb"
+    networks:
+      - smoke-net
+
+  platform-agent:
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.agent
+    environment:
+      SERVER_PORT: 7071
+      PLATFORM_PLAYWRIGHT_URL: http://playwright-server:3000
+    depends_on:
+      playwright-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7071/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - smoke-net
+
+  platform-executor:
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.executor
+    environment:
+      SERVER_PORT: 7070
+      PLATFORM_API_URL: http://platform-api:8080
+      PLATFORM_AGENT_URL: http://platform-agent:7071
+      PLATFORM_AGENT_BASE_URL: http://example.com
+      PLATFORM_AGENT_HEADLESS: "true"
+    depends_on:
+      platform-api:
+        condition: service_healthy
+      platform-agent:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:7070:7070"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7070/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - smoke-net
+
+networks:
+  smoke-net:
+    driver: bridge

@@ -5,6 +5,9 @@ if (!window.__TAURI__?.core) {
 }
 const { invoke } = window.__TAURI__.core;
 
+const DEFAULT_EXECUTOR_URL = 'http://localhost:7070';
+const DEFAULT_POLL_INTERVAL_MS = 1500;
+
 function applyPanelStyleForWindow(panelBase) {
     const s = { ...panelBase };
     s.position = 'relative';
@@ -26,11 +29,57 @@ function applyMessagesStyleForWindow(messagesBase) {
     return s;
 }
 
+async function postJson(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+    });
+    const text = await res.text();
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch (_) {
+        data = text;
+    }
+    if (!res.ok) {
+        const message =
+            (data && (data.message || data.error)) ||
+            `HTTP ${res.status} ${res.statusText}`;
+        throw new Error(message);
+    }
+    return data;
+}
+
+async function getJson(url) {
+    const res = await fetch(url);
+    const text = await res.text();
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch (_) {
+        data = text;
+    }
+    if (!res.ok) {
+        const message =
+            (data && (data.message || data.error)) ||
+            `HTTP ${res.status} ${res.statusText}`;
+        throw new Error(message);
+    }
+    return data;
+}
+
 async function mount() {
     const payload = await invoke('get_panel_payload');
     const ch = payload.chatPanel;
     const appCfg = payload.app || {};
     const root = document.getElementById('root');
+
+    const executorBase = (appCfg.executorUrl || DEFAULT_EXECUTOR_URL).replace(/\/+$/, '');
+    const pollInterval =
+        Number.isFinite(appCfg.statusPollIntervalMs) && appCfg.statusPollIntervalMs > 0
+            ? appCfg.statusPollIntervalMs
+            : DEFAULT_POLL_INTERVAL_MS;
 
     const titleText =
         (appCfg.displayName && String(appCfg.displayName).trim()) || ch.strings.title;
@@ -91,24 +140,73 @@ async function mount() {
     btn.textContent = ch.strings.sendLabel;
     Object.assign(btn.style, ch.sendButton);
 
-    function appendUserMessage(text) {
+    function appendMessage(text, bubbleStyle) {
         if (placeholder.parentNode) {
             placeholder.remove();
         }
         const row = document.createElement('div');
-        Object.assign(row.style, ch.userBubble);
+        Object.assign(row.style, bubbleStyle);
         row.textContent = text;
         messages.appendChild(row);
         messages.scrollTop = messages.scrollHeight;
+        return row;
     }
 
-    function send() {
+    function appendUserMessage(text) {
+        return appendMessage(text, ch.userBubble);
+    }
+
+    function appendBotMessage(text) {
+        return appendMessage(text, ch.botBubble || ch.userBubble);
+    }
+
+    function updateMessage(row, text) {
+        row.textContent = text;
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    async function pollUntilDone(runId, statusRow) {
+        const terminal = new Set(['SUCCEEDED', 'FAILED']);
+        while (true) {
+            await new Promise(r => setTimeout(r, pollInterval));
+            try {
+                const status = await getJson(`${executorBase}/local/status/${runId}`);
+                const summary = formatStatus(status);
+                updateMessage(statusRow, summary);
+                if (terminal.has(status.status)) {
+                    return status;
+                }
+            } catch (err) {
+                updateMessage(statusRow, `Не смогли получить статус: ${err.message}`);
+                return null;
+            }
+        }
+    }
+
+    function formatStatus(status) {
+        const totalSteps = status.totalSteps ?? 0;
+        const failedSteps = status.failedSteps ?? 0;
+        const msg = status.message ? ` — ${status.message}` : '';
+        return `${status.status} • runId=${status.runId} • шагов: ${totalSteps} (упало: ${failedSteps})${msg}`;
+    }
+
+    async function send() {
         const text = input.value.trim();
         if (!text) {
             return;
         }
         appendUserMessage(text);
         input.value = '';
+        btn.disabled = true;
+        try {
+            const initial = await postJson(`${executorBase}/local/run`, { userInput: text });
+            const statusRow = appendBotMessage(formatStatus(initial));
+            await pollUntilDone(initial.runId, statusRow);
+        } catch (err) {
+            appendBotMessage(`Ошибка запуска: ${err.message}`);
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     btn.addEventListener('click', send);

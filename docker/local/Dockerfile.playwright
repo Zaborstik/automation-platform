@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.6
+#
+# Playwright sidecar for the local agent. Wraps the existing Node script that
+# lives in platform-agent/src/main/resources/playwright-server.js together
+# with Microsoft's official Playwright runtime image (includes Chromium,
+# Firefox, WebKit and all required system libraries).
+
+FROM mcr.microsoft.com/playwright:v1.49.1-jammy
+
+ENV NODE_ENV=production \
+    PORT=3000 \
+    DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Copy only the bits we need from the agent module so the build context
+# stays small. The package.json next to playwright-server.js already pins
+# the playwright/express versions.
+COPY platform-agent/src/main/resources/package.json ./package.json
+# Install runtime deps. Use npm install (not ci) because we don't pin a
+# package-lock.json next to the script.
+RUN npm install --omit=dev --no-audit --no-fund
+
+COPY platform-agent/src/main/resources/playwright-server.js ./playwright-server.js
+COPY platform-agent/src/main/resources/playwright-server.config.js ./playwright-server.config.js
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
+    CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/health || exit 1
+
+CMD ["node", "playwright-server.js"]

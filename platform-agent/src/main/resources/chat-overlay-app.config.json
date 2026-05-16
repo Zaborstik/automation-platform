@@ -3,5 +3,7 @@
   "iconPath": "",
   "logFilePath": "",
   "windowMargin": 16,
-  "windowHeightFraction": 0.45
+  "windowHeightFraction": 0.45,
+  "executorUrl": "http://localhost:7070",
+  "statusPollIntervalMs": 1500
 }

@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: platform-agent
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+server:
+  port: ${SERVER_PORT:7071}
+
+platform:
+  playwright:
+    url: ${PLATFORM_PLAYWRIGHT_URL:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.zaborstik: ${LOG_LEVEL:INFO}

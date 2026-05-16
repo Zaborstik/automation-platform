@@ -1,0 +1,91 @@
+# Server-side stack: lives on a remote VM. Provides plan storage (Postgres),
+# the REST gateway (platform-api) and the plan generation microservice
+# (platform-knowledge). The local executor talks to platform-api over HTTP.
+#
+# Build/run:
+#   cp .env.example .env       # fill in production secrets
+#   docker compose --env-file .env up -d --build
+#
+# Build context is the repository root, so this file MUST be invoked from
+# the repo root with -f docker/server/docker-compose.yml (or via the
+# scripts/deploy-server.sh helper).
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: platform-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-platformdb}
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform} -d ${POSTGRES_DB:-platformdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - platform-server-net
+    # No port exposed by default — the api is the only client.
+
+  platform-knowledge:
+    image: ${KNOWLEDGE_IMAGE:-platform-knowledge:local}
+    container_name: platform-knowledge
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: docker/server/Dockerfile.knowledge
+    environment:
+      SERVER_PORT: 8081
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - platform-server-net
+
+  platform-api:
+    image: ${API_IMAGE:-platform-api:local}
+    container_name: platform-api
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: docker/server/Dockerfile.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      platform-knowledge:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-platformdb}
+      DATABASE_USERNAME: ${POSTGRES_USER:-platform}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-platform}
+      PLATFORM_KNOWLEDGE_URL: http://platform-knowledge:8081
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${PLATFORM_API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - platform-server-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  platform-server-net:
+    driver: bridge

@@ -1,133 +1,199 @@
 package com.zaborstik.platform.executor;
 
 import com.zaborstik.platform.agent.dto.StepExecutionResult;
-import com.zaborstik.platform.agent.service.AgentService;
-import com.zaborstik.platform.agent.service.StepExecutionCallback;
+import com.zaborstik.platform.core.domain.Action;
 import com.zaborstik.platform.core.plan.Plan;
 import com.zaborstik.platform.core.plan.PlanStep;
+import com.zaborstik.platform.core.plan.PlanStepAction;
+import com.zaborstik.platform.core.resolver.Resolver;
+import com.zaborstik.platform.executor.client.AgentRestClient;
+import com.zaborstik.platform.executor.client.RemoteApiClient;
+import com.zaborstik.platform.executor.client.api.PlanRunStartDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Optional;
 
 /**
- * Исполнитель планов.
+ * Orchestrates plan execution on the local machine.
  *
- * Берёт {@link Plan}, передаёт шаги в {@link AgentService}, собирает execution_log
- * и возвращает агрегированный {@link PlanExecutionResult}.
+ * <ol>
+ *   <li>Asks {@code platform-api} to start a run for the plan.</li>
+ *   <li>For each step: resolves the action's {@code internalname} via
+ *       {@code RemoteResolver}, calls the local {@code platform-agent} to
+ *       perform the operation, then posts the result back to the api.</li>
+ *   <li>Finalises the run with success/failure summary.</li>
+ * </ol>
  *
- * Plan executor.
- *
- * Takes {@link Plan}, passes steps to {@link AgentService}, collects execution_log
- * and returns aggregated {@link PlanExecutionResult}.
+ * <p>This class replaces the old in-process executor that called
+ * {@code AgentService} directly. All inter-service communication is now HTTP.
  */
+@Component
 public class PlanExecutor {
+
     private static final Logger log = LoggerFactory.getLogger(PlanExecutor.class);
 
-    private final AgentService agentService;
+    private final RemoteApiClient apiClient;
+    private final AgentRestClient agentClient;
+    private final Resolver resolver;
 
-    public PlanExecutor(AgentService agentService) {
-        this.agentService = Objects.requireNonNull(agentService, "agentService cannot be null");
+    public PlanExecutor(RemoteApiClient apiClient, AgentRestClient agentClient, Resolver resolver) {
+        this.apiClient = apiClient;
+        this.agentClient = agentClient;
+        this.resolver = resolver;
     }
 
-    /**
-     * Синхронно выполняет план.
-     *
-     * Synchronously executes plan.
-     *
-     * @param plan план для исполнения / plan to execute
-     * @return результат исполнения с execution_log / execution result with execution_log
-     */
-    public PlanExecutionResult execute(Plan plan) {
-        return execute(plan, false, StepExecutionCallback.noOp());
-    }
-
-    public PlanExecutionResult execute(Plan plan, boolean stopOnFailure) {
-        return execute(plan, stopOnFailure, StepExecutionCallback.noOp());
-    }
-
-    public PlanExecutionResult execute(Plan plan, boolean stopOnFailure, StepExecutionCallback callback) {
-        Objects.requireNonNull(plan, "plan cannot be null");
-        StepExecutionCallback effectiveCallback = callback != null ? callback : StepExecutionCallback.noOp();
-        log.info("Executing plan {} target={}",
-            plan.id(), plan.target());
-
+    public PlanExecutionResult execute(Plan plan, String baseUrl, boolean headless) {
         Instant startedAt = Instant.now();
         List<ExecutionLogEntry> logEntries = new ArrayList<>();
+        boolean success = true;
 
-        List<PlanStep> steps = plan.steps();
-        List<StepExecutionResult> results = agentService.executePlan(plan, stopOnFailure, effectiveCallback);
+        PlanRunStartDto run = apiClient.startRun(plan.id());
+        log.info("Started run for plan {}: planResultId={}", plan.id(), run.planResultId);
 
-        int stepsSize = steps.size();
-        int resultsSize = results.size();
-        int count = Math.min(stepsSize, resultsSize);
-        int processedCount = count;
+        try {
+            agentClient.initializeSession(baseUrl, headless);
+        } catch (Exception ex) {
+            log.error("Failed to initialise local agent: {}", ex.getMessage(), ex);
+            success = false;
+            return finishRun(plan, run, startedAt, logEntries, false, true);
+        }
 
-        if (stopOnFailure) {
-            for (int i = 0; i < count; i++) {
-                if (!results.get(i).success()) {
-                    processedCount = i + 1;
-                    break;
+        try {
+            for (int i = 0; i < plan.steps().size(); i++) {
+                PlanStep step = plan.steps().get(i);
+                StepOutcome outcome = executeOneStep(step, i);
+                logEntries.add(new ExecutionLogEntry(plan.id(), i, step, outcome.result, Instant.now()));
+
+                reportStepBack(plan, run, step, outcome);
+
+                if (!outcome.result.success()) {
+                    success = false;
                 }
             }
-        }
-
-        for (int i = 0; i < processedCount; i++) {
-            PlanStep step = steps.get(i);
-            StepExecutionResult result = results.get(i);
-            logEntries.add(new ExecutionLogEntry(
-                plan.id(),
-                i,
-                step,
-                result,
-                Instant.now()
-            ));
-        }
-
-        // Если агент вернул меньше результатов, чем шагов, добавим фиктивные failure-записи.
-        // If agent returned fewer results than steps, add synthetic failure entries.
-        if (stepsSize > processedCount) {
-            for (int i = processedCount; i < stepsSize; i++) {
-                PlanStep step = steps.get(i);
-                StepExecutionResult syntheticFailure = StepExecutionResult.failure(
-                    step.id(),
-                    step.displayName(),
-                    "Step was not executed by agent (no result returned)",
-                    0,
-                    java.util.Map.of(),
-                    0,
-                    i,
-                    null
-                );
-                logEntries.add(new ExecutionLogEntry(
-                    plan.id(),
-                    i,
-                    step,
-                    syntheticFailure,
-                    Instant.now()
-                ));
+        } finally {
+            try {
+                agentClient.closeSession();
+            } catch (Exception ex) {
+                log.warn("Failed to close local agent: {}", ex.getMessage());
             }
         }
 
-        boolean success = logEntries.stream().allMatch(e -> e.result().success());
+        return finishRun(plan, run, startedAt, logEntries, success, false);
+    }
+
+    private PlanExecutionResult finishRun(Plan plan, PlanRunStartDto run, Instant startedAt,
+                                          List<ExecutionLogEntry> logEntries, boolean success,
+                                          boolean abortedBeforeSteps) {
         Instant finishedAt = Instant.now();
+        int failed = (int) logEntries.stream().filter(e -> !e.result().success()).count();
+        if (abortedBeforeSteps) {
+            failed = 0;
+        }
+        try {
+            apiClient.finishRun(plan.id(), run.planResultId, success,
+                logEntries.size(), failed, startedAt, finishedAt);
+        } catch (Exception ex) {
+            log.warn("Failed to finish run for plan {}: {}", plan.id(), ex.getMessage());
+        }
+        return new PlanExecutionResult(plan.id(), success, startedAt, finishedAt, logEntries);
+    }
 
-        PlanExecutionResult executionResult = new PlanExecutionResult(
-            plan.id(),
-            success,
-            startedAt,
-            finishedAt,
-            logEntries
-        );
+    private StepOutcome executeOneStep(PlanStep step, int index) {
+        String operation = resolveOperation(step).orElse(null);
+        if (operation == null) {
+            StepExecutionResult failure = StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                "Cannot resolve operation: no plan_step_action with a known actionId",
+                0L,
+                Map.of(),
+                0,
+                index,
+                null
+            );
+            return new StepOutcome(failure, null);
+        }
+        Map<String, String> selectors = collectSelectors(step);
+        StepExecutionResult result;
+        try {
+            result = agentClient.executeStep(step, operation, selectors, index);
+        } catch (Exception ex) {
+            log.error("Agent failed to execute step {}: {}", step.id(), ex.getMessage(), ex);
+            result = StepExecutionResult.failure(
+                step.id(),
+                step.displayName(),
+                "Agent call failed: " + ex.getMessage(),
+                0L,
+                Map.of(),
+                0,
+                index,
+                null
+            );
+        }
+        String actionId = step.actions().stream()
+            .map(PlanStepAction::actionId)
+            .filter(a -> a != null && !a.isBlank())
+            .findFirst()
+            .orElse(null);
+        return new StepOutcome(result, actionId);
+    }
 
-        log.info("Plan {} execution finished with status={}, steps={}",
-            plan.id(), success ? "SUCCESS" : "FAILED", logEntries.size());
+    private Optional<String> resolveOperation(PlanStep step) {
+        for (PlanStepAction a : step.actions()) {
+            if (a.actionId() == null || a.actionId().isBlank()) {
+                continue;
+            }
+            Optional<Action> action = resolver.findAction(a.actionId());
+            if (action.isPresent()) {
+                return Optional.of(action.get().internalName());
+            }
+        }
+        String fallback = step.workflowStepInternalName();
+        if (fallback != null && !resolver.isWorkflowStepInternalName(fallback)) {
+            return Optional.of(fallback);
+        }
+        return Optional.empty();
+    }
 
-        return executionResult;
+    private Map<String, String> collectSelectors(PlanStep step) {
+        Map<String, String> selectors = new LinkedHashMap<>();
+        for (PlanStepAction a : step.actions()) {
+            if (a.actionId() != null) {
+                resolver.findUIBinding(a.actionId())
+                    .ifPresent(binding -> selectors.put(a.actionId(), binding.selector()));
+            }
+        }
+        return selectors;
+    }
+
+    private void reportStepBack(Plan plan, PlanRunStartDto run, PlanStep step, StepOutcome outcome) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", outcome.result.success());
+        body.put("message", outcome.result.message());
+        body.put("error", outcome.result.error());
+        body.put("screenshotPath", outcome.result.screenshotPath());
+        body.put("executionTimeMs", outcome.result.executionTimeMs());
+        body.put("executedAt", outcome.result.executedAt());
+        body.put("metadata", outcome.result.metadata());
+        if (outcome.actionId != null) {
+            body.put("actionId", outcome.actionId);
+        }
+        try {
+            apiClient.reportStepResult(plan.id(), step.id(), run.planResultId, body);
+        } catch (Exception ex) {
+            log.warn("Failed to report step {} for plan {}: {}",
+                step.id(), plan.id(), ex.getMessage());
+        }
+    }
+
+    private record StepOutcome(StepExecutionResult result, String actionId) {
     }
 }
-
-

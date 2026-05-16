@@ -24,6 +24,12 @@ struct AppConfig {
     #[serde(default)]
     #[serde(rename = "windowHeightFraction")]
     window_height_fraction: Option<f64>,
+    #[serde(default)]
+    #[serde(rename = "executorUrl")]
+    executor_url: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "statusPollIntervalMs")]
+    status_poll_interval_ms: Option<u64>,
 }
 
 fn dev_resources_dir() -> PathBuf {
@@ -108,6 +114,13 @@ fn get_panel_payload(app: tauri::AppHandle) -> Result<Value, String> {
     let mut app_json = json!({
         "displayName": app_cfg.display_name,
     });
+
+    if let Some(ref url) = app_cfg.executor_url {
+        app_json["executorUrl"] = json!(url);
+    }
+    if let Some(ms) = app_cfg.status_poll_interval_ms {
+        app_json["statusPollIntervalMs"] = json!(ms);
+    }
 
     if let Some(ref ip) = app_cfg.icon_path {
         let trimmed = ip.trim();

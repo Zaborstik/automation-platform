@@ -1,0 +1,82 @@
+# Local stack: lives on the user's machine. Wires the Tauri chat overlay
+# (a separate native app) with the local executor + agent and the Node
+# Playwright sidecar. The executor talks back to the remote platform-api
+# via PLATFORM_API_URL set in .env.
+#
+# Build/run from the repo root:
+#   cp docker/local/.env.example docker/local/.env
+#   # edit PLATFORM_API_URL with your server address
+#   docker compose --env-file docker/local/.env -f docker/local/docker-compose.yml up -d --build
+
+services:
+
+  playwright-server:
+    image: ${PLAYWRIGHT_IMAGE:-platform-playwright:local}
+    container_name: platform-playwright
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.playwright
+    environment:
+      PORT: 3000
+    # IPC_LOCK / SYS_ADMIN are not required for headless Chromium because
+    # the upstream image already disables sandboxing internally.
+    shm_size: "1gb"
+    networks:
+      - platform-local-net
+
+  platform-agent:
+    image: ${AGENT_IMAGE:-platform-agent:local}
+    container_name: platform-agent
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.agent
+    environment:
+      SERVER_PORT: 7071
+      PLATFORM_PLAYWRIGHT_URL: http://playwright-server:3000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      playwright-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7071/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - platform-local-net
+
+  platform-executor:
+    image: ${EXECUTOR_IMAGE:-platform-executor:local}
+    container_name: platform-executor
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: docker/local/Dockerfile.executor
+    environment:
+      SERVER_PORT: 7070
+      PLATFORM_API_URL: ${PLATFORM_API_URL:?set in .env to your server URL}
+      PLATFORM_AGENT_URL: http://platform-agent:7071
+      PLATFORM_AGENT_BASE_URL: ${PLATFORM_AGENT_BASE_URL:-http://localhost:8080}
+      PLATFORM_AGENT_HEADLESS: ${PLATFORM_AGENT_HEADLESS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      platform-agent:
+        condition: service_healthy
+    ports:
+      # Exposed to the host loopback only — chat overlay calls this.
+      - "127.0.0.1:${PLATFORM_EXECUTOR_PORT:-7070}:7070"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7070/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - platform-local-net
+
+networks:
+  platform-local-net:
+    driver: bridge
